@@ -1,0 +1,8 @@
+#include "app/app.hpp"
+#include "parser/parser.hpp"
+
+int main(int argc, char* argv[]) {
+    auto f = parser::parse(argc, argv);
+    auto a = app();
+    return a.run(f);
+}

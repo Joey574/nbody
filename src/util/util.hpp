@@ -2,6 +2,8 @@
 #include <cstddef>
 #include <immintrin.h>
 
+#include "../definitions/macros.hpp"
+
 namespace util {
     size_t aligned_size(size_t size);    
 
@@ -9,7 +11,7 @@ namespace util {
         return _mm_cvtss_f32(_mm_rsqrt_ss(_mm_set_ss(x)));
     }
 
-    #if defined(__AVX2__)
+    #if defined(USE_AVX2)
     inline float sum256(const __m256 v) {
         __m128 vlow  = _mm256_castps256_ps128(v);
         __m128 vhigh = _mm256_extractf128_ps(v, 1);
@@ -25,7 +27,7 @@ namespace util {
     }
     #endif
 
-    #if defined(__AVX512F__)
+    #if defined(USE_AVX512)
     inline float sum512(const __m512 v) {
         __m256 low256  = _mm512_castps512_ps256(v);
         __m256 high256 = _mm512_extractf32x8_ps(v, 1);

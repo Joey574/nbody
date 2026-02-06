@@ -7,7 +7,7 @@ on omp and compiler for vectorization
 
 */
 
-#if defined(__AVX512F__)
+#if defined(USE_AVX512)
 std::chrono::nanoseconds simulation::update_cpu(const float ft) noexcept {
     auto s = std::chrono::high_resolution_clock::now();
     data_.zero_acc();
@@ -137,7 +137,7 @@ std::chrono::nanoseconds simulation::update_cpu(const float ft) noexcept {
 
     return std::chrono::high_resolution_clock::now() - s;
 }
-#elif defined(__AVX2__)
+#elif defined(USE_AVX2)
 std::chrono::nanoseconds simulation::update_cpu(const float ft) noexcept {
     auto s = std::chrono::high_resolution_clock::now();
     data_.zero_acc();

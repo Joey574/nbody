@@ -1,14 +1,13 @@
 #include "simulation.hpp"
 /*
 
-Switches update_cpu implementation based on compile time definitions
-supports both AVX512 and AVX2 directly, all others will fall back
+Switches update_cpu implementation based on compile time definitions.
+Supports both AVX512 and AVX2 explicitly, all others will fall back
 on omp and compiler for vectorization
 
 */
 
 #if defined(__AVX512F__)
-
 std::chrono::nanoseconds simulation::update_cpu(const float ft) noexcept {
     auto s = std::chrono::high_resolution_clock::now();
     data_.zero_acc();
@@ -137,7 +136,6 @@ std::chrono::nanoseconds simulation::update_cpu(const float ft) noexcept {
 
     return std::chrono::high_resolution_clock::now() - s;
 }
-
 #elif defined(__AVX2__)
 std::chrono::nanoseconds simulation::update_cpu(const float ft) noexcept {
     auto s = std::chrono::high_resolution_clock::now();

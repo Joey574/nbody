@@ -3,6 +3,7 @@
 #include <malloc.h>
 #include <cstring>
 
+#include "macros.hpp"
 #include "../util/util.hpp"
 
 /// @brief lightweight abstraction for a matrix of floats, memory is aligned to 32 bytes
@@ -29,7 +30,7 @@ struct matrix {
     matrix(const matrix& other) :
         rows_(other.rows_),
         cols_(other.cols_) {
-            data_ = (float*)aligned_alloc(32, util::aligned_size(rows_*cols_*sizeof(float)));
+            data_ = (float*)aligned_alloc(MEM_ALIGNMENT, util::aligned_size(rows_*cols_*sizeof(float)));
             std::memcpy(data_, other.data_, rows_*cols_*sizeof(float));
         }
 
@@ -37,7 +38,7 @@ struct matrix {
     matrix(size_t r, size_t c) : 
     rows_(r), 
     cols_(c), 
-    data_((float*)aligned_alloc(32, util::aligned_size(r*c*sizeof(float)))) {}
+    data_((float*)aligned_alloc(MEM_ALIGNMENT, util::aligned_size(r*c*sizeof(float)))) {}
 
     // move operator
     matrix& operator = (matrix&& other) noexcept {
@@ -55,7 +56,7 @@ struct matrix {
     matrix& operator = (const matrix& other) {
         rows_ = other.rows_;
         cols_ = other.cols_;
-        data_ = (float*)aligned_alloc(32, util::aligned_size(rows_*cols_*sizeof(float)));
+        data_ = (float*)aligned_alloc(MEM_ALIGNMENT, util::aligned_size(rows_*cols_*sizeof(float)));
         std::memcpy(data_, other.data_, rows_*cols_*sizeof(float));
         return *this;
     }

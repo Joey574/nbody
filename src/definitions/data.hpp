@@ -1,13 +1,55 @@
 #pragma once
 #include <cstddef>
 #include <omp.h>
+#include <iterator>
 
 #include "matrix.hpp"
+#include "macros.hpp"
 #include "../util/util.hpp"
 
 /// @brief Hold the raw underlying simulation data and provides a simple interface to access it
 struct data {
     public:
+    struct point {
+        float x;
+        float y;
+        float m;
+    };
+
+    struct Iterator {
+        using iterator_category = std::forward_iterator_tag;
+        using difference_type = std::ptrdiff_t;
+        using value_type = point;
+        using pointer = void;
+        using reference = point&;
+
+        // constructor
+        Iterator(float* xptr, float* yptr, float* mptr) : xptr_(xptr), yptr_(yptr), mptr_(mptr) {}
+
+        point operator*() const { return point{*xptr_, *yptr_, *mptr_}; }
+
+        Iterator& operator++() {
+            xptr_++;
+            yptr_++;
+            mptr_++;
+            return *this;
+        }
+
+        friend bool operator == (const Iterator& a, const Iterator& b) {
+            return a.xptr_ == b.xptr_;
+        }
+        friend bool operator != (const Iterator& a, const Iterator& b) {
+            return !(a == b);
+        }
+
+        private:
+        float* xptr_;
+        float* yptr_;
+        float* mptr_;
+    };
+
+    Iterator begin() { return Iterator{posx_, posy_, mass_}; }
+    Iterator end() { return Iterator{posx_+bodies_, posy_+bodies_, mass_+bodies_}; }
 
     // default constructor
     data() : 
@@ -43,11 +85,11 @@ struct data {
         bodies_(other.bodies_),
         accx_(other.accx_),
         accy_(other.accy_) {
-            posx_ = (float*)aligned_alloc(32, util::aligned_size(bodies_*sizeof(float)));
-            posy_ = (float*)aligned_alloc(32, util::aligned_size(bodies_*sizeof(float)));
-            velx_ = (float*)aligned_alloc(32, util::aligned_size(bodies_*sizeof(float)));
-            vely_ = (float*)aligned_alloc(32, util::aligned_size(bodies_*sizeof(float)));
-            mass_ = (float*)aligned_alloc(32, util::aligned_size(bodies_*sizeof(float)));
+            posx_ = (float*)aligned_alloc(MEM_ALIGNMENT, util::aligned_size(bodies_*sizeof(float)));
+            posy_ = (float*)aligned_alloc(MEM_ALIGNMENT, util::aligned_size(bodies_*sizeof(float)));
+            velx_ = (float*)aligned_alloc(MEM_ALIGNMENT, util::aligned_size(bodies_*sizeof(float)));
+            vely_ = (float*)aligned_alloc(MEM_ALIGNMENT, util::aligned_size(bodies_*sizeof(float)));
+            mass_ = (float*)aligned_alloc(MEM_ALIGNMENT, util::aligned_size(bodies_*sizeof(float)));
 
             std::memcpy(posx_, other.posx_, bodies_*sizeof(float));
             std::memcpy(posy_, other.posy_, bodies_*sizeof(float));
@@ -59,11 +101,11 @@ struct data {
     // custom constructor
     data(size_t n, bool init_acc) :
         bodies_(n),
-        posx_((float*)aligned_alloc(32, util::aligned_size(n*sizeof(float)))),
-        posy_((float*)aligned_alloc(32, util::aligned_size(n*sizeof(float)))),
-        velx_((float*)aligned_alloc(32, util::aligned_size(n*sizeof(float)))),
-        vely_((float*)aligned_alloc(32, util::aligned_size(n*sizeof(float)))),
-        mass_((float*)aligned_alloc(32, util::aligned_size(n*sizeof(float)))),
+        posx_((float*)aligned_alloc(MEM_ALIGNMENT, util::aligned_size(n*sizeof(float)))),
+        posy_((float*)aligned_alloc(MEM_ALIGNMENT, util::aligned_size(n*sizeof(float)))),
+        velx_((float*)aligned_alloc(MEM_ALIGNMENT, util::aligned_size(n*sizeof(float)))),
+        vely_((float*)aligned_alloc(MEM_ALIGNMENT, util::aligned_size(n*sizeof(float)))),
+        mass_((float*)aligned_alloc(MEM_ALIGNMENT, util::aligned_size(n*sizeof(float)))),
         accx_(init_acc ? matrix(omp_get_max_threads(), n) : matrix()),
         accy_(init_acc ? matrix(omp_get_max_threads(), n) : matrix()) {}
 
@@ -94,11 +136,11 @@ struct data {
         accx_ = other.accx_;
         accy_ = other.accy_;
 
-        posx_ = (float*)aligned_alloc(32, util::aligned_size(bodies_*sizeof(float)));
-        posy_ = (float*)aligned_alloc(32, util::aligned_size(bodies_*sizeof(float)));
-        velx_ = (float*)aligned_alloc(32, util::aligned_size(bodies_*sizeof(float)));
-        vely_ = (float*)aligned_alloc(32, util::aligned_size(bodies_*sizeof(float)));
-        mass_ = (float*)aligned_alloc(32, util::aligned_size(bodies_*sizeof(float)));
+        posx_ = (float*)aligned_alloc(MEM_ALIGNMENT, util::aligned_size(bodies_*sizeof(float)));
+        posy_ = (float*)aligned_alloc(MEM_ALIGNMENT, util::aligned_size(bodies_*sizeof(float)));
+        velx_ = (float*)aligned_alloc(MEM_ALIGNMENT, util::aligned_size(bodies_*sizeof(float)));
+        vely_ = (float*)aligned_alloc(MEM_ALIGNMENT, util::aligned_size(bodies_*sizeof(float)));
+        mass_ = (float*)aligned_alloc(MEM_ALIGNMENT, util::aligned_size(bodies_*sizeof(float)));
             
         std::memcpy(posx_, other.posx_, bodies_*sizeof(float));
         std::memcpy(posy_, other.posy_, bodies_*sizeof(float));

@@ -66,6 +66,7 @@ struct simulation {
     
     std::chrono::nanoseconds (simulation::*update)(const float) noexcept;
     
+    data& get_data() { return data_; }
     const float* posx() const noexcept { return data_.posx(); }
     const float* posy() const noexcept { return data_.posy(); }
 

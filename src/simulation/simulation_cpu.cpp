@@ -80,6 +80,7 @@ std::chrono::nanoseconds simulation::update_cpu(const float ft) noexcept {
             float a1x_final = util::sum512(_a1x_sum);
             float a1y_final = util::sum512(_a1y_sum);
 
+            // remainder handling
             for(; j < n; j++) {
                 const float p2x = px[j];
                 const float p2y = py[j];
@@ -209,6 +210,7 @@ std::chrono::nanoseconds simulation::update_cpu(const float ft) noexcept {
             float a1x_final = util::sum256(_a1x_sum);
             float a1y_final = util::sum256(_a1y_sum);
 
+            // remainder handling
             for(; j < n; j++) {
                 const float p2x = px[j];
                 const float p2y = py[j];
@@ -279,11 +281,6 @@ std::chrono::nanoseconds simulation::update_cpu(const float ft) noexcept {
     float* __restrict ma = data_.mass();
     matrix& ax = data_.accx();
     matrix& ay = data_.accy();
-
-    // constants
-    const __m256 _opf = _mm256_set1_ps(1.5f);
-    const __m256 _pf = _mm256_set1_ps(0.5f);
-    const __m256 _epsl = _mm256_set1_ps(1e-12f);
 
     // gravitational constant is set to 1 for purposes of this simulation
     #pragma omp parallel

@@ -9,6 +9,7 @@ LIBS="-lvulkan -lGLEW -lglfw -lpthread -ldl -lX11 -lXxf86vm -lXrandr -lXi"
 SOURCES=$(find src -name "*.cpp")
 OUT="bin/nbody"
 
+# default to release mode build
 FLAGS="-march=native -mtune=native -O3 -ffast-math -fopenmp"
 MODE="RELEASE"
 

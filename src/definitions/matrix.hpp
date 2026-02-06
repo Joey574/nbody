@@ -5,6 +5,7 @@
 
 #include "../util/util.hpp"
 
+/// @brief lightweight abstraction for a matrix of floats, memory is aligned to 32 bytes
 struct matrix {
     public:
 
@@ -63,7 +64,7 @@ struct matrix {
     ~matrix() {
         rows_ = 0;
         cols_ = 0;
-        if (data_) { free(data_); }
+        if (data_) { free(data_); data_ = nullptr; }
     }
 
     void zero() noexcept {

@@ -16,6 +16,8 @@ int app::run(const cliargs& f) {
     return 0;
 }
 
+/// @brief Initializes the main application window
+/// @return 0 if successful
 int app::init_window() {
     if (!glfwInit()) { return 1; }
 

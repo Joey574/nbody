@@ -5,6 +5,7 @@
 #include "matrix.hpp"
 #include "../util/util.hpp"
 
+/// @brief Hold the raw underlying simulation data and provides a simple interface to access it
 struct data {
     public:
 
@@ -110,11 +111,11 @@ struct data {
     // deconstructor
     ~data() {
         bodies_ = 0;
-        if (posx_) { free(posx_); }
-        if (posy_) { free(posy_); }
-        if (velx_) { free(velx_); }
-        if (vely_) { free(vely_); }
-        if (mass_) { free(mass_); }
+        if (posx_) { free(posx_); posx_ =  nullptr; }
+        if (posy_) { free(posy_); posy_ =  nullptr; }
+        if (velx_) { free(velx_); velx_ =  nullptr; }
+        if (vely_) { free(vely_); vely_ =  nullptr; }
+        if (mass_) { free(mass_); mass_ =  nullptr; }
     }
 
     constexpr inline size_t bodies() const noexcept { return bodies_; }

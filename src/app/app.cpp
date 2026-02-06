@@ -1,5 +1,8 @@
 #include "app.hpp"
 
+/// @brief Handles application starting and managing the main loop
+/// @param f User defined cli arguments
+/// @return 0 if successful
 int app::run(const cliargs& f) {
     printf("\033c");
     sim = simulation(f);

@@ -8,7 +8,6 @@ on omp and compiler for vectorization
 */
 
 #if defined(__AVX512F__)
-
 std::chrono::nanoseconds simulation::update_cpu(const float ft) noexcept {
     auto s = std::chrono::high_resolution_clock::now();
     data_.zero_acc();
@@ -24,9 +23,9 @@ std::chrono::nanoseconds simulation::update_cpu(const float ft) noexcept {
     matrix& ay = data_.accy();
 
     // constants
-    const __m256 _opf = _mm256_set1_ps(1.5f);
-    const __m256 _pf = _mm256_set1_ps(0.5f);
-    const __m256 _epsl = _mm256_set1_ps(1e-12f);
+    const __m512 _opf = _mm512_set1_ps(1.5f);
+    const __m512 _pf = _mm512_set1_ps(0.5f);
+    const __m512 _epsl = _mm512_set1_ps(1e-12f);
 
     // gravitational constant is set to 1 for purposes of this simulation
     #pragma omp parallel
@@ -39,47 +38,47 @@ std::chrono::nanoseconds simulation::update_cpu(const float ft) noexcept {
             const float p1y = py[i];
             const float p1m = ma[i];
 
-            const __m256 _p1x = _mm256_set1_ps(p1x);
-            const __m256 _p1y = _mm256_set1_ps(p1y);
-            const __m256 _p1m = _mm256_set1_ps(p1m);
+            const __m512 _p1x = _mm512_set1_ps(p1x);
+            const __m512 _p1y = _mm512_set1_ps(p1y);
+            const __m512 _p1m = _mm512_set1_ps(p1m);
 
-            __m256 _a1x_sum = _mm256_setzero_ps();
-            __m256 _a1y_sum = _mm256_setzero_ps();
+            __m512 _a1x_sum = _mm512_setzero_ps();
+            __m512 _a1y_sum = _mm512_setzero_ps();
 
             size_t j = i+1;
-            for (; j+7 < n; j += 8) {
-                const __m256 _p2x = _mm256_loadu_ps(&px[j]);
-                const __m256 _p2y = _mm256_loadu_ps(&py[j]);
-                const __m256 _p2m = _mm256_loadu_ps(&ma[j]);
+            for (; j+15 < n; j += 16) {
+                const __m512 _p2x = _mm512_loadu_ps(&px[j]);
+                const __m512 _p2y = _mm512_loadu_ps(&py[j]);
+                const __m512 _p2m = _mm512_loadu_ps(&ma[j]);
 
                 // compute distance squared
-                const __m256 _dx = _p2x - _p1x;
-                const __m256 _dy = _p2y - _p1y;
-                const __m256 _dsq = _epsl + (_dx*_dx) + (_dy*_dy);
+                const __m512 _dx = _p2x - _p1x;
+                const __m512 _dy = _p2y - _p1y;
+                const __m512 _dsq = _epsl + (_dx*_dx) + (_dy*_dy);
 
                 // fast inv sqrt with newton step
-                __m256 _inv = _mm256_rsqrt_ps(_dsq);
+                __m512 _inv = _mm512_rsqrt14_ps(_dsq);
                 _inv = _inv * (_opf - _pf * _dsq * _inv * _inv);
-                const __m256 _inv3 = _inv * _inv * _inv;
+                const __m512 _inv3 = _inv * _inv * _inv;
 
                 // compute intermediate values
-                const __m256 _ivx = _dx * _inv3;
-                const __m256 _ivy = _dy * _inv3;
+                const __m512 _ivx = _dx * _inv3;
+                const __m512 _ivy = _dy * _inv3;
 
                 // compute acceleration
-                const __m256 _a1x = _ivx * _p2m;
-                const __m256 _a1y = _ivy * _p2m;
-                const __m256 _a2x = _ivx * _p1m;
-                const __m256 _a2y = _ivy * _p1m;
+                const __m512 _a1x = _ivx * _p2m;
+                const __m512 _a1y = _ivy * _p2m;
+                const __m512 _a2x = _ivx * _p1m;
+                const __m512 _a2y = _ivy * _p1m;
 
-                _mm256_storeu_ps(&ax(tid, j), _a2x + _mm256_loadu_ps(&ax(tid, j)));
-                _mm256_storeu_ps(&ay(tid, j), _a2y + _mm256_loadu_ps(&ay(tid, j)));
+                _mm512_storeu_ps(&ax(tid, j), _a2x + _mm512_loadu_ps(&ax(tid, j)));
+                _mm512_storeu_ps(&ay(tid, j), _a2y + _mm512_loadu_ps(&ay(tid, j)));
                 _a1x_sum += _a1x;
                 _a1y_sum += _a1y;
             }
 
-            float a1x_final = util::sum256(_a1x_sum);
-            float a1y_final = util::sum256(_a1y_sum);
+            float a1x_final = util::sum512(_a1x_sum);
+            float a1y_final = util::sum512(_a1y_sum);
 
             for(; j < n; j++) {
                 const float p2x = px[j];

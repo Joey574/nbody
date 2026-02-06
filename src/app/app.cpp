@@ -44,6 +44,13 @@ int app::main_loop(const cliargs& f) {
         auto sim_time = std::invoke(sim.update, sim, f.fixedtime).count() * 0.000001;
         sim_sum += sim_time;
 
+        if (count % 10000 == 0) {
+            std::cout << "\n" << sim.bodies() << "\n";
+            std::cout << sim.posx()[0] << ", " << sim.posy()[0] << "\n";
+            std::cout << sim.posx()[sim.bodies()-1] << ", " << sim.posy()[sim.bodies()-1] << std::endl;
+            exit(0);
+        }
+
         auto ren_time = ren.render(sim).count() * 0.000001;
         ren_sum += ren_time;
         tot_sum += sim_time + ren_time;

@@ -24,7 +24,7 @@ int app::init_window() {
     glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
     glfwWindowHint(GLFW_RESIZABLE, GLFW_FALSE);
 
-    window = glfwCreateWindow(width_, height_, "Nbody simulation", nullptr, nullptr);
+    window = glfwCreateWindow(width_, height_, "nbody simulation", nullptr, nullptr);
     if (!window) {
         glfwTerminate();
         return 1;
@@ -51,7 +51,7 @@ int app::main_loop(const cliargs& f) {
         glfwPollEvents();
 
         printf("\033[H"
-            "\nFrame %zu     "
+            "\nFrame %zu"
             "\n\nSimulation (ms):"
             "\n\tAverage: %.2f     "
             "\n\tLast:    %.2f     "

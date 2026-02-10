@@ -1,122 +1,156 @@
 #include "renderer.hpp"
 
-int renderer::init_vulkan(GLFWwindow* window, size_t n) {
-    //if (create_buffers(n)) { return 1; }
-    if (create_instance()) { return 1; }
-    if (create_surface(window)) { return 1; }
-    //if (create_device()) { return 1; }
-    //if (create_pipeline()) { return 1; }
-    //if (set_descriptors(n)) { return 1; }
+int renderer::init(size_t n) {
+    if (init_window()) { return 1; }
+    if (vulkan_instance()) { return 1; }
+    if (vulkan_surface()) { return 1; }
+    if (vulkan_physicaldevice()) { return 1; }
+    if (vulkan_device()) { return 1; }
     return 0;
 }
 
-int renderer::create_buffers(size_t n) {
+/// @brief Initializes the main application window
+/// @return 0 if successful
+int renderer::init_window() {
+    if (!glfwInit()) { return 1; }
+
+    glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
+    glfwWindowHint(GLFW_RESIZABLE, GLFW_FALSE);
+
+    window = glfwCreateWindow(width_, height_, "nbody simulation", nullptr, nullptr);
+    if (!window) {
+        glfwTerminate();
+        return 1;
+    }
+
     return 0;
 }
 
-int renderer::create_instance() {
-    
-    // vulkan initialization
-    VkApplicationInfo appInfo{};
-    appInfo.sType = VK_STRUCTURE_TYPE_APPLICATION_INFO;
-    appInfo.pApplicationName = "Hello Window";
-    appInfo.applicationVersion = VK_MAKE_VERSION(1, 0, 0);
-    appInfo.pEngineName = "No Engine";
-    appInfo.engineVersion = VK_MAKE_VERSION(1, 0, 0);
-    appInfo.apiVersion = VK_API_VERSION_1_3;
-
-    VkInstanceCreateInfo createInfo{};
-    createInfo.sType = VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO;
-    createInfo.pApplicationInfo = &appInfo;
+int renderer::vulkan_instance() {
+    constexpr vk::ApplicationInfo appInfo{
+        .pApplicationName = "nbody",
+        .applicationVersion = VK_MAKE_VERSION( 1, 0, 0 ),
+        .pEngineName        = "No Engine",
+        .engineVersion      = VK_MAKE_VERSION( 1, 0, 0 ),
+        .apiVersion         = vk::ApiVersion13
+    };
 
     uint32_t glfwExtensionCount = 0;
-    const char** glfwExtensions = glfwGetRequiredInstanceExtensions(&glfwExtensionCount);
+    auto glfwExtensions = glfwGetRequiredInstanceExtensions(&glfwExtensionCount);
     
-    createInfo.enabledExtensionCount = glfwExtensionCount;
-    createInfo.ppEnabledExtensionNames = glfwExtensions;
+    vk::InstanceCreateInfo createInfo{
+        .pApplicationInfo = &appInfo,
+        .enabledExtensionCount = glfwExtensionCount,
+        .ppEnabledExtensionNames = glfwExtensions
+    };
 
-    if (vkCreateInstance(&createInfo, nullptr, &instance) != VK_SUCCESS) {
+    instance = vk::raii::Instance(context, createInfo);
+    return 0;
+}
+
+int renderer::vulkan_surface() {
+    VkSurfaceKHR _surface;
+    if (glfwCreateWindowSurface(*instance, window, nullptr, &_surface) != VK_SUCCESS) {
+        return 1;
+    }
+    
+    surface = vk::raii::SurfaceKHR(instance, _surface);
+    return 0;
+}
+
+int renderer::vulkan_physicaldevice() {
+    auto devices = instance.enumeratePhysicalDevices();
+    if (devices.empty()) {
         return 1;
     }
 
+    physicalDevice = devices[0];
     return 0;
 }
 
-int renderer::create_surface(GLFWwindow* window) {
-    if (glfwCreateWindowSurface(instance, window, nullptr, &surface) != VK_SUCCESS) {
+int renderer::vulkan_device() {
+    std::vector<vk::QueueFamilyProperties> queueFamilyProperties = physicalDevice.getQueueFamilyProperties();
+
+    // get the first index into queueFamilyProperties which supports graphics
+    auto graphicsQueueFamilyProperty = std::ranges::find_if( queueFamilyProperties, []( auto const & qfp )
+                    { return (qfp.queueFlags & vk::QueueFlagBits::eGraphics) != static_cast<vk::QueueFlags>(0); } );
+
+    auto graphicsIndex = static_cast<uint32_t>( std::distance( queueFamilyProperties.begin(), graphicsQueueFamilyProperty ) );
+
+    // determine a queueFamilyIndex that supports present
+    // first check if the graphicsIndex is good enough
+    auto presentIndex = physicalDevice.getSurfaceSupportKHR( graphicsIndex, *surface )
+                                       ? graphicsIndex
+                                       : static_cast<uint32_t>( queueFamilyProperties.size() );
+    if ( presentIndex == queueFamilyProperties.size() )
+    {
+        // the graphicsIndex doesn't support present -> look for another family index that supports both
+        // graphics and present
+        for ( size_t i = 0; i < queueFamilyProperties.size(); i++ ) {
+            if ((queueFamilyProperties[i].queueFlags & vk::QueueFlagBits::eGraphics ) &&
+                 physicalDevice.getSurfaceSupportKHR( static_cast<uint32_t>( i ), *surface)) {
+                graphicsIndex = static_cast<uint32_t>( i );
+                presentIndex  = graphicsIndex;
+                break;
+            }
+        }
+        if (presentIndex == queueFamilyProperties.size()) {
+            // there's nothing like a single family index that supports both graphics and present -> look for another
+            // family index that supports present
+            for ( size_t i = 0; i < queueFamilyProperties.size(); i++ )
+            {
+                if ( physicalDevice.getSurfaceSupportKHR( static_cast<uint32_t>( i ), *surface ) )
+                {
+                    presentIndex = static_cast<uint32_t>( i );
+                    break;
+                }
+            }
+        }
+    }
+    if ((graphicsIndex == queueFamilyProperties.size() ) || ( presentIndex == queueFamilyProperties.size())) {
         return 1;
     }
 
+    std::vector<const char*> deviceExtensions = {
+        vk::KHRSwapchainExtensionName
+    };
+
+    // query for Vulkan 1.3 features
+    auto features = physicalDevice.getFeatures2();
+    vk::PhysicalDeviceVulkan13Features vulkan13Features;
+    vk::PhysicalDeviceExtendedDynamicStateFeaturesEXT extendedDynamicStateFeatures;
+    vulkan13Features.dynamicRendering = vk::True;
+    extendedDynamicStateFeatures.extendedDynamicState = vk::True;
+    vulkan13Features.pNext = &extendedDynamicStateFeatures;
+    features.pNext = &vulkan13Features;
+
+    // create a Device
+    float                     queuePriority = 0.5f;
+    vk::DeviceQueueCreateInfo deviceQueueCreateInfo { .queueFamilyIndex = graphicsIndex, .queueCount = 1, .pQueuePriorities = &queuePriority };
+    vk::DeviceCreateInfo      deviceCreateInfo{ .pNext =  &features, .queueCreateInfoCount = 1, .pQueueCreateInfos = &deviceQueueCreateInfo };
+    deviceCreateInfo.enabledExtensionCount = deviceExtensions.size();
+    deviceCreateInfo.ppEnabledExtensionNames = deviceExtensions.data();
+
+    device = vk::raii::Device( physicalDevice, deviceCreateInfo );
+    graphicsQueue = vk::raii::Queue( device, graphicsIndex, 0 );
+    presentQueue = vk::raii::Queue( device, presentIndex, 0 );
     return 0;
 }
 
-int renderer::create_device() {
-    return 0;
-}
+uint32_t renderer::findQueueFamilies(vk::raii::PhysicalDevice physicalDevice) {
+    // find the index of the first queue family that supports graphics
+    std::vector<vk::QueueFamilyProperties> queueFamilyProperties = physicalDevice.getQueueFamilyProperties();
 
-int renderer::create_pipeline() {
-    return 0;
-    VkPipelineLayoutCreateInfo pipelineLayoutInfo{VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO};
-    pipelineLayoutInfo.setLayoutCount = 1;
-    pipelineLayoutInfo.pSetLayouts = &descriptorSetLayout;
+    // get the first index into queueFamilyProperties which supports graphics
+    auto graphicsQueueFamilyProperty =
+      std::find_if( queueFamilyProperties.begin(),
+                    queueFamilyProperties.end(),
+                    []( vk::QueueFamilyProperties const & qfp ) { return qfp.queueFlags & vk::QueueFlagBits::eGraphics; } );
 
-    vkCreatePipelineLayout(device, &pipelineLayoutInfo, nullptr, &pipelineLayout);
-
-    //vkCreateGraphicsPipelines(device, VK_NULL_HANDLE, 1, &pipelineInfo, nullptr, &circlePipeline);
-
-    return 0;
-}
-
-int renderer::set_descriptors(size_t n) {
-    return 0;
-    VkDescriptorSetLayoutBinding layoutBinding{};
-    layoutBinding.binding = 0;
-    layoutBinding.descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
-    layoutBinding.descriptorCount = 1;
-    layoutBinding.stageFlags = VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT;
-
-    VkDescriptorSetLayoutCreateInfo layoutInfo {VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO};
-    layoutInfo.bindingCount = 1;
-    layoutInfo.pBindings = &layoutBinding;
-    vkCreateDescriptorSetLayout(device, &layoutInfo, nullptr, &descriptorSetLayout);
-
-    VkDescriptorSetAllocateInfo allocInfo {VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO};
-    allocInfo.descriptorPool = descriptorPool;
-    allocInfo.descriptorSetCount = 1;
-    allocInfo.pSetLayouts = &descriptorSetLayout;
-    vkAllocateDescriptorSets(device, &allocInfo, &descriptorSet);
-
-    VkDescriptorBufferInfo bufferInfo{};
-    bufferInfo.buffer = storageBuffer;
-    bufferInfo.offset = 0;
-    bufferInfo.range = 16 + (sizeof(CircleData) * n);
-
-    VkWriteDescriptorSet descriptorWrite {VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET};
-    descriptorWrite.dstSet = descriptorSet;
-    descriptorWrite.dstBinding = 0;
-    descriptorWrite.descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
-    descriptorWrite.pBufferInfo = &bufferInfo;
-    vkUpdateDescriptorSets(device, 1, &descriptorWrite, 0, nullptr);
-
-    return 0;
+    return static_cast<uint32_t>( std::distance( queueFamilyProperties.begin(), graphicsQueueFamilyProperty ) );
 }
 
 void renderer::cleanup() {
-    if (device) { vkDeviceWaitIdle(device); }
-
-    if (circlePipeline) { vkDestroyPipeline(device, circlePipeline, nullptr); }
-    if (pipelineLayout) { vkDestroyPipelineLayout(device, pipelineLayout, nullptr); }
-
-    if (stagingBuffer) { vkDestroyBuffer(device, stagingBuffer, nullptr); }
-    if (stagingBufferMemory) { vkFreeMemory(device, stagingBufferMemory, nullptr); }
-    if (storageBuffer) { vkDestroyBuffer(device, storageBuffer, nullptr); }
-    if (storageBufferMemory) { vkFreeMemory(device, storageBufferMemory, nullptr); }
-
-    if (descriptorPool) {vkDestroyDescriptorPool(device, descriptorPool, nullptr); }
-    if (descriptorSetLayout) {vkDestroyDescriptorSetLayout(device, descriptorSetLayout, nullptr); }
-
-    if (commandPool) { vkDestroyCommandPool(device, commandPool, nullptr); }
-    if (device) { vkDestroyDevice(device, nullptr); }
-    if (surface ) { vkDestroySurfaceKHR(instance, surface, nullptr); }
-    if (instance) { vkDestroyInstance(instance, nullptr); }
+    if (window) { glfwDestroyWindow(window); }
+    glfwTerminate();
 }

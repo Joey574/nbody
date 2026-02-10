@@ -12,7 +12,7 @@ OUT="bin/nbody"
 mkdir bin -p
 
 # default to release mode build
-FLAGS="-march=native -mtune=native -O3 -ffast-math -fopenmp"
+FLAGS="-march=native -mtune=native -O3 -ffast-math -s -fopenmp"
 MODE="RELEASE"
 
 # check for build flags
@@ -23,7 +23,7 @@ elif [[ "$1" == "-p" ]]; then
     FLAGS="-march=native -mtune=native -g -O3 -ffast-math -fno-omit-frame-pointer -fopenmp"
     MODE="PERF"
 fi
-ccache g++ $FLAGS $SOURCES -o $OUT $LIBS
+ccache g++ -std=c++23 $FLAGS $SOURCES -o $OUT $LIBS
 
 file_size=$(stat -c %s $OUT)
 size_human=$(numfmt --to=iec --suffix=B "$file_size")

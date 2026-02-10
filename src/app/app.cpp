@@ -8,27 +8,9 @@ int app::run(const cliargs& f) {
     sim = simulation(f);
     ren = renderer();
     
-    if (init_window()) { return 1; };
-    if (ren.init_vulkan(window, sim.bodies())) { return 1; }
+    if (ren.init(sim.bodies())) { return 1; }
     if (main_loop(f)) { return 1; }
     cleanup();
-
-    return 0;
-}
-
-/// @brief Initializes the main application window
-/// @return 0 if successful
-int app::init_window() {
-    if (!glfwInit()) { return 1; }
-
-    glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
-    glfwWindowHint(GLFW_RESIZABLE, GLFW_FALSE);
-
-    window = glfwCreateWindow(width_, height_, "nbody simulation", nullptr, nullptr);
-    if (!window) {
-        glfwTerminate();
-        return 1;
-    }
 
     return 0;
 }
@@ -39,7 +21,7 @@ int app::main_loop(const cliargs& f) {
     double tot_sum = 0.0;
     size_t count = 0;
 
-    while (!glfwWindowShouldClose(window)) {
+    while (!ren.should_close()) {
         count++;
         auto sim_time = std::invoke(sim.update, sim, f.fixedtime).count() * 0.000001;
         sim_sum += sim_time;
@@ -67,7 +49,7 @@ int app::main_loop(const cliargs& f) {
             1000.00 / (tot_sum / count)
         );
 
-        fflush(stdout);
+        //fflush(stdout);
     }
 
     return 0;
@@ -75,10 +57,4 @@ int app::main_loop(const cliargs& f) {
 
 void app::cleanup() {
     ren.cleanup();
-
-    if (window) {
-        glfwDestroyWindow(window);
-    }
-
-    glfwTerminate();
 }

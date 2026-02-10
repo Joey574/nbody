@@ -9,10 +9,17 @@ namespace simd_policy {
     struct AVX512 {
         using reg = __m512;
         static inline constexpr size_t width = 16;
-        static inline reg load(const float* p) { return _mm512_loadu_ps(p); }
-        static inline void store(float* p, reg r) { _mm512_storeu_ps(p, r); }
+        static inline constexpr size_t last = 15;
+        
+        static inline reg load(const float* p) { return _mm512_load_ps(p); }
+        static inline void store(float* p, reg r) { _mm512_store_ps(p, r); }
+        
+        static inline reg loadu(const float* p) { return _mm512_loadu_ps(p); }
+        static inline void storeu(float* p, reg r) { _mm512_storeu_ps(p, r); }
+
         static inline reg set1(float f) { return _mm512_set1_ps(f); }
         static inline reg zero() { return _mm512_setzero_ps(); }
+        
         static inline reg rsqrt(reg d2) {
             reg r = _mm512_rsqrt14_ps(d2);
             return r * (_opf - _pf * d2 * r * r);
@@ -43,10 +50,17 @@ namespace simd_policy {
     struct AVX2 {
         using reg = __m256;
         static inline constexpr size_t width = 8;
-        static inline reg load(const float* p) { return _mm256_loadu_ps(p); }
-        static inline void store(float* p, reg r) { _mm256_storeu_ps(p, r); }
+        static inline constexpr size_t last = 7;
+        
+        static inline reg load(const float* p) { return _mm256_load_ps(p); }
+        static inline void store(float* p, reg r) { _mm256_store_ps(p, r); }
+
+        static inline reg loadu(const float* p) { return _mm256_loadu_ps(p); }
+        static inline void storeu(float* p, reg r) { _mm256_storeu_ps(p, r); }
+        
         static inline reg set1(float f) { return _mm256_set1_ps(f); }
         static inline reg zero() { return _mm256_setzero_ps(); }
+        
         static inline reg rsqrt(reg d2) {
             reg r = _mm256_rsqrt_ps(d2);
             return r * (_opf - _pf * d2 * r * r);

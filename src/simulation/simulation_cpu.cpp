@@ -58,10 +58,13 @@ std::chrono::nanoseconds simulation::update_cpu_simd(const float ft) noexcept {
             auto _a1y_sum = p::zero();
 
             size_t j = i+1;
-            for (; j+(p::width-1) < n; j += p::width) {
-                const auto _p2x = p::load(&px[j]);
-                const auto _p2y = p::load(&py[j]);
-                const auto _p2m = p::load(&ma[j]);
+
+            for (; j+p::last < n; j += p::width) {
+                // depending on out jdx we switch between aligned and unaligned loads, branch predictor should do a fine enough job of this
+                // modulo is also fast enough since p::width is some multiple of 2
+                const auto _p2x = j % p::width == 0 ? p::load(&px[j]) : p::loadu(&px[j]);
+                const auto _p2y = j % p::width == 0 ? p::load(&py[j]) : p::loadu(&py[j]);
+                const auto _p2m = j % p::width == 0 ? p::load(&ma[j]) : p::loadu(&ma[j]);
 
                 // compute distance squared
                 const auto _dx = _p2x - _p1x;
@@ -77,8 +80,8 @@ std::chrono::nanoseconds simulation::update_cpu_simd(const float ft) noexcept {
                 const auto _ivy = _dy * _inv3;
 
                 // compute and store accelerations
-                p::store(&ax(tid, j), (_ivx * _p1m) + p::load(&ax(tid, j)));
-                p::store(&ay(tid, j), (_ivy * _p1m) + p::load(&ay(tid, j)));
+                p::storeu(&ax(tid, j), (_ivx * _p1m) + p::loadu(&ax(tid, j)));
+                p::storeu(&ay(tid, j), (_ivy * _p1m) + p::loadu(&ay(tid, j)));
                 _a1x_sum += _ivx * _p2m;;
                 _a1y_sum += _ivy * _p2m;;
             }

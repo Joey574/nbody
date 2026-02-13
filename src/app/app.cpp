@@ -33,7 +33,7 @@ int app::main_loop(const cliargs& f) {
         glfwPollEvents();
 
         printf("\033[H"
-            "\nFrame %zu"
+            "Frame %zu"
             "\n\nSimulation (ms):"
             "\n\tAverage: %.2f     "
             "\n\tLast:    %.2f     "

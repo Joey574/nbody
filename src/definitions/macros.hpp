@@ -10,12 +10,18 @@ MEM_ALIGNMENT : dictates the parameter used for aligned_alloc
 
 */
 
-#if defined(__AVX512__)
+#ifdef __AVX512__
 #define USE_AVX512
-#define MEM_ALIGNMENT 64
-#elif defined(__AVX2__)
+#endif
+
+#ifdef __AVX2__
 #define USE_AVX2
+#endif
+
+#ifdef USE_AVX512
+#define MEM_ALIGNMENT 64
+#elifdef USE_AVX2
 #define MEM_ALIGNMENT 32
 #else
-#define MEM_ALIGNMENT 32
+#define MEM_ALIGNMENT 16
 #endif

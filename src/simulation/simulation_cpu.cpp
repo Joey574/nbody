@@ -36,9 +36,6 @@ std::chrono::nanoseconds simulation::update_cpu_simd(const float ft) noexcept {
     matrix& ax = data_.accx();
     matrix& ay = data_.accy();
 
-    // constants
-    const auto _epsl = p::set1(1e-12f);
-
     // gravitational constant is set to 1 for purposes of this simulation
     #pragma omp parallel
     {
@@ -69,7 +66,7 @@ std::chrono::nanoseconds simulation::update_cpu_simd(const float ft) noexcept {
                 // compute distance squared
                 const auto _dx = _p2x - _p1x;
                 const auto _dy = _p2y - _p1y;
-                const auto _dsq = _epsl + (_dx*_dx) + (_dy*_dy);
+                const auto _dsq = p::_epsl + (_dx*_dx) + (_dy*_dy);
 
                 // fast inv sqrt with newton step
                 const auto _inv = p::rsqrt(_dsq);

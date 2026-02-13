@@ -10,7 +10,7 @@
 /// @brief Hold the raw underlying simulation data and provides a simple interface to access it
 struct data {
     public:
-    struct point {
+    struct point {  
         float x;
         float y;
         float m;

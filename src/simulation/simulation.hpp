@@ -76,6 +76,8 @@ struct simulation {
     private:
     data data_;
 
+    std::chrono::nanoseconds update_cpu_bh(const float ft) noexcept;
+
     std::chrono::nanoseconds update_cpu(const float ft) noexcept;
     std::chrono::nanoseconds update_cpu_fallback(const float ft) noexcept;
     template <typename simd_policy> std::chrono::nanoseconds update_cpu_simd(const float ft) noexcept;

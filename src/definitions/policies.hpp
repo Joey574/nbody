@@ -41,6 +41,7 @@ namespace simd_policy {
             return _mm_cvtss_f32(final);
         }
 
+        static inline const __m512 _epsl = _mm512_set1_ps(1e-12f);
         static inline const __m512 _opf = _mm512_set1_ps(1.5f);
         static inline const __m512 _pf = _mm512_set1_ps(0.5f);
     };
@@ -79,8 +80,10 @@ namespace simd_policy {
             return _mm_cvtss_f32(v32);
         }
 
+        static inline const __m256 _epsl = _mm256_set1_ps(1e-12f);
         static inline const __m256 _opf = _mm256_set1_ps(1.5f);
         static inline const __m256 _pf = _mm256_set1_ps(0.5f);
+
     };
     #endif
 }

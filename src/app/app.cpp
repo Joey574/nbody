@@ -32,7 +32,8 @@ int app::main_loop(const cliargs& f) {
 
         glfwPollEvents();
 
-        printf("\033[H"
+        printf(
+            "\033[H"
             "Frame %zu"
             "\n\nSimulation (ms):"
             "\n\tAverage: %.2f     "
@@ -48,8 +49,6 @@ int app::main_loop(const cliargs& f) {
             ren_sum / count, ren_time,
             1000.00 / (tot_sum / count)
         );
-
-        //fflush(stdout);
     }
 
     return 0;

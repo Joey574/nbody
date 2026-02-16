@@ -105,9 +105,10 @@ int renderer::vulkan_device() {
     };
 
     std::vector<const char*> deviceExtensions = {
-    vk::KHRSwapchainExtensionName};
+        vk::KHRSwapchainExtensionName
+    };
 
-    vk::DeviceCreateInfo deviceCreateInfo{
+    vk::DeviceCreateInfo deviceCreateInfo {
         .pNext = &featureChain.get<vk::PhysicalDeviceFeatures2>(),
         .queueCreateInfoCount = 1,
         .pQueueCreateInfos = &deviceQueueCreateInfo,

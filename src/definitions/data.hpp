@@ -10,46 +10,10 @@
 /// @brief Hold the raw underlying simulation data and provides a simple interface to access it
 struct data {
     public:
-    struct point {  
-        float x;
-        float y;
-        float m;
+    struct float2 {
+        float* x;
+        float* y;
     };
-
-    struct Iterator {
-        using iterator_category = std::forward_iterator_tag;
-        using difference_type = std::ptrdiff_t;
-        using value_type = point;
-        using pointer = void;
-        using reference = point&;
-
-        // constructor
-        Iterator(float* xptr, float* yptr, float* mptr) : xptr_(xptr), yptr_(yptr), mptr_(mptr) {}
-
-        point operator*() const { return point{*xptr_, *yptr_, *mptr_}; }
-
-        Iterator& operator++() {
-            xptr_++;
-            yptr_++;
-            mptr_++;
-            return *this;
-        }
-
-        friend bool operator == (const Iterator& a, const Iterator& b) {
-            return a.xptr_ == b.xptr_;
-        }
-        friend bool operator != (const Iterator& a, const Iterator& b) {
-            return !(a == b);
-        }
-
-        private:
-        float* xptr_;
-        float* yptr_;
-        float* mptr_;
-    };
-
-    Iterator begin() { return Iterator{posx_, posy_, mass_}; }
-    Iterator end() { return Iterator{posx_+bodies_, posy_+bodies_, mass_+bodies_}; }
 
     // default constructor
     data() : 

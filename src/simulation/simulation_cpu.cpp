@@ -40,6 +40,8 @@ std::chrono::nanoseconds simulation::update_cpu_simd(const float ft) noexcept {
     #pragma omp parallel
     {
         int tid = omp_get_thread_num();
+        assert(ax.rows() >= tid);
+        assert(ay.rows() >= tid);
 
         #pragma omp for schedule(static)
         for (size_t i = 0; i < n; i++) {
@@ -57,11 +59,9 @@ std::chrono::nanoseconds simulation::update_cpu_simd(const float ft) noexcept {
             size_t j = i+1;
 
             for (; j+p::last < n; j += p::width) {
-                // depending on out jdx we switch between aligned and unaligned loads, branch predictor should do a fine enough job of this
-                // modulo is also fast enough since p::width is some multiple of 2
-                const auto _p2x = j % p::width == 0 ? p::load(&px[j]) : p::loadu(&px[j]);
-                const auto _p2y = j % p::width == 0 ? p::load(&py[j]) : p::loadu(&py[j]);
-                const auto _p2m = j % p::width == 0 ? p::load(&ma[j]) : p::loadu(&ma[j]);
+                const auto _p2x = p::loadu(&px[j]);
+                const auto _p2y = p::loadu(&py[j]);
+                const auto _p2m = p::loadu(&ma[j]);
 
                 // compute distance squared
                 const auto _dx = _p2x - _p1x;
@@ -79,8 +79,8 @@ std::chrono::nanoseconds simulation::update_cpu_simd(const float ft) noexcept {
                 // compute and store accelerations
                 p::storeu(&ax(tid, j), (_ivx * _p1m) + p::loadu(&ax(tid, j)));
                 p::storeu(&ay(tid, j), (_ivy * _p1m) + p::loadu(&ay(tid, j)));
-                _a1x_sum += _ivx * _p2m;;
-                _a1y_sum += _ivy * _p2m;;
+                _a1x_sum += _ivx * _p2m;
+                _a1y_sum += _ivy * _p2m;
             }
 
             float a1x_final = p::hsum(_a1x_sum);
@@ -109,7 +109,7 @@ std::chrono::nanoseconds simulation::update_cpu_simd(const float ft) noexcept {
                 a1x_final += ivx * p2m;
                 a1y_final += ivy * p2m;
                 ax(tid, j) += ivx * p1m;
-                ax(tid, j) += ivy * p1m;
+                ay(tid, j) += ivy * p1m;
             }
 
             ax(tid, i) = a1x_final;
@@ -200,7 +200,7 @@ std::chrono::nanoseconds simulation::update_cpu_fallback(const float ft) noexcep
                 a1x_final += ivx * p2m;
                 a1y_final += ivy * p2m;
                 ax(tid, j) += ivx * p1m;
-                ax(tid, j) += ivy * p1m;
+                ay(tid, j) += ivy * p1m;
             }
 
             ax(tid, i) = a1x_final;

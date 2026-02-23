@@ -159,7 +159,7 @@ std::chrono::nanoseconds simulation::update_cpu_fallback(const float ft) noexcep
     float* __restrict py = data_.posy();
     float* __restrict vx = data_.velx();
     float* __restrict vy = data_.vely();
-    float* __restrict ma = data_.mass();
+    const float* __restrict ma = data_.mass();
     matrix& ax = data_.accx();
     matrix& ay = data_.accy();
 
@@ -167,6 +167,8 @@ std::chrono::nanoseconds simulation::update_cpu_fallback(const float ft) noexcep
     #pragma omp parallel
     {
         int tid = omp_get_thread_num();
+        float* __restrict ax_row = &ax(tid, 0);
+        float* __restrict ay_row = &ax(tid, 0);
 
         #pragma omp for schedule(static)
         for (size_t i = 0; i < n; i++) {
@@ -199,12 +201,12 @@ std::chrono::nanoseconds simulation::update_cpu_fallback(const float ft) noexcep
                 // update acceleration values
                 a1x_final += ivx * p2m;
                 a1y_final += ivy * p2m;
-                ax(tid, j) += ivx * p1m;
-                ay(tid, j) += ivy * p1m;
+                ax_row[j] += ivx * p1m;
+                ay_row[j] += ivy * p1m;
             }
 
-            ax(tid, i) = a1x_final;
-            ay(tid, i) = a1y_final;
+            ax_row[i] = a1x_final;
+            ay_row[i] = a1y_final;
         }
 
         // explicit barrier

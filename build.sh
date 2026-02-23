@@ -12,7 +12,7 @@ OUT="bin/nbody"
 mkdir bin -p
 
 # default to release mode build
-FLAGS="-march=native -mtune=native -O3 -ffast-math -s -fopenmp"
+FLAGS="-march=native -mtune=native -O3 -ffast-math -s -fopenmp -fassociative-math"
 MODE="RELEASE"
 
 # check for build flags
@@ -20,7 +20,7 @@ if [[ "$1" == "-d" ]]; then
     FLAGS="-march=native -mtune=native -g -O0 -ffast-math -fopenmp"
     MODE="DEBUG"
 elif [[ "$1" == "-p" ]]; then
-    FLAGS="-march=native -mtune=native -g -O3 -ffast-math -fno-omit-frame-pointer -fopenmp"
+    FLAGS="-march=native -mtune=native -g -O3 -ffast-math -fno-omit-frame-pointer -fopenmp -fassociative-math"
     MODE="PERF"
 fi
 ccache g++ -std=c++23 $FLAGS $SOURCES -o $OUT $LIBS

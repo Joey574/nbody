@@ -26,6 +26,11 @@ int renderer::init(size_t n) {
         return 1;
     }
 
+    if (vulkan_swapchain()) {
+        std::__throw_runtime_error("failed to init swapchain");
+        return 1;
+    }
+
     return 0;
 }
 
@@ -121,6 +126,34 @@ int renderer::vulkan_device() {
     presentQueue = vk::raii::Queue( device, presentIndex, 0 );
 }
 
+int renderer::vulkan_swapchain() {
+    auto surfaceCapabilities = physicalDevice.getSurfaceCapabilitiesKHR(*surface);
+    swapChainSurfaceFormat = chooseSwapSurfaceFormat(physicalDevice.getSurfaceFormatsKHR(*surface));
+    swapChainExtent = chooseSwapExtent(surfaceCapabilities);
+    auto minImageCount = std::max(3u, surfaceCapabilities.minImageCount);
+    minImageCount = (surfaceCapabilities.maxImageCount > 0 && minImageCount > surfaceCapabilities.maxImageCount) ? surfaceCapabilities.maxImageCount : minImageCount;
+
+    vk::SwapchainCreateInfoKHR swapChainCreateInfo {
+        .flags = vk::SwapchainCreateFlagsKHR(),
+        .surface = *surface,
+        .minImageCount = minImageCount,
+        .imageFormat = swapChainSurfaceFormat.format,
+        .imageColorSpace = swapChainSurfaceFormat.colorSpace,
+        .imageExtent = swapChainExtent,
+        .imageArrayLayers = 1,
+        .imageUsage = vk::ImageUsageFlagBits::eColorAttachment,
+        .imageSharingMode = vk::SharingMode::eExclusive,
+        .preTransform = surfaceCapabilities.currentTransform,
+        .compositeAlpha = vk::CompositeAlphaFlagBitsKHR::eOpaque,
+        .presentMode = chooseSwapPresentMode(physicalDevice.getSurfacePresentModesKHR(*surface)),
+        .clipped = true,
+        .oldSwapchain = nullptr
+    };
+
+    //uint32_t queueFamilyIndicies[] = {graphicsFamily, presentFamily};
+    return 0;
+}
+
 uint32_t renderer::findQueueFamilies(vk::raii::PhysicalDevice physicalDevice) {
     // find the index of the first queue family that supports graphics
     std::vector<vk::QueueFamilyProperties> queueFamilyProperties = physicalDevice.getQueueFamilyProperties();
@@ -132,6 +165,34 @@ uint32_t renderer::findQueueFamilies(vk::raii::PhysicalDevice physicalDevice) {
                     []( vk::QueueFamilyProperties const & qfp ) { return qfp.queueFlags & vk::QueueFlagBits::eGraphics; } );
 
     return static_cast<uint32_t>( std::distance( queueFamilyProperties.begin(), graphicsQueueFamilyProperty ) );
+}
+
+vk::SurfaceFormatKHR renderer::chooseSwapSurfaceFormat(const std::vector<vk::SurfaceFormatKHR>& formats) {
+    return formats[0];
+}
+
+vk::PresentModeKHR renderer::chooseSwapPresentMode(const std::vector<vk::PresentModeKHR>& presentModes) {
+    for (const auto& mode : presentModes) {
+        if (mode == vk::PresentModeKHR::eMailbox) {
+            return mode;
+        }
+    }
+
+    return vk::PresentModeKHR::eFifo;
+}
+
+vk::Extent2D renderer::chooseSwapExtent(const vk::SurfaceCapabilitiesKHR& capabilities) {
+    if (capabilities.currentExtent.width != std::numeric_limits<uint32_t>::max()) {
+        return capabilities.currentExtent;
+    }
+
+    int w, h;
+    glfwGetFramebufferSize(window, &w, &h);
+
+    return {
+        std::clamp<uint32_t>(w, capabilities.minImageExtent.width, capabilities.maxImageExtent.width),
+        std::clamp<uint32_t>(h, capabilities.minImageExtent.height, capabilities.maxImageExtent.height),
+    };
 }
 
 void renderer::cleanup() {

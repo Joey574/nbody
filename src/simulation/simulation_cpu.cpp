@@ -38,14 +38,14 @@ std::chrono::nanoseconds simulation::update_cpu_simd(const float ft) noexcept {
     matrix& ax = data_.accx();
     matrix& ay = data_.accy();
 
-    // TODO : test out blocked implementation to decrease pressure to ax and ay
+    // TODO : test out blocked implementation to decrease pressure on ax and ay
 
     // gravitational constant is set to 1 for purposes of this simulation
     #pragma omp parallel
     {
         int tid = omp_get_thread_num();
-        float* __restrict ax_row = &ax(tid, 0);
-        float* __restrict ay_row = &ay(tid, 0);
+        float* __restrict ax_row = ax.row(tid);
+        float* __restrict ay_row = ay.row(tid);
 
         #pragma omp for schedule(static)
         for (size_t i = 0; i < n; i++) {
@@ -61,7 +61,6 @@ std::chrono::nanoseconds simulation::update_cpu_simd(const float ft) noexcept {
             auto _a1y_sum = p::zero();
 
             size_t j = i+1;
-
             for (; j+p::last < n; j += p::width) {
                 const auto _p2x = p::loadu(&px[j]);
                 const auto _p2y = p::loadu(&py[j]);
@@ -123,13 +122,16 @@ std::chrono::nanoseconds simulation::update_cpu_simd(const float ft) noexcept {
         // explicit barrier
         #pragma omp barrier
 
+        float* __restrict ax_top = ax.row(0);
+        float* __restrict ay_top = ay.row(0);
+
         // sum acceleration into top row
         for (size_t r = 1; r < ax.rows(); r++) {
 
             #pragma omp for simd schedule(static)
             for (size_t c = 0; c < ax.cols(); c++) {
-                ax(0, c) += ax(r, c);
-                ay(0, c) += ay(r, c);
+                ax_top[c] += ax(r, c);
+                ay_top[c] += ay(r, c);
             }
         }
 
@@ -139,8 +141,8 @@ std::chrono::nanoseconds simulation::update_cpu_simd(const float ft) noexcept {
         // update body positions and velocities
         #pragma omp for simd schedule(static)
         for (size_t i = 0; i < n; i++) {
-            vx[i] += ax(0, i) * ft;
-            vy[i] += ay(0, i) * ft;
+            vx[i] += ax_top[i] * ft;
+            vy[i] += ay_top[i] * ft;
 
             px[i] += vx[i] * ft;
             py[i] += vy[i] * ft;

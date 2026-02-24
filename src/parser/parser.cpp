@@ -37,7 +37,14 @@ namespace parser {
                     f.fixedtime = std::stof(argv[i+1]);
                     i++;
                 }
-            } else {
+            } else if (v == "-q" || v == "--quiet") {
+                f.quiet = true;
+            } else if (v == "--refresh") {
+                if (argc > i+1) {
+                    f.refresh = std::stoul(argv[i+1]);
+                    i++;                    
+                }
+            }else {
                 std::__throw_runtime_error(("unrecognized argument \"" + v + "\"").c_str());
             }
         }

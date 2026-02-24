@@ -21,6 +21,8 @@ int app::main_loop(const cliargs& f) {
     double tot_sum = 0.0;
     size_t count = 0;
 
+    auto last_print = std::chrono::high_resolution_clock::now();
+
     while (!ren.should_close()) {
         count++;
         auto sim_time = std::invoke(sim.update, sim, f.fixedtime).count() * 0.000001;
@@ -32,23 +34,28 @@ int app::main_loop(const cliargs& f) {
 
         glfwPollEvents();
 
-        printf(
-            "\033[H"
-            "Frame %zu"
-            "\n\nSimulation (ms):"
-            "\n\tAverage: %.2f     "
-            "\n\tLast:    %.2f     "
-            "\n\nRenderer (ms):"
-            "\n\tAverage: %.2f     "
-            "\n\tLast:    %.2f     "
-            "\n\nPerformance:"
-            "\n\tFPS:     %.2f     "
-            "\n",
-            count, 
-            sim_sum / count, sim_time,
-            ren_sum / count, ren_time,
-            1000.00 / (tot_sum / count)
-        );
+        // lock debugging output to 100ms refresh
+        if (!f.quiet && std::chrono::high_resolution_clock::now() - last_print >= std::chrono::milliseconds(f.refresh)) {
+            printf(
+                "\033[H"
+                "Frame %zu"
+                "\n\nSimulation (ms):"
+                "\n\tAverage: %.2f     "
+                "\n\tLast:    %.2f     "
+                "\n\nRenderer (ms):"
+                "\n\tAverage: %.2f     "
+                "\n\tLast:    %.2f     "
+                "\n\nPerformance:"
+                "\n\tFPS:     %.2f     "
+                "\n",
+                count, 
+                sim_sum / count, sim_time,
+                ren_sum / count, ren_time,
+                1000.00 / (tot_sum / count)
+            );
+
+            last_print = std::chrono::high_resolution_clock::now();
+        }
     }
 
     return 0;

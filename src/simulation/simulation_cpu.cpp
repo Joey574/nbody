@@ -1,11 +1,13 @@
-#include "simulation.hpp"
-/*
-
-Switches update_cpu implementation based on compile time definitions.
-Supports both AVX512 and AVX2 explicitly, all others will fall back
-on omp and compiler for vectorization
-
+/* 
+Author: Joey Soroka
+Updated: 2/23/26
+Purpose: Implements nbody simulation for the cpu
+Comments: Switches update_cpu implementation based on compile time definitions.
+Supports both AVX512 and AVX2 explicitly, all others will fall back on omp and
+compiler for vectorization
 */
+
+#include "simulation.hpp"
 
 std::chrono::nanoseconds simulation::update_cpu(const float ft) noexcept {
     #ifdef USE_AVX512
@@ -36,12 +38,14 @@ std::chrono::nanoseconds simulation::update_cpu_simd(const float ft) noexcept {
     matrix& ax = data_.accx();
     matrix& ay = data_.accy();
 
+    // TODO : test out blocked implementation to decrease pressure to ax and ay
+
     // gravitational constant is set to 1 for purposes of this simulation
     #pragma omp parallel
     {
         int tid = omp_get_thread_num();
-        assert(ax.rows() >= tid);
-        assert(ay.rows() >= tid);
+        float* __restrict ax_row = &ax(tid, 0);
+        float* __restrict ay_row = &ay(tid, 0);
 
         #pragma omp for schedule(static)
         for (size_t i = 0; i < n; i++) {
@@ -77,8 +81,8 @@ std::chrono::nanoseconds simulation::update_cpu_simd(const float ft) noexcept {
                 const auto _ivy = _dy * _inv3;
 
                 // compute and store accelerations
-                p::storeu(&ax(tid, j), (_ivx * _p1m) + p::loadu(&ax(tid, j)));
-                p::storeu(&ay(tid, j), (_ivy * _p1m) + p::loadu(&ay(tid, j)));
+                p::storeu(&ax_row[j], (_ivx * _p1m) + p::loadu(&ax_row[j]));
+                p::storeu(&ay_row[j], (_ivy * _p1m) + p::loadu(&ay_row[j]));
                 _a1x_sum += _ivx * _p2m;
                 _a1y_sum += _ivy * _p2m;
             }
@@ -108,12 +112,12 @@ std::chrono::nanoseconds simulation::update_cpu_simd(const float ft) noexcept {
                 // update acceleration values
                 a1x_final += ivx * p2m;
                 a1y_final += ivy * p2m;
-                ax(tid, j) += ivx * p1m;
-                ay(tid, j) += ivy * p1m;
+                ax_row[j] += ivx * p1m;
+                ay_row[j] += ivy * p1m;
             }
 
-            ax(tid, i) = a1x_final;
-            ay(tid, i) = a1y_final;
+            ax_row[i] = a1x_final;
+            ay_row[i] = a1y_final;
         }
 
         // explicit barrier
@@ -168,7 +172,7 @@ std::chrono::nanoseconds simulation::update_cpu_fallback(const float ft) noexcep
     {
         int tid = omp_get_thread_num();
         float* __restrict ax_row = &ax(tid, 0);
-        float* __restrict ay_row = &ax(tid, 0);
+        float* __restrict ay_row = &ay(tid, 0);
 
         #pragma omp for schedule(static)
         for (size_t i = 0; i < n; i++) {

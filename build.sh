@@ -11,19 +11,24 @@ OUT="bin/nbody"
 
 mkdir bin -p
 
+DEFAULT_FLAGS="-march=native -mtune=native -fopenmp -fassociative-math -ffast-math -fmodules-ts"
+
+
 # default to release mode build
-FLAGS="-march=native -mtune=native -O3 -ffast-math -s -fopenmp -fassociative-math"
+FLAGS="-O3 -s"
 MODE="RELEASE"
 
 # check for build flags
 if [[ "$1" == "-d" ]]; then
-    FLAGS="-march=native -mtune=native -g -O0 -ffast-math -fopenmp"
+    FLAGS="-g -O0"
     MODE="DEBUG"
 elif [[ "$1" == "-p" ]]; then
-    FLAGS="-march=native -mtune=native -g -O3 -ffast-math -fno-omit-frame-pointer -fopenmp -fassociative-math"
+    FLAGS="-g -O3 -fno-omit-frame-pointer"
     MODE="PERF"
 fi
-ccache g++ -std=c++23 $FLAGS $SOURCES -o $OUT $LIBS
+
+# compile
+g++ -std=c++23 $DEFAULT_FLAGS $FLAGS $SOURCES -o $OUT $LIBS
 
 file_size=$(stat -c %s $OUT)
 size_human=$(numfmt --to=iec --suffix=B "$file_size")

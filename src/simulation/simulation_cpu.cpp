@@ -1,6 +1,6 @@
 /* 
 Author: Joey Soroka
-Updated: 2/23/26
+Updated: 2/25/26
 Purpose: Implements nbody simulation for the cpu
 Comments: Switches update_cpu implementation based on compile time definitions.
 Supports both AVX512 and AVX2 explicitly, all others will fall back on omp and
@@ -173,8 +173,8 @@ std::chrono::nanoseconds simulation::update_cpu_fallback(const float ft) noexcep
     #pragma omp parallel
     {
         int tid = omp_get_thread_num();
-        float* __restrict ax_row = &ax(tid, 0);
-        float* __restrict ay_row = &ay(tid, 0);
+        float* __restrict ax_row = ax.row(tid);
+        float* __restrict ay_row = ay.row(tid);
 
         #pragma omp for schedule(static)
         for (size_t i = 0; i < n; i++) {
@@ -218,13 +218,16 @@ std::chrono::nanoseconds simulation::update_cpu_fallback(const float ft) noexcep
         // explicit barrier
         #pragma omp barrier
 
+        float* __restrict ax_top = ax.row(0);
+        float* __restrict ay_top = ay.row(0);
+
         // sum acceleration into top row
         for (size_t r = 1; r < ax.rows(); r++) {
 
             #pragma omp for simd schedule(static)
             for (size_t c = 0; c < ax.cols(); c++) {
-                ax(0, c) += ax(r, c);
-                ay(0, c) += ay(r, c);
+                ax_top[c] += ax(r, c);
+                ay_top[c] += ay(r, c);
             }
         }
 
@@ -234,8 +237,8 @@ std::chrono::nanoseconds simulation::update_cpu_fallback(const float ft) noexcep
         // update body positions and velocities
         #pragma omp for simd schedule(static)
         for (size_t i = 0; i < n; i++) {
-            vx[i] += ax(0, i) * ft;
-            vy[i] += ay(0, i) * ft;
+            vx[i] += ax_top[i] * ft;
+            vy[i] += ay_top[i] * ft;
 
             px[i] += vx[i] * ft;
             py[i] += vy[i] * ft;

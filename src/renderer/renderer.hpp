@@ -32,6 +32,7 @@ struct renderer {
     vk::raii::Queue presentQueue = nullptr;
     vk::SurfaceFormatKHR swapChainSurfaceFormat;
     vk::Extent2D swapChainExtent;
+    std::vector<vk::raii::ImageView> swapChainImageViews;
 
     std::vector<CircleData> circles;
 
@@ -41,6 +42,8 @@ struct renderer {
     int vulkan_physicaldevice();
     int vulkan_device();
     int vulkan_swapchain();
+    int vulkan_image_views();
+    int vulkan_graphics_pipeline();
 
     uint32_t findQueueFamilies(vk::raii::PhysicalDevice physicalDevice);
     vk::SurfaceFormatKHR chooseSwapSurfaceFormat(const std::vector<vk::SurfaceFormatKHR>& formats);

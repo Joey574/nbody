@@ -41,8 +41,6 @@ int renderer::init(size_t n) {
     return 0;
 }
 
-/// @brief Initializes the main application window
-/// @return 0 if successful
 int renderer::init_window() {
     if (!glfwInit()) { return 1; }
 
@@ -157,8 +155,40 @@ int renderer::vulkan_swapchain() {
         .oldSwapchain = nullptr
     };
 
-    //uint32_t queueFamilyIndicies[] = {graphicsFamily, presentFamily};
+    uint32_t queueFamilyIndicies[] = {graphicsFamily, presentFamily};
+
+    if (graphicsFamily != presentFamily) {
+        swapChainCreateInfo.imageSharingMode = vk::SharingMode::eConcurrent;
+        swapChainCreateInfo.queueFamilyIndexCount = 2;
+        swapChainCreateInfo.pQueueFamilyIndices = queueFamilyIndices;
+    } else {
+        swapChainCreateInfo.imageSharingMode = vk::SharingMode::eExclusive;
+        swapChainCreateInfo.queueFamilyIndexCount = 0;
+        swapChainCreateInfo.pQueueFamilyIndices = nullptr;
+    }
+
+    swapChainCreateInfo.preTransform = surfaceCapabilities.currentTransform;
+    swapChainCreateInfo.compositeAlpha = vk::CompositeAlphaFlagBitsKHR::eOpaque;
+
     return 0;
+}
+
+int renderer::vulkan_image_views() {
+    swapChainImageViews.clear();
+    vk::ImageViewCreateInfo imageViewCreateInfo {
+        .viewType = vk::ImageViewType::e2D,
+        .format = swapChainImageFormat,
+        .subresourceRange = { vk::ImageAspectFlagBits::eColor, 0, 1, 0, 1 }
+    };
+
+    for (auto image : swapChainImageViews) {
+        imageViewCreateInfo.image = image;
+        swapChainImageViews.emplace_back(device, imageViewCreateInfo);
+    }
+}
+
+int renderer::vulkan_graphics_pipeline() {
+
 }
 
 uint32_t renderer::findQueueFamilies(vk::raii::PhysicalDevice physicalDevice) {

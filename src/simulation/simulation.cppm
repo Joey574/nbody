@@ -1,15 +1,15 @@
-#pragma once
+module;
 #include <malloc.h>
-#include <cmath>
 #include <immintrin.h>
-#include <chrono>
-#include <random>
 #include <omp.h>
-
 #include "../util/util.hpp"
 #include "../definitions/definitions.hpp"
 
-struct simulation {
+export module simulation;
+
+import std;
+
+export struct simulation {
     public:
     enum init { CLUSTER, SPIRAL };
 

@@ -5,7 +5,7 @@ Purpose: Implements basic member functions for the simulation class
 Comments: Currently contains the update_gpu method implementation, which doesn't do anything
 */
 
-#include "simulation.hpp"
+module simulation;
 #define TAU 6.28318530718
 
 std::chrono::nanoseconds simulation::update_gpu(const float dt) noexcept {

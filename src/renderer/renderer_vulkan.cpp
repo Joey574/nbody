@@ -1,6 +1,6 @@
 /* 
 Author: Joey Soroka
-Updated: 2/23/26
+Updated: 2/25/26
 Purpose: Contains vulkan initilization utilities for the renderer struct
 Comments: Most of this code is ripped from https://docs.vulkan.org/tutorial/latest/00_Introduction.html
 */
@@ -38,6 +38,12 @@ int renderer::init(size_t n) {
         return 1;
     }
 
+    if (vulkan_image_views()) {
+        std::__throw_runtime_error("failed to init image views");
+        return 1;
+
+    }
+
     return 0;
 }
 
@@ -46,8 +52,9 @@ int renderer::init_window() {
 
     glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
     glfwWindowHint(GLFW_RESIZABLE, GLFW_FALSE);
+    glfwWindowHint(GLFW_DECORATED, GLFW_TRUE);
 
-    window = glfwCreateWindow(width_, height_, "nbody simulation", nullptr, nullptr);
+    window = glfwCreateWindow(width_, height_, "nbody", nullptr, nullptr);
     if (!window) {
         glfwTerminate();
         return 1;
@@ -99,42 +106,82 @@ int renderer::vulkan_physicaldevice() {
 }
 
 int renderer::vulkan_device() {
+    // find the index of the first queue family that supports graphics
     std::vector<vk::QueueFamilyProperties> queueFamilyProperties = physicalDevice.getQueueFamilyProperties();
-    uint32_t graphicsIndex = findQueueFamilies(physicalDevice);
-    uint32_t presentIndex = physicalDevice.getSurfaceSupportKHR(graphicsIndex, *surface) ? graphicsIndex : static_cast<uint32_t>(queueFamilyProperties.size());
+    
 
-    float queuePriority = 0.5f;
+    // get the first index into queueFamilyProperties which supports graphics
+    auto graphicsQueueFamilyProperty = std::ranges::find_if( queueFamilyProperties, []( auto const & qfp )
+                    { return (qfp.queueFlags & vk::QueueFlagBits::eGraphics) != static_cast<vk::QueueFlags>(0); } );
+
+    auto graphicsIndex = static_cast<uint32_t>( std::distance( queueFamilyProperties.begin(), graphicsQueueFamilyProperty ) );
+
+    // determine a queueFamilyIndex that supports present
+    // first check if the graphicsIndex is good enough
+    auto presentIndex = physicalDevice.getSurfaceSupportKHR( graphicsIndex, *surface )
+                                       ? graphicsIndex
+                                       : static_cast<uint32_t>( queueFamilyProperties.size() );
+    if ( presentIndex == queueFamilyProperties.size() )
+    {
+        // the graphicsIndex doesn't support present -> look for another family index that supports both
+        // graphics and present
+        for ( size_t i = 0; i < queueFamilyProperties.size(); i++ )
+        {
+            if ( ( queueFamilyProperties[i].queueFlags & vk::QueueFlagBits::eGraphics ) &&
+                 physicalDevice.getSurfaceSupportKHR( static_cast<uint32_t>( i ), *surface ) )
+            {
+                graphicsIndex = static_cast<uint32_t>( i );
+                presentIndex  = graphicsIndex;
+                break;
+            }
+        }
+        if ( presentIndex == queueFamilyProperties.size() )
+        {
+            // there's nothing like a single family index that supports both graphics and present -> look for another
+            // family index that supports present
+            for ( size_t i = 0; i < queueFamilyProperties.size(); i++ )
+            {
+                if ( physicalDevice.getSurfaceSupportKHR( static_cast<uint32_t>( i ), *surface ) )
+                {
+                    presentIndex = static_cast<uint32_t>( i );
+                    break;
+                }
+            }
+        }
+    }
+    if ( ( graphicsIndex == queueFamilyProperties.size() ) || ( presentIndex == queueFamilyProperties.size() ) )
+    {
+        return 1;
+    }
+
+    // query for Vulkan 1.3 features
+    auto features = physicalDevice.getFeatures2();
+    vk::PhysicalDeviceVulkan13Features vulkan13Features;
+    vk::PhysicalDeviceExtendedDynamicStateFeaturesEXT extendedDynamicStateFeatures;
+    vulkan13Features.dynamicRendering = vk::True;
+    extendedDynamicStateFeatures.extendedDynamicState = vk::True;
+    vulkan13Features.pNext = &extendedDynamicStateFeatures;
+    features.pNext = &vulkan13Features;
+    
+    // create a Device
+    float                     queuePriority = 0.5f;
     vk::DeviceQueueCreateInfo deviceQueueCreateInfo { .queueFamilyIndex = graphicsIndex, .queueCount = 1, .pQueuePriorities = &queuePriority };
-    return 0;
-
-    // Create a chain of feature structures
-    vk::StructureChain<vk::PhysicalDeviceFeatures2, vk::PhysicalDeviceVulkan13Features, vk::PhysicalDeviceExtendedDynamicStateFeaturesEXT> featureChain = {
-        {},                               // vk::PhysicalDeviceFeatures2 (empty for now)
-        {.dynamicRendering = true },      // Enable dynamic rendering from Vulkan 1.3
-        {.extendedDynamicState = true }   // Enable extended dynamic state from the extension
-    };
-
-    std::vector<const char*> deviceExtensions = {
-        vk::KHRSwapchainExtensionName
-    };
-
-    vk::DeviceCreateInfo deviceCreateInfo {
-        .pNext = &featureChain.get<vk::PhysicalDeviceFeatures2>(),
-        .queueCreateInfoCount = 1,
-        .pQueueCreateInfos = &deviceQueueCreateInfo,
-        .enabledExtensionCount = static_cast<uint32_t>(deviceExtensions.size()),
-        .ppEnabledExtensionNames = deviceExtensions.data()
-    };
+    vk::DeviceCreateInfo      deviceCreateInfo{ .pNext =  &features, .queueCreateInfoCount = 1, .pQueueCreateInfos = &deviceQueueCreateInfo };
+    deviceCreateInfo.enabledExtensionCount = deviceExtensions.size();
+    deviceCreateInfo.ppEnabledExtensionNames = deviceExtensions.data();
 
     device = vk::raii::Device( physicalDevice, deviceCreateInfo );
     graphicsQueue = vk::raii::Queue( device, graphicsIndex, 0 );
     presentQueue = vk::raii::Queue( device, presentIndex, 0 );
+
+    return 0;
 }
 
 int renderer::vulkan_swapchain() {
     auto surfaceCapabilities = physicalDevice.getSurfaceCapabilitiesKHR(*surface);
     swapChainSurfaceFormat = chooseSwapSurfaceFormat(physicalDevice.getSurfaceFormatsKHR(*surface));
     swapChainExtent = chooseSwapExtent(surfaceCapabilities);
+    presentMode = chooseSwapPresentMode(physicalDevice.getSurfacePresentModesKHR(*surface));
     auto minImageCount = std::max(3u, surfaceCapabilities.minImageCount);
     minImageCount = (surfaceCapabilities.maxImageCount > 0 && minImageCount > surfaceCapabilities.maxImageCount) ? surfaceCapabilities.maxImageCount : minImageCount;
 
@@ -150,13 +197,18 @@ int renderer::vulkan_swapchain() {
         .imageSharingMode = vk::SharingMode::eExclusive,
         .preTransform = surfaceCapabilities.currentTransform,
         .compositeAlpha = vk::CompositeAlphaFlagBitsKHR::eOpaque,
-        .presentMode = chooseSwapPresentMode(physicalDevice.getSurfacePresentModesKHR(*surface)),
+        .presentMode = presentMode,
         .clipped = true,
         .oldSwapchain = nullptr
     };
 
-    uint32_t queueFamilyIndicies[] = {graphicsFamily, presentFamily};
+    // TODO : fix this
+    //uint32_t graphicsFamily = findQueueFamilies(physicalDevice);
+    //uint32_t presentFamily = physicalDevice.getQueueFamilyProperties();
+    uint32_t graphicsFamily = 0;
+    uint32_t presentFamily = 0;
 
+    uint32_t queueFamilyIndices[] = {graphicsFamily, presentFamily};
     if (graphicsFamily != presentFamily) {
         swapChainCreateInfo.imageSharingMode = vk::SharingMode::eConcurrent;
         swapChainCreateInfo.queueFamilyIndexCount = 2;
@@ -170,6 +222,14 @@ int renderer::vulkan_swapchain() {
     swapChainCreateInfo.preTransform = surfaceCapabilities.currentTransform;
     swapChainCreateInfo.compositeAlpha = vk::CompositeAlphaFlagBitsKHR::eOpaque;
 
+    swapChainCreateInfo.presentMode = presentMode;
+    swapChainCreateInfo.clipped = vk::True;
+    swapChainCreateInfo.oldSwapchain = nullptr;
+
+    swapChain = vk::raii::SwapchainKHR(device, swapChainCreateInfo);
+    swapChainImages = swapChain.getImages();
+    swapChainImageFormat = swapChainCreateInfo.imageFormat;
+    swapChainExtent = swapChainCreateInfo.imageExtent;
     return 0;
 }
 
@@ -181,14 +241,16 @@ int renderer::vulkan_image_views() {
         .subresourceRange = { vk::ImageAspectFlagBits::eColor, 0, 1, 0, 1 }
     };
 
-    for (auto image : swapChainImageViews) {
+    for (auto image : swapChainImages) {
         imageViewCreateInfo.image = image;
         swapChainImageViews.emplace_back(device, imageViewCreateInfo);
     }
+
+    return 0;
 }
 
 int renderer::vulkan_graphics_pipeline() {
-
+    return 0;
 }
 
 uint32_t renderer::findQueueFamilies(vk::raii::PhysicalDevice physicalDevice) {
@@ -205,6 +267,12 @@ uint32_t renderer::findQueueFamilies(vk::raii::PhysicalDevice physicalDevice) {
 }
 
 vk::SurfaceFormatKHR renderer::chooseSwapSurfaceFormat(const std::vector<vk::SurfaceFormatKHR>& formats) {
+    for (const auto& f : formats) {
+        if (f.format == vk::Format::eB8G8R8A8Srgb && f.colorSpace == vk::ColorSpaceKHR::eSrgbNonlinear) {
+            return f;
+        }
+    }
+
     return formats[0];
 }
 

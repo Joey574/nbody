@@ -3,7 +3,8 @@
 #include <iostream>
 #include <chrono>
 
-#include "../simulation/simulation.hpp"
+//#include "../simulation/simulation.hpp"
+import simulation;
 #include "../renderer/renderer.hpp"
 
 struct app {

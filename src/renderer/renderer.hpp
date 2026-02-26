@@ -9,7 +9,7 @@
 
 #include "../dependencies/dependencies.hpp"
 #include "../definitions/definitions.hpp"
-#include "../simulation/simulation.hpp"
+import simulation;
 
 struct renderer {
     public:
@@ -32,7 +32,12 @@ struct renderer {
     vk::raii::Queue presentQueue = nullptr;
     vk::SurfaceFormatKHR swapChainSurfaceFormat;
     vk::Extent2D swapChainExtent;
+    vk::raii::SwapchainKHR swapChain = nullptr;
+    std::vector<vk::Image> swapChainImages;
+    vk::Format swapChainImageFormat = vk::Format::eUndefined;
+    std::vector<const char*> deviceExtensions = { vk::KHRSwapchainExtensionName };
     std::vector<vk::raii::ImageView> swapChainImageViews;
+    vk::PresentModeKHR presentMode = vk::PresentModeKHR::eFifo;
 
     std::vector<CircleData> circles;
 

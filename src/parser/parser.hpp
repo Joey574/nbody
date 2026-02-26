@@ -2,7 +2,7 @@
 #include <cstddef>
 #include <string>
 
-#include "../definitions/cliargs.hpp"
+import cli_module;
 
 namespace parser {
     cliargs parse(int argc, char* argv[]);        

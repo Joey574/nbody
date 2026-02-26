@@ -16,6 +16,7 @@ module;
 #define TAU 6.28318530718
 
 module simulation;
+import data;
 import util;
 
 std::chrono::nanoseconds simulation::update_gpu(const float dt) noexcept {

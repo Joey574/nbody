@@ -1,13 +1,16 @@
-#pragma once
+module;
+#include <cstdlib>
+#include <string.h>
 #include <cstddef>
 #include <omp.h>
+#include "../definitions/macros.hpp"
 
-#include "matrix.hpp"
-#include "macros.hpp"
+export module data;
+import matrix;
 import util;
 
 /// @brief Hold the raw underlying simulation data and provides a simple interface to access it
-struct data {
+export struct data {
     public:
     struct float2 {
         float* x;
@@ -54,11 +57,11 @@ struct data {
             vely_ = (float*)aligned_alloc(MEM_ALIGNMENT, util::aligned_size(bodies_*sizeof(float)));
             mass_ = (float*)aligned_alloc(MEM_ALIGNMENT, util::aligned_size(bodies_*sizeof(float)));
 
-            std::memcpy(posx_, other.posx_, bodies_*sizeof(float));
-            std::memcpy(posy_, other.posy_, bodies_*sizeof(float));
-            std::memcpy(velx_, other.velx_, bodies_*sizeof(float));
-            std::memcpy(vely_, other.vely_, bodies_*sizeof(float));
-            std::memcpy(mass_, other.mass_, bodies_*sizeof(float));
+            memcpy(posx_, other.posx_, bodies_*sizeof(float));
+            memcpy(posy_, other.posy_, bodies_*sizeof(float));
+            memcpy(velx_, other.velx_, bodies_*sizeof(float));
+            memcpy(vely_, other.vely_, bodies_*sizeof(float));
+            memcpy(mass_, other.mass_, bodies_*sizeof(float));
     }
 
     // custom constructor
@@ -105,11 +108,11 @@ struct data {
         vely_ = (float*)aligned_alloc(MEM_ALIGNMENT, util::aligned_size(bodies_*sizeof(float)));
         mass_ = (float*)aligned_alloc(MEM_ALIGNMENT, util::aligned_size(bodies_*sizeof(float)));
             
-        std::memcpy(posx_, other.posx_, bodies_*sizeof(float));
-        std::memcpy(posy_, other.posy_, bodies_*sizeof(float));
-        std::memcpy(velx_, other.velx_, bodies_*sizeof(float));
-        std::memcpy(vely_, other.vely_, bodies_*sizeof(float));
-        std::memcpy(mass_, other.mass_, bodies_*sizeof(float));
+        memcpy(posx_, other.posx_, bodies_*sizeof(float));
+        memcpy(posy_, other.posy_, bodies_*sizeof(float));
+        memcpy(velx_, other.velx_, bodies_*sizeof(float));
+        memcpy(vely_, other.vely_, bodies_*sizeof(float));
+        memcpy(mass_, other.mass_, bodies_*sizeof(float));
         return *this;
     }
 

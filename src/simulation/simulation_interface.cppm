@@ -3,10 +3,10 @@ module;
 #include <immintrin.h>
 #include <omp.h>
 #include <chrono>
-#include "../definitions/data.hpp"
 
 export module simulation;
 import util;
+import data;
 import cli;
 
 export struct simulation {

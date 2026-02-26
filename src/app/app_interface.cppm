@@ -2,10 +2,11 @@ module;
 #include <functional>
 #include <iostream>
 #include <chrono>
+
 export module app;
-import cli;
 import simulation;
 import renderer;
+import cli;
 
 export struct app {
     public:

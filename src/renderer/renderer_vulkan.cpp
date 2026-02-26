@@ -64,7 +64,6 @@ int renderer::init_window() {
 
     glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
     glfwWindowHint(GLFW_RESIZABLE, GLFW_FALSE);
-    glfwWindowHint(GLFW_DECORATED, GLFW_TRUE);
 
     window = glfwCreateWindow(width_, height_, "nbody", nullptr, nullptr);
     if (!window) {
@@ -72,6 +71,7 @@ int renderer::init_window() {
         return 1;
     }
 
+    glfwShowWindow(window);
     return 0;
 }
 
@@ -102,7 +102,7 @@ int renderer::vulkan_surface() {
     if (glfwCreateWindowSurface(*instance, window, nullptr, &_surface) != VK_SUCCESS) {
         return 1;
     }
-    
+
     surface = vk::raii::SurfaceKHR(instance, _surface);
     return 0;
 }

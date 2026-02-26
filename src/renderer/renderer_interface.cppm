@@ -7,7 +7,6 @@ module;
 #include <ranges>
 #include <algorithm>
 
-#include <GLFW/glfw3.h>
 #include "../dependencies/dependencies.hpp"
 #include "../definitions/definitions.hpp"
 
@@ -42,8 +41,6 @@ export struct renderer {
     std::vector<const char*> deviceExtensions = { vk::KHRSwapchainExtensionName };
     std::vector<vk::raii::ImageView> swapChainImageViews;
     vk::PresentModeKHR presentMode = vk::PresentModeKHR::eFifo;
-
-    std::vector<CircleData> circles;
 
     int init_window();
     int vulkan_instance();

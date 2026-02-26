@@ -15,12 +15,13 @@ module;
 #include <vector>
 #include <random>
 #include "../definitions/macros.hpp"
-#include "../definitions/data.hpp"
 #include "../definitions/policies.hpp"
 
 module simulation;
 import util;
+import data;
 import cli;
+import matrix;
 
 std::chrono::nanoseconds simulation::update_cpu(const float ft) noexcept {
     #ifdef USE_AVX512

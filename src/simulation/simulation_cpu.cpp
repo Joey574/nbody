@@ -1,6 +1,6 @@
 /* 
 Author: Joey Soroka
-Updated: 2/25/26
+Updated: 2/26/26
 Purpose: Implements nbody simulation for the cpu
 Comments: Switches update_cpu implementation based on compile time definitions.
 Supports both AVX512 and AVX2 explicitly, all others will fall back on omp and

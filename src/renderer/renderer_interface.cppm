@@ -1,14 +1,12 @@
 module;
 #include <chrono>
 #include <string>
-#include <fstream>
-#include <sstream>
-#include <iostream>
-#include <ranges>
-#include <algorithm>
 
-#include "../dependencies/dependencies.hpp"
-#include "../definitions/definitions.hpp"
+#define VULKAN_HPP_NO_STRUCT_CONSTRUCTORS
+#include <vulkan/vulkan_raii.hpp>
+
+#define GLFW_INCLUDE_VULKAN
+#include <GLFW/glfw3.h>
 
 export module renderer;
 import simulation;
@@ -41,6 +39,7 @@ export struct renderer {
     std::vector<const char*> deviceExtensions = { vk::KHRSwapchainExtensionName };
     std::vector<vk::raii::ImageView> swapChainImageViews;
     vk::PresentModeKHR presentMode = vk::PresentModeKHR::eFifo;
+    vk::raii::PipelineLayout pipelineLayout = nullptr;
 
     int init_window();
     int vulkan_instance();
@@ -50,6 +49,9 @@ export struct renderer {
     int vulkan_swapchain();
     int vulkan_image_views();
     int vulkan_graphics_pipeline();
+
+    std::vector<char> readFile(const std::string& path);
+    [[nodiscard]] vk::raii::ShaderModule createShaderModule(const std::vector<char>& code);
 
     uint32_t findQueueFamilies(vk::raii::PhysicalDevice physicalDevice);
     vk::SurfaceFormatKHR chooseSwapSurfaceFormat(const std::vector<vk::SurfaceFormatKHR>& formats);

@@ -1,21 +1,17 @@
 /* 
 Author: Joey Soroka
-Updated: 2/25/26
+Updated: 2/26/26
 Purpose: Contains vulkan initilization utilities for the renderer struct
 Comments: Most of this code is ripped from https://docs.vulkan.org/tutorial/latest/00_Introduction.html
 */
 
 module;
-#include <chrono>
-#include <string>
-#include <fstream>
-#include <sstream>
-#include <iostream>
-#include <ranges>
-#include <algorithm>
+#define VULKAN_HPP_NO_STRUCT_CONSTRUCTORS
+#include <vulkan/vulkan_raii.hpp>
 
-#include "../dependencies/dependencies.hpp"
-#include "../definitions/definitions.hpp"
+#define GLFW_INCLUDE_VULKAN
+#include <GLFW/glfw3.h>
+
 module renderer;
 import simulation;
 
@@ -53,7 +49,11 @@ int renderer::init(size_t n) {
     if (vulkan_image_views()) {
         std::__throw_runtime_error("failed to init image views");
         return 1;
+    }
 
+    if (vulkan_graphics_pipeline()) {
+        std::__throw_runtime_error("failed to init vulkan pipeline");
+        return 1;
     }
 
     return 0;
@@ -262,7 +262,50 @@ int renderer::vulkan_image_views() {
 }
 
 int renderer::vulkan_graphics_pipeline() {
+    auto shaderCode = readFile("slang.spv");
+    vk::raii::ShaderModule shaderModule = createShaderModule(shaderCode);
+
+    vk::PipelineShaderStageCreateInfo vertShaderStageInfo {
+        .stage = vk::ShaderStageFlagBits::eVertex,
+        .module = shaderModule,
+        .pName = "vertMain"
+    };
+
+    vk::PipelineShaderStageCreateInfo fragShaderStageInfo {
+        .stage = vk::ShaderStageFlagBits::eFragment,
+        .module = shaderModule,
+        .pName = "fragMain"
+    };
+
+    vk::PipelineShaderStageCreateInfo shaderStages[] = {
+        vertShaderStageInfo,
+        fragShaderStageInfo
+    };
+
+    vk::PipelineVertexInputStateCreateInfo vertexInputInfo;
+
+    vk::PipelineInputAssemblyStateCreateInfo inputAssembly {
+        .topology = vk::PrimitiveTopology::eTriangleList
+    };
+
+    vk::Viewport viewport{ 0.0f, 0.0f, static_cast<float>(swapChainExtent.width), static_cast<float>(swapChainExtent.height), 0.0f, 1.0f};
+
+    vk::Rect2D rect2d {
+        vk::Offset2D{ 0, 0},
+        swapChainExtent
+    };
+
     return 0;
+}
+
+[[nodiscard]] vk::raii::ShaderModule renderer::createShaderModule(const std::vector<char>& code) {
+    vk::ShaderModuleCreateInfo createInfo {
+        .codeSize = code.size() * sizeof(char),
+        .pCode = reinterpret_cast<const uint32_t*>(code.data())
+    };
+
+    vk::raii::ShaderModule shaderModule{device, createInfo};
+    return shaderModule;
 }
 
 uint32_t renderer::findQueueFamilies(vk::raii::PhysicalDevice physicalDevice) {

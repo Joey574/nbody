@@ -1,4 +1,4 @@
-#pragma once
+module;
 #include <chrono>
 #include <string>
 #include <fstream>
@@ -7,11 +7,14 @@
 #include <ranges>
 #include <algorithm>
 
+#include <GLFW/glfw3.h>
 #include "../dependencies/dependencies.hpp"
 #include "../definitions/definitions.hpp"
+
+export module renderer;
 import simulation;
 
-struct renderer {
+export struct renderer {
     public:
 
     std::chrono::nanoseconds render(const simulation& sim);
@@ -19,6 +22,7 @@ struct renderer {
 
     int init(size_t n);
     bool should_close() { return glfwWindowShouldClose(window); }
+    void poll_events() { glfwPollEvents(); }
 
     private:
     GLFWwindow* window = nullptr;

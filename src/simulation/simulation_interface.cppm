@@ -2,12 +2,12 @@ module;
 #include <malloc.h>
 #include <immintrin.h>
 #include <omp.h>
-#include "../util/util.hpp"
-#include "../definitions/definitions.hpp"
+#include <chrono>
+#include "../definitions/data.hpp"
 
 export module simulation;
-
-import std;
+import util;
+import cli;
 
 export struct simulation {
     public:
@@ -71,7 +71,6 @@ export struct simulation {
     const float* posy() const noexcept { return data_.posy(); }
 
     size_t bodies() const noexcept { return data_.bodies(); }
-    void renderable(CircleSSBO& ssbo) const noexcept;
 
     private:
     data data_;

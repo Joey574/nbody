@@ -1,11 +1,10 @@
 #pragma once
 #include <cstddef>
 #include <omp.h>
-#include <iterator>
 
 #include "matrix.hpp"
 #include "macros.hpp"
-#include "../util/util.hpp"
+import util;
 
 /// @brief Hold the raw underlying simulation data and provides a simple interface to access it
 struct data {

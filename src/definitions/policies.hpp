@@ -2,7 +2,7 @@
 #include <immintrin.h>
 
 #include "macros.hpp"
-#include "../util/util.hpp"
+import util;
 
 namespace simd_policy {
     #ifdef USE_AVX512

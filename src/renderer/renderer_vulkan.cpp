@@ -5,7 +5,19 @@ Purpose: Contains vulkan initilization utilities for the renderer struct
 Comments: Most of this code is ripped from https://docs.vulkan.org/tutorial/latest/00_Introduction.html
 */
 
-#include "renderer.hpp"
+module;
+#include <chrono>
+#include <string>
+#include <fstream>
+#include <sstream>
+#include <iostream>
+#include <ranges>
+#include <algorithm>
+
+#include "../dependencies/dependencies.hpp"
+#include "../definitions/definitions.hpp"
+module renderer;
+import simulation;
 
 int renderer::init(size_t n) {
     if (init_window()) { 

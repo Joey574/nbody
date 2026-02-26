@@ -1,11 +1,13 @@
 module;
 #include <cstddef>
-
-export module cli_module;
+export module cli;
 
 export struct cliargs {
     public:
     cliargs() : bodies(100), refresh(100), fixedtime(0.0001f), cluster(true), spiral(false), cpu(false), quiet(false) {}
+
+    void parse(int argc, char* argv[]);
+
     size_t bodies;
     size_t refresh;
     float fixedtime;

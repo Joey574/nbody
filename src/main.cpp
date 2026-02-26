@@ -1,8 +1,9 @@
-#include "app/app.hpp"
-#include "parser/parser.hpp"
+import app;
+import cli;
 
 int main(int argc, char* argv[]) {
-    auto f = parser::parse(argc, argv);
+    auto f = cliargs();
+    f.parse(argc, argv);
     auto a = app();
     return a.run(f);
 }

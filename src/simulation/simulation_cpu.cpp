@@ -7,7 +7,20 @@ Supports both AVX512 and AVX2 explicitly, all others will fall back on omp and
 compiler for vectorization
 */
 
+module;
+#include <malloc.h>
+#include <immintrin.h>
+#include <omp.h>
+#include <chrono>
+#include <vector>
+#include <random>
+#include "../definitions/macros.hpp"
+#include "../definitions/data.hpp"
+#include "../definitions/policies.hpp"
+
 module simulation;
+import util;
+import cli;
 
 std::chrono::nanoseconds simulation::update_cpu(const float ft) noexcept {
     #ifdef USE_AVX512

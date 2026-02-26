@@ -4,7 +4,7 @@
 #include <cstring>
 
 #include "macros.hpp"
-#include "../util/util.hpp"
+import util;
 
 /// @brief lightweight abstraction for a matrix of floats, each row is aligned to MEM_ALIGNMENT for simd usage
 struct matrix {

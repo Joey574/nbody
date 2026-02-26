@@ -27,7 +27,7 @@ find_package(glfw3 REQUIRED)
 
 target_link_libraries(nbody PRIVATE 
     OpenMP::OpenMP_CXX 
-    Vulkan::Vulkan 
+    Vulkan::Vulkan
     glfw 
     dl 
     pthread
@@ -52,4 +52,7 @@ target_compile_options(nbody PRIVATE
 )
 
 # Set output to bin folder
-set_target_properties(nbody PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/../bin CXX_MODULE_STD ON)
+set_target_properties(nbody PROPERTIES 
+    RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/../bin 
+    CXX_MODULE_STD ON
+)

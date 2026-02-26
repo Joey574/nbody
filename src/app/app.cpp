@@ -1,4 +1,12 @@
-#include "app.hpp"
+module;
+#include <functional>
+#include <iostream>
+#include <chrono>
+
+module app;
+import cli;
+import simulation;
+import renderer;
 
 /// @brief Handles application starting and managing the main loop
 /// @param f User defined cli arguments
@@ -32,7 +40,7 @@ int app::main_loop(const cliargs& f) {
         ren_sum += ren_time;
         tot_sum += sim_time + ren_time;
 
-        glfwPollEvents();
+        ren.poll_events();
 
         // lock debugging output to 100ms refresh
         if (!f.quiet && std::chrono::high_resolution_clock::now() - last_print >= std::chrono::milliseconds(f.refresh)) {

@@ -40,6 +40,7 @@ export struct renderer {
     std::vector<vk::raii::ImageView> swapChainImageViews;
     vk::PresentModeKHR presentMode = vk::PresentModeKHR::eFifo;
     vk::raii::PipelineLayout pipelineLayout = nullptr;
+    vk::raii::Pipeline graphicsPipeline = nullptr;
 
     int init_window();
     int vulkan_instance();

@@ -6,6 +6,8 @@ Comments: Most of this code is ripped from https://docs.vulkan.org/tutorial/late
 */
 
 module;
+#include <chrono>
+
 #define VULKAN_HPP_NO_STRUCT_CONSTRUCTORS
 #include <vulkan/vulkan_raii.hpp>
 
@@ -288,13 +290,86 @@ int renderer::vulkan_graphics_pipeline() {
         .topology = vk::PrimitiveTopology::eTriangleList
     };
 
-    vk::Viewport viewport{ 0.0f, 0.0f, static_cast<float>(swapChainExtent.width), static_cast<float>(swapChainExtent.height), 0.0f, 1.0f};
-
-    vk::Rect2D rect2d {
-        vk::Offset2D{ 0, 0},
-        swapChainExtent
+    vk::Viewport viewport {
+        0.0f,
+        0.0f,
+        static_cast<float>(swapChainExtent.width),
+        static_cast<float>(swapChainExtent.height),
+        0.0f,
+        1.0f
     };
 
+    std::vector<vk::DynamicState> dynamicStates = {
+        vk::DynamicState::eViewport,
+        vk::DynamicState::eScissor
+    };
+
+    vk::PipelineDynamicStateCreateInfo dynamicState {
+        .dynamicStateCount = static_cast<uint32_t>(dynamicStates.size()),
+        .pDynamicStates = dynamicStates.data()
+    };
+
+    constexpr vk::PipelineViewportStateCreateInfo viewportState {
+        .viewportCount = 1,
+        .scissorCount = 1
+    };
+
+    constexpr vk::PipelineRasterizationStateCreateInfo rasterizer {
+        .depthClampEnable = vk::False,
+        .rasterizerDiscardEnable = vk::False,
+        .polygonMode = vk::PolygonMode::eFill,
+        .cullMode = vk::CullModeFlagBits::eBack,
+        .frontFace = vk::FrontFace::eClockwise,
+        .depthBiasEnable = vk::False,
+        .depthBiasSlopeFactor = 1.0f,
+        .lineWidth = 1.0f
+    };
+
+    constexpr vk::PipelineMultisampleStateCreateInfo multisampling {
+        .rasterizationSamples = vk::SampleCountFlagBits::e1,
+        .sampleShadingEnable = vk::False
+    };
+
+    constexpr vk::PipelineColorBlendAttachmentState colorBlendAttachment {
+        .blendEnable = vk::False,
+        .colorWriteMask = vk::ColorComponentFlagBits::eR | vk::ColorComponentFlagBits::eG | vk::ColorComponentFlagBits::eB | vk::ColorComponentFlagBits::eA
+    };
+
+    vk::PipelineColorBlendStateCreateInfo colorBlending {
+        .logicOpEnable = vk::False,
+        .logicOp = vk::LogicOp::eCopy,
+        .attachmentCount = 1,
+        .pAttachments = &colorBlendAttachment
+    };
+
+    constexpr vk::PipelineLayoutCreateInfo pipelineLayoutInfo {
+        .setLayoutCount = 0,
+        .pushConstantRangeCount = 0
+    };
+
+    pipelineLayout = vk::raii::PipelineLayout(device, pipelineLayoutInfo);
+
+    vk::PipelineRenderingCreateInfo pipelineRenderingCreateInfo {
+        .colorAttachmentCount = 1,
+        .pColorAttachmentFormats = &swapChainImageFormat
+    };
+
+    vk::GraphicsPipelineCreateInfo pipelineInfo {
+        .pNext = &pipelineRenderingCreateInfo,
+        .stageCount = 2,
+        .pStages = shaderStages,
+        .pVertexInputState = &vertexInputInfo,
+        .pInputAssemblyState = &inputAssembly,
+        .pViewportState = &viewportState,
+        .pRasterizationState = &rasterizer,
+        .pMultisampleState = &multisampling,
+        .pColorBlendState = &colorBlending,
+        .pDynamicState = &dynamicState,
+        .layout = pipelineLayout,
+        .renderPass = nullptr
+    };
+
+    graphicsPipeline = vk::raii::Pipeline(device, nullptr, pipelineInfo);
     return 0;
 }
 
@@ -353,6 +428,11 @@ vk::Extent2D renderer::chooseSwapExtent(const vk::SurfaceCapabilitiesKHR& capabi
         std::clamp<uint32_t>(w, capabilities.minImageExtent.width, capabilities.maxImageExtent.width),
         std::clamp<uint32_t>(h, capabilities.minImageExtent.height, capabilities.maxImageExtent.height),
     };
+}
+
+std::chrono::nanoseconds renderer::render(const simulation& sim) {
+    auto s = std::chrono::high_resolution_clock::now();
+    return std::chrono::high_resolution_clock::now() - s;
 }
 
 void renderer::cleanup() {

@@ -1,15 +1,9 @@
 module;
-#include <chrono>
 #include <vector>
 #include <fstream>
 
 module renderer;
 import simulation;
-
-std::chrono::nanoseconds renderer::render(const simulation& sim) {
-    auto s = std::chrono::high_resolution_clock::now();
-    return std::chrono::high_resolution_clock::now() - s;
-}
 
 std::vector<char> renderer::readFile(const std::string& path) {
     std::ifstream file(path, std::ios::ate | std::ios::binary);

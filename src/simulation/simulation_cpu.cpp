@@ -7,27 +7,14 @@ Supports both AVX512 and AVX2 explicitly, all others will fall back on omp and
 compiler for vectorization
 */
 
-module;
-#include <malloc.h>
-#include <immintrin.h>
-#include <omp.h>
+#include "simulation.hpp"
 #include <chrono>
-#include <vector>
-#include <random>
-#include "../definitions/macros.hpp"
-#include "../definitions/policies.hpp"
-
-module simulation;
-import util;
-import data;
-import cli;
-import matrix;
 
 std::chrono::nanoseconds simulation::update_cpu(const float ft) noexcept {
     #ifdef USE_AVX512
-        return update_cpu_simd<simd_policy::AVX512>(ft);
+        return update_cpu_simd<util::simd_policy::AVX512>(ft);
     #elifdef USE_AVX2
-        return update_cpu_simd<simd_policy::AVX2>(ft);
+        return update_cpu_simd<util::simd_policy::AVX2>(ft);
     #else
         return update_cpu_fallback(ft);
     #endif

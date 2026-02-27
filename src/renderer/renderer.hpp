@@ -1,4 +1,4 @@
-module;
+#pragma once
 #include <chrono>
 #include <string>
 
@@ -8,21 +8,23 @@ module;
 #define GLFW_INCLUDE_VULKAN
 #include <GLFW/glfw3.h>
 
-export module renderer;
-import simulation;
+#include "../data/data.hpp"
 
-export struct renderer {
+struct renderer {
     public:
 
-    std::chrono::nanoseconds render(const simulation& sim);
+    std::chrono::nanoseconds render(const data& data);
     void cleanup();
 
-    int init(size_t n);
+    void init(size_t n);
     bool should_close() { return glfwWindowShouldClose(window); }
     void poll_events() { glfwPollEvents(); }
 
     private:
     GLFWwindow* window = nullptr;
+
+    uint32_t graphicsIndex;
+    uint32_t presentIndex;
 
     vk::raii::Context context;
     vk::raii::Instance instance = nullptr;
@@ -41,15 +43,29 @@ export struct renderer {
     vk::PresentModeKHR presentMode = vk::PresentModeKHR::eFifo;
     vk::raii::PipelineLayout pipelineLayout = nullptr;
     vk::raii::Pipeline graphicsPipeline = nullptr;
+    vk::raii::CommandPool commandPool = nullptr;
+    vk::raii::CommandBuffer commandBuffer = nullptr;
 
-    int init_window();
-    int vulkan_instance();
-    int vulkan_surface();
-    int vulkan_physicaldevice();
-    int vulkan_device();
-    int vulkan_swapchain();
-    int vulkan_image_views();
-    int vulkan_graphics_pipeline();
+    void init_window();
+    void vulkan_instance();
+    void vulkan_surface();
+    void vulkan_physicaldevice();
+    void vulkan_device();
+    void vulkan_swapchain();
+    void vulkan_image_views();
+    void vulkan_graphics_pipeline();
+    void vulkan_command_pool();
+    void vulkan_command_buffer();
+    void vulkan_record_command_buffer(uint32_t imageIndex);
+    void transition_image_layout(
+        uint32_t imageIndex,
+        vk::ImageLayout oldLayout,
+        vk::ImageLayout newLayout,
+        vk::AccessFlags2 srcAccessMask,
+        vk::AccessFlags2 dstAccessMask,
+        vk::PipelineStageFlags2 srcStageMask,
+        vk::PipelineStageFlags2 dstStageMask    
+    );
 
     std::vector<char> readFile(const std::string& path);
     [[nodiscard]] vk::raii::ShaderModule createShaderModule(const std::vector<char>& code);

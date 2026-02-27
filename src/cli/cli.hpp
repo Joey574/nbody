@@ -1,8 +1,7 @@
-module;
+#pragma once
 #include <cstddef>
-export module cli;
 
-export struct cliargs {
+struct cliargs {
     public:
     cliargs() : bodies(100), refresh(100), fixedtime(0.0001f), cluster(true), spiral(false), cpu(false), quiet(false) {}
 

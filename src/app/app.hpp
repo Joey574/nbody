@@ -1,14 +1,9 @@
-module;
-#include <functional>
-#include <iostream>
-#include <chrono>
+#pragma once
+#include "../simulation/simulation.hpp"
+#include "../renderer/renderer.hpp"
+#include "../cli/cli.hpp"
 
-export module app;
-import simulation;
-import renderer;
-import cli;
-
-export struct app {
+struct app {
     public:
 
     int run(const cliargs& f);

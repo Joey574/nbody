@@ -1,5 +1,4 @@
-import app;
-import cli;
+#include "app/app.hpp"
 
 int main(int argc, char* argv[]) {
     auto f = cliargs();

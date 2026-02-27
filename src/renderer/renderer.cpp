@@ -1,9 +1,7 @@
-module;
+#include "renderer.hpp"
 #include <vector>
 #include <fstream>
 
-module renderer;
-import simulation;
 
 std::vector<char> renderer::readFile(const std::string& path) {
     std::ifstream file(path, std::ios::ate | std::ios::binary);

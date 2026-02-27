@@ -1,15 +1,14 @@
-module;
+#pragma onces
 #include <cstddef>
 #include <malloc.h>
 #include <cstring>
 #include <immintrin.h>
-#include "../definitions/macros.hpp"
 
-export module matrix;
-import util;
+#include "../definitions/macros.hpp"
+#include "../util/util.hpp"
 
 /// @brief lightweight abstraction for a matrix of floats, each row is aligned to MEM_ALIGNMENT for simd usage
-export struct matrix {
+struct matrix {
     public:
 
     // default constructor

@@ -1,12 +1,8 @@
-module;
+#include "app.hpp"
+
 #include <functional>
-#include <iostream>
 #include <chrono>
 
-module app;
-import cli;
-import simulation;
-import renderer;
 
 /// @brief Handles application starting and managing the main loop
 /// @param f User defined cli arguments
@@ -16,7 +12,7 @@ int app::run(const cliargs& f) {
     sim = simulation(f);
     ren = renderer();
     
-    if (ren.init(sim.bodies())) { return 1; }
+    ren.init(sim.bodies());
     if (main_loop(f)) { return 1; }
     cleanup();
 
@@ -36,7 +32,7 @@ int app::main_loop(const cliargs& f) {
         auto sim_time = std::invoke(sim.update, sim, f.fixedtime).count() * 0.000001;
         sim_sum += sim_time;
 
-        auto ren_time = ren.render(sim).count() * 0.000001;
+        auto ren_time = ren.render(sim.get_data()).count() * 0.000001;
         ren_sum += ren_time;
         tot_sum += sim_time + ren_time;
 

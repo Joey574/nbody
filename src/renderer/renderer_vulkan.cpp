@@ -5,64 +5,25 @@ Purpose: Contains vulkan initilization utilities for the renderer struct
 Comments: Most of this code is ripped from https://docs.vulkan.org/tutorial/latest/00_Introduction.html
 */
 
-module;
-#include <chrono>
+#include "renderer.hpp"
 
-#define VULKAN_HPP_NO_STRUCT_CONSTRUCTORS
-#include <vulkan/vulkan_raii.hpp>
-
-#define GLFW_INCLUDE_VULKAN
-#include <GLFW/glfw3.h>
-
-module renderer;
-import simulation;
-
-int renderer::init(size_t n) {
-    if (init_window()) { 
-        std::__throw_runtime_error("failed to init window");
-        return 1;
-    }
-
-    if (vulkan_instance()) { 
-        std::__throw_runtime_error("failed to init vulkan instance");
-        return 1;
-    }
-
-    if (vulkan_surface()) { 
-        std::__throw_runtime_error("failed to init vulkan surface");
-        return 1;
-    }
-
-    if (vulkan_physicaldevice()) { 
-        std::__throw_runtime_error("failed to init vulkan physical device");
-        return 1;
-    }
-
-    if (vulkan_device()) { 
-        std::__throw_runtime_error("failed to init vulkan device");
-        return 1;
-    }
-
-    if (vulkan_swapchain()) {
-        std::__throw_runtime_error("failed to init swapchain");
-        return 1;
-    }
-
-    if (vulkan_image_views()) {
-        std::__throw_runtime_error("failed to init image views");
-        return 1;
-    }
-
-    if (vulkan_graphics_pipeline()) {
-        std::__throw_runtime_error("failed to init vulkan pipeline");
-        return 1;
-    }
-
-    return 0;
+void renderer::init(size_t n) {
+    init_window();
+    vulkan_instance();
+    vulkan_surface();
+    vulkan_physicaldevice();
+    vulkan_device();
+    vulkan_swapchain();
+    vulkan_image_views();
+    vulkan_graphics_pipeline();
+    vulkan_command_pool();
+    vulkan_command_buffer();
 }
 
-int renderer::init_window() {
-    if (!glfwInit()) { return 1; }
+void renderer::init_window() {
+    if (!glfwInit()) { 
+        throw std::runtime_error("failed to init glfw");
+    }
 
     glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
     glfwWindowHint(GLFW_RESIZABLE, GLFW_FALSE);
@@ -70,14 +31,13 @@ int renderer::init_window() {
     window = glfwCreateWindow(width_, height_, "nbody", nullptr, nullptr);
     if (!window) {
         glfwTerminate();
-        return 1;
+        throw std::runtime_error("failed to create glfw window");
     }
 
     glfwShowWindow(window);
-    return 0;
 }
 
-int renderer::vulkan_instance() {
+void renderer::vulkan_instance() {
     constexpr vk::ApplicationInfo appInfo{
         .pApplicationName = "nbody",
         .applicationVersion = VK_MAKE_VERSION( 1, 0, 0 ),
@@ -96,30 +56,27 @@ int renderer::vulkan_instance() {
     };
 
     instance = vk::raii::Instance(context, createInfo);
-    return 0;
 }
 
-int renderer::vulkan_surface() {
+void renderer::vulkan_surface() {
     VkSurfaceKHR _surface;
     if (glfwCreateWindowSurface(*instance, window, nullptr, &_surface) != VK_SUCCESS) {
-        return 1;
+        throw std::runtime_error("failed to create glfw window surface");
     }
 
     surface = vk::raii::SurfaceKHR(instance, _surface);
-    return 0;
 }
 
-int renderer::vulkan_physicaldevice() {
+void renderer::vulkan_physicaldevice() {
     auto devices = instance.enumeratePhysicalDevices();
     if (devices.empty()) {
-        return 1;
+        throw std::runtime_error("no devices :/");
     }
 
     physicalDevice = devices[0];
-    return 0;
 }
 
-int renderer::vulkan_device() {
+void renderer::vulkan_device() {
     // find the index of the first queue family that supports graphics
     std::vector<vk::QueueFamilyProperties> queueFamilyProperties = physicalDevice.getQueueFamilyProperties();
     
@@ -128,11 +85,11 @@ int renderer::vulkan_device() {
     auto graphicsQueueFamilyProperty = std::ranges::find_if( queueFamilyProperties, []( auto const & qfp )
                     { return (qfp.queueFlags & vk::QueueFlagBits::eGraphics) != static_cast<vk::QueueFlags>(0); } );
 
-    auto graphicsIndex = static_cast<uint32_t>( std::distance( queueFamilyProperties.begin(), graphicsQueueFamilyProperty ) );
+    graphicsIndex = static_cast<uint32_t>( std::distance( queueFamilyProperties.begin(), graphicsQueueFamilyProperty ) );
 
     // determine a queueFamilyIndex that supports present
     // first check if the graphicsIndex is good enough
-    auto presentIndex = physicalDevice.getSurfaceSupportKHR( graphicsIndex, *surface )
+    presentIndex = physicalDevice.getSurfaceSupportKHR( graphicsIndex, *surface )
                                        ? graphicsIndex
                                        : static_cast<uint32_t>( queueFamilyProperties.size() );
     if ( presentIndex == queueFamilyProperties.size() )
@@ -165,7 +122,7 @@ int renderer::vulkan_device() {
     }
     if ( ( graphicsIndex == queueFamilyProperties.size() ) || ( presentIndex == queueFamilyProperties.size() ) )
     {
-        return 1;
+        throw std::runtime_error("failed to find device");
     }
 
     // query for Vulkan 1.3 features
@@ -187,11 +144,9 @@ int renderer::vulkan_device() {
     device = vk::raii::Device( physicalDevice, deviceCreateInfo );
     graphicsQueue = vk::raii::Queue( device, graphicsIndex, 0 );
     presentQueue = vk::raii::Queue( device, presentIndex, 0 );
-
-    return 0;
 }
 
-int renderer::vulkan_swapchain() {
+void renderer::vulkan_swapchain() {
     auto surfaceCapabilities = physicalDevice.getSurfaceCapabilitiesKHR(*surface);
     swapChainSurfaceFormat = chooseSwapSurfaceFormat(physicalDevice.getSurfaceFormatsKHR(*surface));
     swapChainExtent = chooseSwapExtent(surfaceCapabilities);
@@ -244,10 +199,9 @@ int renderer::vulkan_swapchain() {
     swapChainImages = swapChain.getImages();
     swapChainImageFormat = swapChainCreateInfo.imageFormat;
     swapChainExtent = swapChainCreateInfo.imageExtent;
-    return 0;
 }
 
-int renderer::vulkan_image_views() {
+void renderer::vulkan_image_views() {
     swapChainImageViews.clear();
     vk::ImageViewCreateInfo imageViewCreateInfo {
         .viewType = vk::ImageViewType::e2D,
@@ -259,11 +213,9 @@ int renderer::vulkan_image_views() {
         imageViewCreateInfo.image = image;
         swapChainImageViews.emplace_back(device, imageViewCreateInfo);
     }
-
-    return 0;
 }
 
-int renderer::vulkan_graphics_pipeline() {
+void renderer::vulkan_graphics_pipeline() {
     auto shaderCode = readFile("slang.spv");
     vk::raii::ShaderModule shaderModule = createShaderModule(shaderCode);
 
@@ -370,7 +322,114 @@ int renderer::vulkan_graphics_pipeline() {
     };
 
     graphicsPipeline = vk::raii::Pipeline(device, nullptr, pipelineInfo);
-    return 0;
+}
+
+void renderer::vulkan_command_pool() {
+    vk::CommandPoolCreateInfo poolInfo {
+        .flags = vk::CommandPoolCreateFlagBits::eResetCommandBuffer,
+        .queueFamilyIndex = graphicsIndex
+    };
+
+    commandPool = vk::raii::CommandPool(device, poolInfo);
+}
+
+void renderer::vulkan_command_buffer() {
+    vk::CommandBufferAllocateInfo allocInfo {
+        .commandPool = commandPool,
+        .level = vk::CommandBufferLevel::ePrimary,
+        .commandBufferCount = 1
+    };
+
+    commandBuffer = std::move(vk::raii::CommandBuffers(device, allocInfo).front());
+}
+
+void renderer::vulkan_record_command_buffer(uint32_t imageIndex) {
+    commandBuffer.begin({});
+
+    transition_image_layout(
+        imageIndex,
+        vk::ImageLayout::eUndefined,
+        vk::ImageLayout::eColorAttachmentOptimal,
+        {},
+        vk::AccessFlagBits2::eColorAttachmentWrite,
+        vk::PipelineStageFlagBits2::eColorAttachmentOutput,
+        vk::PipelineStageFlagBits2::eColorAttachmentOutput
+    );
+
+    vk::ClearValue clearColor = vk::ClearColorValue(0.0f, 0.0f, 0.0f, 1.0f);
+    vk::RenderingAttachmentInfo attachmentInfo = {
+        .imageView = swapChainImageViews[imageIndex],
+        .imageLayout = vk::ImageLayout::eColorAttachmentOptimal,
+        .loadOp = vk::AttachmentLoadOp::eClear,
+        .storeOp = vk::AttachmentStoreOp::eStore,
+        .clearValue = clearColor
+    };
+
+    vk::RenderingInfo renderingInfo = {
+        .renderArea = { 
+            .offset = { 0, 0}, 
+            .extent = swapChainExtent 
+        },
+        .layerCount = 1,
+        .colorAttachmentCount = 1,
+        .pColorAttachments = &attachmentInfo
+    };
+
+    commandBuffer.beginRendering(renderingInfo);
+    commandBuffer.bindPipeline(vk::PipelineBindPoint::eGraphics, graphicsPipeline);
+    commandBuffer.setViewport(0, vk::Viewport(0.0f, 0.0f, static_cast<float>(swapChainExtent.width), static_cast<float>(swapChainExtent.height), 0.0f, 1.0f));
+    commandBuffer.setScissor(0, vk::Rect2D(vk::Offset2D(0, 0), swapChainExtent));
+    commandBuffer.draw(3, 1, 0, 0);
+    commandBuffer.endRendering();
+
+    transition_image_layout(
+        imageIndex,
+        vk::ImageLayout::eColorAttachmentOptimal,
+        vk::ImageLayout::ePresentSrcKHR,
+        vk::AccessFlagBits2::eColorAttachmentWrite,
+        {},
+        vk::PipelineStageFlagBits2::eColorAttachmentOutput,
+        vk::PipelineStageFlagBits2::eBottomOfPipe
+    );
+
+    commandBuffer.end();
+}
+
+void renderer::transition_image_layout(
+    uint32_t imageIndex,
+    vk::ImageLayout oldLayout,
+    vk::ImageLayout newLayout,
+    vk::AccessFlags2 srcAccessMask,
+    vk::AccessFlags2 dstAccessMask,
+    vk::PipelineStageFlags2 srcStageMask,
+    vk::PipelineStageFlags2 dstStageMask    
+) {
+    vk::ImageMemoryBarrier2 barrier = {
+        .srcStageMask = srcStageMask,
+        .srcAccessMask = srcAccessMask,
+        .dstStageMask = dstStageMask,
+        .dstAccessMask = dstAccessMask,
+        .oldLayout = oldLayout,
+        .newLayout = newLayout,
+        .srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
+        .dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
+        .image = swapChainImages[imageIndex],
+        .subresourceRange = {
+            .aspectMask = vk::ImageAspectFlagBits::eColor,
+            .baseMipLevel = 0,
+            .levelCount = 1,
+            .baseArrayLayer = 0,
+            .layerCount = 1
+        }
+    };
+
+    vk::DependencyInfo dependencyInfo = {
+        .dependencyFlags = {},
+        .imageMemoryBarrierCount = 1,
+        .pImageMemoryBarriers = &barrier
+    };
+
+    commandBuffer.pipelineBarrier2(dependencyInfo);
 }
 
 [[nodiscard]] vk::raii::ShaderModule renderer::createShaderModule(const std::vector<char>& code) {
@@ -430,7 +489,7 @@ vk::Extent2D renderer::chooseSwapExtent(const vk::SurfaceCapabilitiesKHR& capabi
     };
 }
 
-std::chrono::nanoseconds renderer::render(const simulation& sim) {
+std::chrono::nanoseconds renderer::render(const data& data) {
     auto s = std::chrono::high_resolution_clock::now();
     return std::chrono::high_resolution_clock::now() - s;
 }

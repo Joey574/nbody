@@ -5,19 +5,10 @@ Purpose: Implements basic member functions for the simulation class
 Comments: Currently contains the update_gpu method implementation, which doesn't do anything
 */
 
-module;
-#include <malloc.h>
-#include <immintrin.h>
-#include <omp.h>
-#include <chrono>
-#include <vector>
+#include "simulation.hpp"
 #include <random>
-#include "../definitions/definitions.hpp"
-#define TAU 6.28318530718
 
-module simulation;
-import data;
-import util;
+#define TAU 6.28318530718
 
 std::chrono::nanoseconds simulation::update_gpu(const float dt) noexcept {
     auto s = std::chrono::high_resolution_clock::now();

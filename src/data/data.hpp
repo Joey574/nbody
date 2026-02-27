@@ -1,16 +1,15 @@
-module;
+#pragma once
 #include <cstdlib>
 #include <string.h>
 #include <cstddef>
 #include <omp.h>
-#include "../definitions/macros.hpp"
 
-export module data;
-import matrix;
-import util;
+#include "../definitions/macros.hpp"
+#include "../matrix/matrix.hpp"
+#include "../util/util.hpp"
 
 /// @brief Hold the raw underlying simulation data and provides a simple interface to access it
-export struct data {
+struct data {
     public:
     struct float2 {
         float* x;

@@ -1,10 +1,19 @@
 #pragma once
+#include <cstddef>
 #include <immintrin.h>
 
-#include "macros.hpp"
-import util;
+#include "../definitions/macros.hpp"
 
-namespace simd_policy {
+namespace util {
+    inline size_t aligned_size(size_t size) {
+        return (size + 31) & ~31;
+    }
+
+    inline float rsqrt(float x) {
+    return _mm_cvtss_f32(_mm_rsqrt_ss(_mm_set_ss(x)));
+    }
+
+    namespace simd_policy {
     #ifdef USE_AVX512
     struct AVX512 {
         using reg = __m512;
@@ -87,3 +96,4 @@ namespace simd_policy {
     };
     #endif
 }
+};

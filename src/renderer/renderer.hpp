@@ -21,6 +21,7 @@ struct renderer {
     void poll_events() { glfwPollEvents(); }
 
     private:
+    static constexpr int MAX_FRAMES_IN_FLIGHT       = 2;
     GLFWwindow*                      window         = nullptr;
     vk::raii::Context                context;
     vk::raii::Instance               instance       = nullptr;

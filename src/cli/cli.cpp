@@ -1,7 +1,10 @@
 #include "cli.hpp"
 #include <string>
+#include "../util/util.hpp"
 
 void cliargs::parse(int argc, char* argv[]) {
+    path = util::executable_path(argv);
+
     // parse out command line args
     for (int i = 1; i < argc; i++) {
         const std::string v(argv[i]);

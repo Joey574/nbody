@@ -1,6 +1,7 @@
 #pragma once
 #include <cstddef>
 #include <immintrin.h>
+#include <string>
 
 #include "../definitions/macros.hpp"
 
@@ -12,6 +13,8 @@ namespace util {
     inline float rsqrt(float x) {
     return _mm_cvtss_f32(_mm_rsqrt_ss(_mm_set_ss(x)));
     }
+
+    std::string executable_path(char* argv[]);
 
     namespace simd_policy {
     #ifdef USE_AVX512
@@ -95,5 +98,7 @@ namespace util {
 
     };
     #endif
+
+    
 }
 };

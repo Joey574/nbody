@@ -15,6 +15,7 @@ mkdir -p bin
 cmake -S . -B build -DCMAKE_BUILD_TYPE="$MODE" -G Ninja
 cmake --build build -j
 
+# output basic information
 file_size=$(stat -c %s ./bin/nbody)
 size_human=$(numfmt --to=iec --suffix=B "$file_size")
 end_time=$(date +%s.%N)

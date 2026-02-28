@@ -22,6 +22,7 @@ void renderer::init(size_t n, const std::string& exePath) {
     vulkan_graphics_pipeline(shaderPath);
     vulkan_command_pool();
     vulkan_command_buffer();
+    vulkan_sync_objects();
 }
 
 void renderer::init_window() {
@@ -233,12 +234,12 @@ void renderer::vulkan_graphics_pipeline(const std::string& shaderPath) {
         .pDynamicStates    = dynamicStates.data()
     };
 
-    constexpr vk::PipelineViewportStateCreateInfo viewportState {
+    vk::PipelineViewportStateCreateInfo viewportState {
         .viewportCount = 1,
         .scissorCount  = 1
     };
 
-    constexpr vk::PipelineRasterizationStateCreateInfo rasterizer {
+    vk::PipelineRasterizationStateCreateInfo rasterizer {
         .depthClampEnable        = vk::False,
         .rasterizerDiscardEnable = vk::False,
         .polygonMode             = vk::PolygonMode::eFill,
@@ -249,12 +250,12 @@ void renderer::vulkan_graphics_pipeline(const std::string& shaderPath) {
         .lineWidth               = 1.0f
     };
 
-    constexpr vk::PipelineMultisampleStateCreateInfo multisampling {
+    vk::PipelineMultisampleStateCreateInfo multisampling {
         .rasterizationSamples = vk::SampleCountFlagBits::e1,
         .sampleShadingEnable  = vk::False
     };
 
-    constexpr vk::PipelineColorBlendAttachmentState colorBlendAttachment {
+    vk::PipelineColorBlendAttachmentState colorBlendAttachment {
         .blendEnable    = vk::False,
         .colorWriteMask = vk::ColorComponentFlagBits::eR | vk::ColorComponentFlagBits::eG | vk::ColorComponentFlagBits::eB | vk::ColorComponentFlagBits::eA
     };
@@ -266,7 +267,7 @@ void renderer::vulkan_graphics_pipeline(const std::string& shaderPath) {
         .pAttachments    = &colorBlendAttachment
     };
 
-    constexpr vk::PipelineLayoutCreateInfo pipelineLayoutInfo {
+    vk::PipelineLayoutCreateInfo pipelineLayoutInfo {
         .setLayoutCount         = 0,
         .pushConstantRangeCount = 0
     };
@@ -413,15 +414,10 @@ void renderer::transition_image_layout(
 std::chrono::nanoseconds renderer::render(const data& data) {
     auto s = std::chrono::high_resolution_clock::now();
 
-    const char* format = "\nWindow = %p\nInstance = %p\nSurface = %p\nPdevice = %p\nLdevice = %p\nQueue = %p\nSwapChain = %p\nPipelineLayout = %p\nPipeline = %p\nCommandPool = %p\nCommandBuffer = %p\nPresentSem = %p\nRenderSem = %p\nFence = %p\n";
-    printf(format, window, &instance, &surface, &physicalDevice, &device, &queue, &swapChain, &pipelineLayout, &pipeline, &commandPool, &commandBuffer, &presentCompleteSemaphore, &renderFinishedSemaphore, &drawFence);
-
     auto fenceResult = device.waitForFences(*drawFence, vk::True, UINT64_MAX);
     auto [result, imageIndex] = swapChain.acquireNextImage(UINT64_MAX, presentCompleteSemaphore, nullptr);
     vulkan_record_command_buffer(imageIndex);
     device.resetFences(*drawFence);
-
-    printf(format, window, &instance, &surface, &physicalDevice, &device, &queue, &swapChain, &pipelineLayout, &pipeline, &commandPool, &commandBuffer, &presentCompleteSemaphore, &renderFinishedSemaphore, &drawFence);
 
     vk::PipelineStageFlags waitDestinationStageMask(vk::PipelineStageFlagBits::eColorAttachmentOutput);
     const vk::SubmitInfo submitInfo {

@@ -1,6 +1,8 @@
 #pragma once
 #include <chrono>
+#include <cstdint>
 #include <string>
+#include <vulkan/vulkan_core.h>
 
 #define VULKAN_HPP_NO_STRUCT_CONSTRUCTORS
 #include <vulkan/vulkan_raii.hpp>
@@ -38,19 +40,18 @@ struct renderer {
     
     vk::raii::PipelineLayout pipelineLayout   = nullptr;
     vk::raii::Pipeline       pipeline         = nullptr;
+    vk::raii::CommandPool    commandPool      = nullptr;
 
-    vk::raii::CommandPool   commandPool   = nullptr;
-    vk::raii::CommandBuffer commandBuffer = nullptr;
-
-    vk::raii::Semaphore presentCompleteSemaphore = nullptr;
-    vk::raii::Semaphore renderFinishedSemaphore  = nullptr;
-    vk::raii::Fence     drawFence                = nullptr;
+    std::vector<vk::raii::CommandBuffer> commandBuffers;
+    std::vector<vk::raii::Semaphore>     presentCompleteSemaphores;
+    std::vector<vk::raii::Semaphore>     renderFinishedSemaphores;
+    std::vector<vk::raii::Fence>         inFlightFences;
+    uint32_t                             frameIndex;
 
     std::vector<const char*> deviceExtensions = {
-        vk::KHRSwapchainExtensionName 
+        vk::KHRSwapchainExtensionName
     };
 
-    vk::Format swapChainImageFormat = vk::Format::eUndefined;
     vk::PresentModeKHR presentMode = vk::PresentModeKHR::eFifo;
 
     void init_window();
@@ -76,16 +77,15 @@ struct renderer {
         vk::PipelineStageFlags2 dstStageMask    
     );
     std::vector<const char*> getRequiredInstanceExtensions();
-
-    std::vector<char> readFile(const std::string& path);
-    [[nodiscard]] vk::raii::ShaderModule createShaderModule(const std::vector<char>& code);
-
-    uint32_t findQueueFamilies(vk::raii::PhysicalDevice physicalDevice);
-    vk::SurfaceFormatKHR chooseSwapSurfaceFormat(const std::vector<vk::SurfaceFormatKHR>& formats);
-    vk::PresentModeKHR chooseSwapPresentMode(const std::vector<vk::PresentModeKHR>& presentModes);
+    vk::raii::ShaderModule createShaderModule(const std::vector<char>& code);
     vk::Extent2D chooseSwapExtent(const vk::SurfaceCapabilitiesKHR& capabilities);
-    
 
+    static std::vector<char> readFile(const std::string& path);
+    static uint32_t chooseSwapMinImageCount(const vk::SurfaceCapabilitiesKHR& capabilities);
+    static uint32_t findQueueFamilies(vk::raii::PhysicalDevice physicalDevice);
+    static vk::SurfaceFormatKHR chooseSwapSurfaceFormat(const std::vector<vk::SurfaceFormatKHR>& formats);
+    static vk::PresentModeKHR chooseSwapPresentMode(const std::vector<vk::PresentModeKHR>& presentModes);
+    
     static const size_t width_ = 800;
     static const size_t height_ = 800;
 };

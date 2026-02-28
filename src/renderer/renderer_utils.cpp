@@ -6,11 +6,12 @@ Comments:
 */
 
 #include "renderer.hpp"
-#include <GLFW/glfw3.h>
+#include "vulkan/vulkan.hpp"
 #include <fstream>
 #include <vector>
+#include <vulkan/vulkan_raii.hpp>
 
-[[nodiscard]] vk::raii::ShaderModule renderer::createShaderModule(const std::vector<char>& code) {
+vk::raii::ShaderModule renderer::createShaderModule(const std::vector<char>& code) {
     vk::ShaderModuleCreateInfo createInfo {
         .codeSize = code.size() * sizeof(char),
         .pCode = reinterpret_cast<const uint32_t*>(code.data())
@@ -45,7 +46,7 @@ vk::SurfaceFormatKHR renderer::chooseSwapSurfaceFormat(const std::vector<vk::Sur
 
 vk::PresentModeKHR renderer::chooseSwapPresentMode(const std::vector<vk::PresentModeKHR>& presentModes) {
     for (const auto& mode : presentModes) {
-        if (mode == vk::PresentModeKHR::eMailbox) {
+        if (mode == vk::PresentModeKHR::eImmediate) {
             return mode;
         }
     }
@@ -87,4 +88,13 @@ std::vector<const char*> renderer::getRequiredInstanceExtensions() {
 
     std::vector extensions(glfwExtensions, glfwExtensions + glfwExtensionCount);
     return extensions;
+}
+
+uint32_t renderer::chooseSwapMinImageCount(const vk::SurfaceCapabilitiesKHR& capabilities) {
+    auto minImageCount = std::max(3u, capabilities.minImageCount);
+    if ((0 < capabilities.maxImageCount) && (capabilities.maxImageCount < minImageCount)) {
+        minImageCount = capabilities.maxImageCount;
+    }
+
+    return minImageCount;
 }

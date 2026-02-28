@@ -6,8 +6,11 @@ Comments: Most of this code is ripped from https://docs.vulkan.org/tutorial/late
 */
 
 #include "renderer.hpp"
+#include "vulkan/vulkan.hpp"
 #include <cstdint>
+#include <map>
 #include <stdexcept>
+#include <vulkan/vulkan_raii.hpp>
 
 void renderer::init(size_t n, const std::string& exePath) {
     auto shaderPath = exePath.substr(0, exePath.find_last_of('/')) + "/slang.spv";
@@ -77,7 +80,31 @@ void renderer::vulkan_physicaldevice() {
         throw std::runtime_error("no devices :/");
     }
 
-    physicalDevice = devices[0];
+    std::multimap<int, vk::raii::PhysicalDevice> candidates;
+
+    for (const auto& d : devices) {
+        auto deviceProperties = d.getProperties();
+        auto deviceFeatures = d.getFeatures();
+        uint32_t score = 0;
+
+        if (deviceProperties.deviceType == vk::PhysicalDeviceType::eDiscreteGpu) {
+            score += 1000;
+        }
+
+        score += deviceProperties.limits.maxImageDimension2D;
+
+        if (!deviceFeatures.geometryShader) {
+            continue;
+        }
+
+        candidates.insert(std::make_pair(score, d));
+    }
+
+    if (candidates.rbegin()->first > 0) {
+        physicalDevice = candidates.rbegin()->second;
+    } else {
+        throw std::runtime_error("no suitable device found");
+    }
 }
 
 void renderer::vulkan_device() {
@@ -130,16 +157,12 @@ void renderer::vulkan_device() {
 
 void renderer::vulkan_swapchain() {
     auto surfaceCapabilities = physicalDevice.getSurfaceCapabilitiesKHR(*surface);
-    swapChainSurfaceFormat = chooseSwapSurfaceFormat(physicalDevice.getSurfaceFormatsKHR(*surface));
     swapChainExtent = chooseSwapExtent(surfaceCapabilities);
-    presentMode = chooseSwapPresentMode(physicalDevice.getSurfacePresentModesKHR(*surface));
-    auto minImageCount = std::max(3u, surfaceCapabilities.minImageCount);
-    minImageCount = (surfaceCapabilities.maxImageCount > 0 && minImageCount > surfaceCapabilities.maxImageCount) ? surfaceCapabilities.maxImageCount : minImageCount;
-
+    swapChainSurfaceFormat = chooseSwapSurfaceFormat(physicalDevice.getSurfaceFormatsKHR(*surface));
+    
     vk::SwapchainCreateInfoKHR swapChainCreateInfo {
-        .flags            = vk::SwapchainCreateFlagsKHR(),
         .surface          = *surface,
-        .minImageCount    = minImageCount,
+        .minImageCount    = chooseSwapMinImageCount(surfaceCapabilities),
         .imageFormat      = swapChainSurfaceFormat.format,
         .imageColorSpace  = swapChainSurfaceFormat.colorSpace,
         .imageExtent      = swapChainExtent,
@@ -148,46 +171,19 @@ void renderer::vulkan_swapchain() {
         .imageSharingMode = vk::SharingMode::eExclusive,
         .preTransform     = surfaceCapabilities.currentTransform,
         .compositeAlpha   = vk::CompositeAlphaFlagBitsKHR::eOpaque,
-        .presentMode      = presentMode,
-        .clipped          = true,
-        .oldSwapchain     = nullptr
+        .presentMode      = chooseSwapPresentMode(physicalDevice.getSurfacePresentModesKHR(*surface)),
+        .clipped = true
     };
-
-    // TODO : fix this
-    //uint32_t graphicsFamily = findQueueFamilies(physicalDevice);
-    //uint32_t presentFamily = physicalDevice.getQueueFamilyProperties();
-    uint32_t graphicsFamily = 0;
-    uint32_t presentFamily = 0;
-
-    uint32_t queueFamilyIndices[] = {graphicsFamily, presentFamily};
-    if (graphicsFamily != presentFamily) {
-        swapChainCreateInfo.imageSharingMode = vk::SharingMode::eConcurrent;
-        swapChainCreateInfo.queueFamilyIndexCount = 2;
-        swapChainCreateInfo.pQueueFamilyIndices = queueFamilyIndices;
-    } else {
-        swapChainCreateInfo.imageSharingMode = vk::SharingMode::eExclusive;
-        swapChainCreateInfo.queueFamilyIndexCount = 0;
-        swapChainCreateInfo.pQueueFamilyIndices = nullptr;
-    }
-
-    swapChainCreateInfo.preTransform = surfaceCapabilities.currentTransform;
-    swapChainCreateInfo.compositeAlpha = vk::CompositeAlphaFlagBitsKHR::eOpaque;
-
-    swapChainCreateInfo.presentMode = presentMode;
-    swapChainCreateInfo.clipped = vk::True;
-    swapChainCreateInfo.oldSwapchain = nullptr;
 
     swapChain = vk::raii::SwapchainKHR(device, swapChainCreateInfo);
     swapChainImages = swapChain.getImages();
-    swapChainImageFormat = swapChainCreateInfo.imageFormat;
-    swapChainExtent = swapChainCreateInfo.imageExtent;
 }
 
 void renderer::vulkan_image_views() {
     swapChainImageViews.clear();
     vk::ImageViewCreateInfo imageViewCreateInfo {
         .viewType = vk::ImageViewType::e2D,
-        .format = swapChainImageFormat,
+        .format = swapChainSurfaceFormat.format,
         .subresourceRange = { vk::ImageAspectFlagBits::eColor, 0, 1, 0, 1 }
     };
 
@@ -276,7 +272,7 @@ void renderer::vulkan_graphics_pipeline(const std::string& shaderPath) {
 
     vk::PipelineRenderingCreateInfo pipelineRenderingCreateInfo {
         .colorAttachmentCount    = 1,
-        .pColorAttachmentFormats = &swapChainImageFormat
+        .pColorAttachmentFormats = &swapChainSurfaceFormat.format
     };
 
     vk::GraphicsPipelineCreateInfo pipelineInfo {
@@ -307,22 +303,34 @@ void renderer::vulkan_command_pool() {
 }
 
 void renderer::vulkan_command_buffer() {
+    commandBuffers.clear();
+
     vk::CommandBufferAllocateInfo allocInfo {
         .commandPool = commandPool,
         .level = vk::CommandBufferLevel::ePrimary,
-        .commandBufferCount = 1
+        .commandBufferCount = MAX_FRAMES_IN_FLIGHT
     };
 
-    commandBuffer = std::move(vk::raii::CommandBuffers(device, allocInfo).front());
+    commandBuffers = vk::raii::CommandBuffers(device, allocInfo);
 }
 
 void renderer::vulkan_sync_objects() {
-    presentCompleteSemaphore = vk::raii::Semaphore(device, vk::SemaphoreCreateInfo());
-    renderFinishedSemaphore = vk::raii::Semaphore(device, vk::SemaphoreCreateInfo());
-    drawFence = vk::raii::Fence(device, {.flags = vk::FenceCreateFlagBits::eSignaled});
+    assert(presentCompleteSemaphores.empty() && renderFinishedSemaphores.empty() && inFlightFences.empty());
+
+    for (size_t i = 0; i < swapChainImages.size(); i++) {
+        renderFinishedSemaphores.emplace_back(device, vk::SemaphoreCreateInfo());
+    }
+
+    for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
+        presentCompleteSemaphores.emplace_back(device, vk::SemaphoreCreateInfo());
+        inFlightFences.emplace_back(device, vk::FenceCreateInfo{
+            .flags = vk::FenceCreateFlagBits::eSignaled
+        });
+    }
 }
 
 void renderer::vulkan_record_command_buffer(uint32_t imageIndex) {
+    auto& commandBuffer = commandBuffers[frameIndex];
     commandBuffer.begin({});
 
     transition_image_layout(
@@ -383,6 +391,7 @@ void renderer::transition_image_layout(
     vk::PipelineStageFlags2 srcStageMask,
     vk::PipelineStageFlags2 dstStageMask    
 ) {
+    auto& commandBuffer = commandBuffers[frameIndex];
     vk::ImageMemoryBarrier2 barrier = {
         .srcStageMask = srcStageMask,
         .srcAccessMask = srcAccessMask,
@@ -414,33 +423,38 @@ void renderer::transition_image_layout(
 std::chrono::nanoseconds renderer::render(const data& data) {
     auto s = std::chrono::high_resolution_clock::now();
 
-    auto fenceResult = device.waitForFences(*drawFence, vk::True, UINT64_MAX);
-    auto [result, imageIndex] = swapChain.acquireNextImage(UINT64_MAX, presentCompleteSemaphore, nullptr);
+    auto fenceResult = device.waitForFences(*inFlightFences[frameIndex], vk::True, UINT64_MAX);
+    device.resetFences(*inFlightFences[frameIndex]);
+
+    auto [result, imageIndex] = swapChain.acquireNextImage(UINT64_MAX, *presentCompleteSemaphores[frameIndex], nullptr);
+
+    commandBuffers[frameIndex].reset();
     vulkan_record_command_buffer(imageIndex);
-    device.resetFences(*drawFence);
 
     vk::PipelineStageFlags waitDestinationStageMask(vk::PipelineStageFlagBits::eColorAttachmentOutput);
     const vk::SubmitInfo submitInfo {
         .waitSemaphoreCount = 1,
-        .pWaitSemaphores = &*presentCompleteSemaphore,
+        .pWaitSemaphores = &*presentCompleteSemaphores[frameIndex],
         .pWaitDstStageMask = &waitDestinationStageMask,
         .commandBufferCount = 1,
-        .pCommandBuffers = &*commandBuffer,
+        .pCommandBuffers = &*commandBuffers[frameIndex],
         .signalSemaphoreCount = 1,
-        .pSignalSemaphores = &*renderFinishedSemaphore
+        .pSignalSemaphores = &*renderFinishedSemaphores[frameIndex]
     };
 
-    queue.submit(submitInfo, *drawFence);
+    queue.submit(submitInfo, *inFlightFences[frameIndex]);
 
     const vk::PresentInfoKHR presentInfoKHR {
         .waitSemaphoreCount = 1,
-        .pWaitSemaphores = &*renderFinishedSemaphore,
+        .pWaitSemaphores = &*renderFinishedSemaphores[frameIndex],
         .swapchainCount = 1,
         .pSwapchains = &*swapChain,
         .pImageIndices = &imageIndex
     };
 
     result = queue.presentKHR(presentInfoKHR);
+    frameIndex = (frameIndex + 1) % MAX_FRAMES_IN_FLIGHT;
+
     return std::chrono::high_resolution_clock::now() - s;
 }
 

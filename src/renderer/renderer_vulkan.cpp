@@ -7,10 +7,9 @@ Comments: Most of this code is ripped from https://docs.vulkan.org/tutorial/late
 
 #include "renderer.hpp"
 #include "vulkan/vulkan.hpp"
-#include <cstdint>
+#include <GLFW/glfw3.h>
 #include <map>
 #include <stdexcept>
-#include <vulkan/vulkan_raii.hpp>
 
 void renderer::init(size_t n, const std::string& exePath) {
     auto shaderPath = exePath.substr(0, exePath.find_last_of('/')) + "/slang.spv";
@@ -34,13 +33,15 @@ void renderer::init_window() {
     }
 
     glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
-    glfwWindowHint(GLFW_RESIZABLE, GLFW_FALSE);
 
     window = glfwCreateWindow(width_, height_, "nbody", nullptr, nullptr);
     if (!window) {
         glfwTerminate();
         throw std::runtime_error("failed to create glfw window");
     }
+
+    glfwSetWindowUserPointer(window, this);
+    glfwSetFramebufferSizeCallback(window, framebufferResizeCallback);
 
     glfwShowWindow(window);
 }
@@ -420,13 +421,43 @@ void renderer::transition_image_layout(
     commandBuffer.pipelineBarrier2(dependencyInfo);
 }
 
+void renderer::vulkan_cleanup_swapchain() {
+    swapChainImageViews.clear();
+    swapChain = nullptr;
+}
+
+void renderer::vulkan_recreate_swapchain() {
+    int w, h = 0;
+    glfwGetFramebufferSize(window, &w, &h);
+    while (w == 0 || h == 0) {
+        glfwGetFramebufferSize(window, &w, &h);
+        glfwWaitEvents();
+    } 
+
+    device.waitIdle();
+
+    vulkan_cleanup_swapchain();
+    vulkan_swapchain();
+    vulkan_image_views();
+}
+
 std::chrono::nanoseconds renderer::render(const data& data) {
     auto s = std::chrono::high_resolution_clock::now();
 
     auto fenceResult = device.waitForFences(*inFlightFences[frameIndex], vk::True, UINT64_MAX);
-    device.resetFences(*inFlightFences[frameIndex]);
+    if (fenceResult != vk::Result::eSuccess) {
+        throw std::runtime_error("failed to wait for fence");
+    }
 
     auto [result, imageIndex] = swapChain.acquireNextImage(UINT64_MAX, *presentCompleteSemaphores[frameIndex], nullptr);
+    if (result == vk::Result::eErrorOutOfDateKHR) {
+        vulkan_recreate_swapchain();
+        return std::chrono::high_resolution_clock::now() - s;
+    } else if (result != vk::Result::eSuccess && result != vk::Result::eSuboptimalKHR) {
+        throw std::runtime_error("failed to acquire swap chain image");
+    }
+
+    device.resetFences(*inFlightFences[frameIndex]);
 
     commandBuffers[frameIndex].reset();
     vulkan_record_command_buffer(imageIndex);
@@ -453,13 +484,18 @@ std::chrono::nanoseconds renderer::render(const data& data) {
     };
 
     result = queue.presentKHR(presentInfoKHR);
-    frameIndex = (frameIndex + 1) % MAX_FRAMES_IN_FLIGHT;
+    if (result == vk::Result::eSuboptimalKHR || result == vk::Result::eErrorOutOfDateKHR || framebufferResized) {
+        framebufferResized = false;
+        vulkan_recreate_swapchain();
+    }
 
+    frameIndex = (frameIndex + 1) % MAX_FRAMES_IN_FLIGHT;
     return std::chrono::high_resolution_clock::now() - s;
 }
 
 void renderer::cleanup() {
     device.waitIdle();
+    vulkan_cleanup_swapchain();
 
     if (window) { glfwDestroyWindow(window); }
     glfwTerminate();

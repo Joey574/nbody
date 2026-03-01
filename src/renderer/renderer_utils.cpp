@@ -6,10 +6,8 @@ Comments:
 */
 
 #include "renderer.hpp"
-#include "vulkan/vulkan.hpp"
 #include <fstream>
 #include <vector>
-#include <vulkan/vulkan_raii.hpp>
 
 vk::raii::ShaderModule renderer::createShaderModule(const std::vector<char>& code) {
     vk::ShaderModuleCreateInfo createInfo {
@@ -97,4 +95,9 @@ uint32_t renderer::chooseSwapMinImageCount(const vk::SurfaceCapabilitiesKHR& cap
     }
 
     return minImageCount;
+}
+
+void renderer::framebufferResizeCallback(GLFWwindow* window, int width, int height) {
+    auto r = reinterpret_cast<renderer*>(glfwGetWindowUserPointer(window));
+    r->framebufferResized = true;
 }

@@ -13,7 +13,7 @@
         }
         return "";
     }
-    #elif (defined(LINUX) || defined(__linux__))
+#elif (defined(LINUX) || defined(__linux__))
     #include <unistd.h>
     #include <limits.h>
 
@@ -26,8 +26,8 @@
         }
         return "";
     }
-    #else
+#else
     std::string util::executable_path(char* argv[]) {
         return std::string(argv[0]);
     }
-    #endif
+#endif

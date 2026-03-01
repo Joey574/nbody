@@ -47,6 +47,7 @@ struct renderer {
     std::vector<vk::raii::Semaphore>     renderFinishedSemaphores;
     std::vector<vk::raii::Fence>         inFlightFences;
     uint32_t                             frameIndex;
+    bool                                 framebufferResized = false;
 
     std::vector<const char*> deviceExtensions = {
         vk::KHRSwapchainExtensionName
@@ -65,6 +66,9 @@ struct renderer {
     void vulkan_command_pool();
     void vulkan_command_buffer();
     void vulkan_sync_objects();
+
+    void vulkan_cleanup_swapchain();
+    void vulkan_recreate_swapchain();
     
     void vulkan_record_command_buffer(uint32_t imageIndex);
     void transition_image_layout(
@@ -85,6 +89,7 @@ struct renderer {
     static uint32_t findQueueFamilies(vk::raii::PhysicalDevice physicalDevice);
     static vk::SurfaceFormatKHR chooseSwapSurfaceFormat(const std::vector<vk::SurfaceFormatKHR>& formats);
     static vk::PresentModeKHR chooseSwapPresentMode(const std::vector<vk::PresentModeKHR>& presentModes);
+    static void framebufferResizeCallback(GLFWwindow* window, int width, int height);
     
     static const size_t width_ = 800;
     static const size_t height_ = 800;

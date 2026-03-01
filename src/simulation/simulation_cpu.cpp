@@ -11,20 +11,16 @@ compiler for vectorization
 #include <chrono>
 
 std::chrono::nanoseconds simulation::update_cpu(const float ft) noexcept {
-    #ifdef USE_AVX512
-        return update_cpu_simd<util::simd_policy::AVX512>(ft);
-    #elifdef USE_AVX2
-        return update_cpu_simd<util::simd_policy::AVX2>(ft);
+    #if defined(__AVX512__) || defined(__AVX2__)
+        return update_cpu_simd(ft);
     #else
         return update_cpu_fallback(ft);
     #endif
 }
 
 /// @brief Generic custom simd update function
-/// @tparam p simd_policy to be used in the update
 /// @param ft Fixed time used for update
 /// @return Nanoseconds it took to run update
-template <typename p>
 std::chrono::nanoseconds simulation::update_cpu_simd(const float ft) noexcept {
     auto s = std::chrono::high_resolution_clock::now();
     data_.zero_acc();
@@ -54,26 +50,26 @@ std::chrono::nanoseconds simulation::update_cpu_simd(const float ft) noexcept {
             const float p1y = py[i];
             const float p1m = ma[i];
 
-            const auto _p1x = p::set1(p1x);
-            const auto _p1y = p::set1(p1y);
-            const auto _p1m = p::set1(p1m);
+            const auto _p1x = util::set1(p1x);
+            const auto _p1y = util::set1(p1y);
+            const auto _p1m = util::set1(p1m);
 
-            auto _a1x_sum = p::zero();
-            auto _a1y_sum = p::zero();
+            auto _a1x_sum = util::zero();
+            auto _a1y_sum = util::zero();
 
             size_t j = i+1;
-            for (; j+p::last < n; j += p::width) {
-                const auto _p2x = p::loadu(&px[j]);
-                const auto _p2y = p::loadu(&py[j]);
-                const auto _p2m = p::loadu(&ma[j]);
+            for (; j+util::last < n; j += util::width) {
+                const auto _p2x = util::loadu(&px[j]);
+                const auto _p2y = util::loadu(&py[j]);
+                const auto _p2m = util::loadu(&ma[j]);
 
                 // compute distance squared
                 const auto _dx = _p2x - _p1x;
                 const auto _dy = _p2y - _p1y;
-                const auto _dsq = p::_epsl + (_dx*_dx) + (_dy*_dy);
+                const auto _dsq = util::_epsl + (_dx*_dx) + (_dy*_dy);
 
                 // fast inv sqrt with newton step
-                const auto _inv = p::rsqrt(_dsq);
+                const auto _inv = util::rsqrt(_dsq);
                 const auto _inv3 = _inv * _inv * _inv;
 
                 // compute intermediate values
@@ -81,14 +77,14 @@ std::chrono::nanoseconds simulation::update_cpu_simd(const float ft) noexcept {
                 const auto _ivy = _dy * _inv3;
 
                 // compute and store accelerations
-                p::storeu(&ax_row[j], (_ivx * _p1m) + p::loadu(&ax_row[j]));
-                p::storeu(&ay_row[j], (_ivy * _p1m) + p::loadu(&ay_row[j]));
+                util::storeu(&ax_row[j], (_ivx * _p1m) + util::loadu(&ax_row[j]));
+                util::storeu(&ay_row[j], (_ivy * _p1m) + util::loadu(&ay_row[j]));
                 _a1x_sum += _ivx * _p2m;
                 _a1y_sum += _ivy * _p2m;
             }
 
-            float a1x_final = p::hsum(_a1x_sum);
-            float a1y_final = p::hsum(_a1y_sum);
+            float a1x_final = util::hsum(_a1x_sum);
+            float a1y_final = util::hsum(_a1y_sum);
 
             // remainder handling
             for(; j < n; j++) {
@@ -101,7 +97,7 @@ std::chrono::nanoseconds simulation::update_cpu_simd(const float ft) noexcept {
                 const float dsq = 1e-12f + (dx*dx) + (dy*dy);
 
                 // fast rsqrt with netwon step
-                float inv = util::rsqrt(dsq);
+                float inv = util::frsqrt(dsq);
                 inv = inv * (1.5f - 0.5f * dsq * inv * inv);
 
                 // compute intermediate values
@@ -197,7 +193,7 @@ std::chrono::nanoseconds simulation::update_cpu_fallback(const float ft) noexcep
                 const float dsq = 1e-12f + (dx*dx) + (dy*dy);
 
                 // fast rsqrt with netwon step
-                float inv = util::rsqrt(dsq);
+                float inv = util::frsqrt(dsq);
                 inv = inv * (1.5f - 0.5f * dsq * inv * inv);
 
                 // compute intermediate values

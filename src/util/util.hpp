@@ -10,18 +10,19 @@ namespace util {
         return (size + 31) & ~31;
     }
 
-    inline float rsqrt(float x) {
+    inline float frsqrt(float x) {
     return _mm_cvtss_f32(_mm_rsqrt_ss(_mm_set_ss(x)));
     }
 
     std::string executable_path(char* argv[]);
 
-    namespace simd_policy {
-    #ifdef USE_AVX512
-    struct AVX512 {
+    #ifdef __AVX512F__
         using reg = __m512;
         static inline constexpr size_t width = 16;
         static inline constexpr size_t last = 15;
+        static inline const __m512 _epsl = _mm512_set1_ps(1e-12f);
+        static inline const __m512 _opf = _mm512_set1_ps(1.5f);
+        static inline const __m512 _pf = _mm512_set1_ps(0.5f);
         
         static inline reg load(const float* p) { return _mm512_load_ps(p); }
         static inline void store(float* p, reg r) { _mm512_store_ps(p, r); }
@@ -52,19 +53,14 @@ namespace util {
 
             return _mm_cvtss_f32(final);
         }
-
-        static inline const __m512 _epsl = _mm512_set1_ps(1e-12f);
-        static inline const __m512 _opf = _mm512_set1_ps(1.5f);
-        static inline const __m512 _pf = _mm512_set1_ps(0.5f);
-    };
-    #endif
-
-    #ifdef USE_AVX2
-    struct AVX2 {
+    #elif defined(__AVX2__)
         using reg = __m256;
         static inline constexpr size_t width = 8;
         static inline constexpr size_t last = 7;
-        
+        static inline const __m256 _epsl = _mm256_set1_ps(1e-12f);
+        static inline const __m256 _opf = _mm256_set1_ps(1.5f);
+        static inline const __m256 _pf = _mm256_set1_ps(0.5f);
+
         static inline reg load(const float* p) { return _mm256_load_ps(p); }
         static inline void store(float* p, reg r) { _mm256_store_ps(p, r); }
 
@@ -91,14 +87,5 @@ namespace util {
 
             return _mm_cvtss_f32(v32);
         }
-
-        static inline const __m256 _epsl = _mm256_set1_ps(1e-12f);
-        static inline const __m256 _opf = _mm256_set1_ps(1.5f);
-        static inline const __m256 _pf = _mm256_set1_ps(0.5f);
-
-    };
     #endif
-
-    
-}
 };

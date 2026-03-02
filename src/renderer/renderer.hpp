@@ -2,7 +2,7 @@
 #include <chrono>
 #include <cstdint>
 #include <string>
-#include <vulkan/vulkan_core.h>
+#include <glm/glm.hpp>
 
 #define VULKAN_HPP_NO_STRUCT_CONSTRUCTORS
 #include <vulkan/vulkan_raii.hpp>
@@ -11,6 +11,21 @@
 #include <GLFW/glfw3.h>
 
 #include "../data/data.hpp"
+
+struct vertex {
+    glm::vec2 pos;
+
+    static vk::VertexInputBindingDescription getBindingDescription() {
+        return {0, sizeof(vertex), vk::VertexInputRate::eVertex};
+    }
+
+    static std::array<vk::VertexInputAttributeDescription, 1> getAttributeDescriptions() {
+        return {
+            vk::VertexInputAttributeDescription(0, 0, vk::Format::eR32G32Sfloat, offsetof(vertex, pos)),
+        };
+    }
+};
+
 
 struct renderer {
     public:
@@ -49,6 +64,8 @@ struct renderer {
     uint32_t                             frameIndex;
     bool                                 framebufferResized = false;
 
+    vk::raii::Buffer vertexBuffer = nullptr;
+
     std::vector<const char*> deviceExtensions = {
         vk::KHRSwapchainExtensionName
     };
@@ -66,6 +83,7 @@ struct renderer {
     void vulkan_command_pool();
     void vulkan_command_buffer();
     void vulkan_sync_objects();
+    void vulkan_vertex_buffer(size_t n);
 
     void vulkan_cleanup_swapchain();
     void vulkan_recreate_swapchain();

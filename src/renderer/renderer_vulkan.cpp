@@ -6,8 +6,6 @@ Comments: Most of this code is ripped from https://docs.vulkan.org/tutorial/late
 */
 
 #include "renderer.hpp"
-#include "vulkan/vulkan.hpp"
-#include <GLFW/glfw3.h>
 #include <map>
 #include <stdexcept>
 
@@ -23,6 +21,7 @@ void renderer::init(size_t n, const std::string& exePath) {
     vulkan_image_views();
     vulkan_graphics_pipeline(shaderPath);
     vulkan_command_pool();
+    vulkan_vertex_buffer(n);
     vulkan_command_buffer();
     vulkan_sync_objects();
 }
@@ -215,7 +214,15 @@ void renderer::vulkan_graphics_pipeline(const std::string& shaderPath) {
         fragShaderStageInfo
     };
 
-    vk::PipelineVertexInputStateCreateInfo vertexInputInfo;
+    auto bindingDescription    = vertex::getBindingDescription();
+    auto attributeDescriptions = vertex::getAttributeDescriptions();
+
+    vk::PipelineVertexInputStateCreateInfo vertexInputInfo {
+        .vertexBindingDescriptionCount   = 1,
+        .pVertexBindingDescriptions      = &bindingDescription,
+        .vertexAttributeDescriptionCount = static_cast<uint32_t>(attributeDescriptions.size()),
+        .pVertexAttributeDescriptions    = attributeDescriptions.data()
+    };
 
     vk::PipelineInputAssemblyStateCreateInfo inputAssembly {
         .topology = vk::PrimitiveTopology::eTriangleList
@@ -491,6 +498,18 @@ std::chrono::nanoseconds renderer::render(const data& data) {
 
     frameIndex = (frameIndex + 1) % MAX_FRAMES_IN_FLIGHT;
     return std::chrono::high_resolution_clock::now() - s;
+}
+
+void renderer::vulkan_vertex_buffer(size_t n) {
+    vk::BufferCreateInfo bufferInfo {
+        .size = sizeof(vertex) * n,
+        .usage = vk::BufferUsageFlagBits::eVertexBuffer,
+        .sharingMode = vk::SharingMode::eExclusive
+    };
+
+    vertexBuffer = vk::raii::Buffer(device, bufferInfo);
+
+    vk::MemoryRequirements memRequirements = vertexBuffer.getMemoryRequirements();
 }
 
 void renderer::cleanup() {

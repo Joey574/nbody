@@ -3,8 +3,6 @@
 #include <immintrin.h>
 #include <string>
 
-#include "../definitions/macros.hpp"
-
 namespace util {
     inline size_t aligned_size(size_t size) {
         return (size + 31) & ~31;

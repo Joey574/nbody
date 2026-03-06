@@ -2,26 +2,29 @@
 #include <chrono>
 #include <cstdint>
 #include <string>
-#include <glm/glm.hpp>
 
+#define VULKAN_HPP_HANDLE_ERROR_OUT_OF_DATE_AS_SUCCESS
 #define VULKAN_HPP_NO_STRUCT_CONSTRUCTORS
 #include <vulkan/vulkan_raii.hpp>
 
 #define GLFW_INCLUDE_VULKAN
 #include <GLFW/glfw3.h>
+#include <glm/glm.hpp>
 
 #include "../data/data.hpp"
 
 struct vertex {
     glm::vec2 pos;
+    glm::vec3 color;
 
     static vk::VertexInputBindingDescription getBindingDescription() {
         return {0, sizeof(vertex), vk::VertexInputRate::eVertex};
     }
 
-    static std::array<vk::VertexInputAttributeDescription, 1> getAttributeDescriptions() {
+    static std::array<vk::VertexInputAttributeDescription, 2> getAttributeDescriptions() {
         return {
             vk::VertexInputAttributeDescription(0, 0, vk::Format::eR32G32Sfloat, offsetof(vertex, pos)),
+            vk::VertexInputAttributeDescription(1, 0, vk::Format::eR32G32B32Sfloat, offsetof(vertex, color))
         };
     }
 };
@@ -33,7 +36,7 @@ struct renderer {
     std::chrono::nanoseconds render(const data& data);
     void cleanup();
 
-    void init(size_t n, const std::string& exePath);
+    void init(const data& data, const std::string& exePath);
     bool should_close() { return glfwWindowShouldClose(window); }
     void poll_events() { glfwPollEvents(); }
 
@@ -65,10 +68,17 @@ struct renderer {
     bool                                 framebufferResized = false;
 
     vk::raii::Buffer vertexBuffer = nullptr;
+    vk::raii::DeviceMemory vertexBufferMemory = nullptr;
 
     std::vector<const char*> deviceExtensions = {
         vk::KHRSwapchainExtensionName
     };
+
+    // TODO : used just for the vulkan tutorial stuff, remove later
+    std::vector<vertex> vertices = {
+    {{0.0f, -0.5f}, {1.0f, 0.0f, 0.0f}},
+    {{0.5f, 0.5f}, {0.0f, 1.0f, 0.0f}},
+    {{-0.5f, 0.5f}, {0.0f, 0.0f, 1.0f}}};
 
     vk::PresentModeKHR presentMode = vk::PresentModeKHR::eFifo;
 
@@ -83,10 +93,12 @@ struct renderer {
     void vulkan_command_pool();
     void vulkan_command_buffer();
     void vulkan_sync_objects();
-    void vulkan_vertex_buffer(size_t n);
+    void vulkan_vertex_buffer(const data& data);
+
 
     void vulkan_cleanup_swapchain();
     void vulkan_recreate_swapchain();
+    void vulkan_update_vertex_buffer(const data& data);
     
     void vulkan_record_command_buffer(uint32_t imageIndex);
     void transition_image_layout(
@@ -101,6 +113,7 @@ struct renderer {
     std::vector<const char*> getRequiredInstanceExtensions();
     vk::raii::ShaderModule createShaderModule(const std::vector<char>& code);
     vk::Extent2D chooseSwapExtent(const vk::SurfaceCapabilitiesKHR& capabilities);
+    uint32_t find_memory_type(uint32_t typeFilter, vk::MemoryPropertyFlags properties);
 
     static std::vector<char> readFile(const std::string& path);
     static uint32_t chooseSwapMinImageCount(const vk::SurfaceCapabilitiesKHR& capabilities);

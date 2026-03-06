@@ -12,7 +12,7 @@ int app::run(const cliargs& f) {
     sim = simulation(f);
     ren = renderer();
     
-    ren.init(sim.bodies(), f.path);
+    ren.init(sim.get_data(), f.path);
     if (main_loop(f)) { return 1; }
     cleanup();
 

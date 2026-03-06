@@ -1,15 +1,14 @@
 /* 
 Author: Joey Soroka
-Updated: 2/27/26
 Purpose: Contains vulkan initilization utilities for the renderer struct
 Comments: Most of this code is ripped from https://docs.vulkan.org/tutorial/latest/00_Introduction.html
 */
 
 #include "renderer.hpp"
-#include <map>
 #include <stdexcept>
+#include <map>
 
-void renderer::init(size_t n, const std::string& exePath) {
+void renderer::init(const data& data, const std::string& exePath) {
     auto shaderPath = exePath.substr(0, exePath.find_last_of('/')) + "/slang.spv";
 
     init_window();
@@ -21,7 +20,7 @@ void renderer::init(size_t n, const std::string& exePath) {
     vulkan_image_views();
     vulkan_graphics_pipeline(shaderPath);
     vulkan_command_pool();
-    vulkan_vertex_buffer(n);
+    vulkan_vertex_buffer(data);
     vulkan_command_buffer();
     vulkan_sync_objects();
 }
@@ -135,7 +134,7 @@ void renderer::vulkan_device() {
             {.extendedDynamicState = true}
         };
 
-    // create a Device
+    // create a device
     float queuePriority = 0.5f;
     vk::DeviceQueueCreateInfo deviceQueueCreateInfo { 
         .queueFamilyIndex = queueIndex, 
@@ -372,6 +371,7 @@ void renderer::vulkan_record_command_buffer(uint32_t imageIndex) {
 
     commandBuffer.beginRendering(renderingInfo);
     commandBuffer.bindPipeline(vk::PipelineBindPoint::eGraphics, pipeline);
+    commandBuffer.bindVertexBuffers(0, *vertexBuffer, {0});
     commandBuffer.setViewport(0, vk::Viewport(0.0f, 0.0f, static_cast<float>(swapChainExtent.width), static_cast<float>(swapChainExtent.height), 0.0f, 1.0f));
     commandBuffer.setScissor(0, vk::Rect2D(vk::Offset2D(0, 0), swapChainExtent));
     commandBuffer.draw(3, 1, 0, 0);
@@ -448,8 +448,37 @@ void renderer::vulkan_recreate_swapchain() {
     vulkan_image_views();
 }
 
+void renderer::vulkan_vertex_buffer(const data& data) {
+    vk::BufferCreateInfo bufferInfo {
+        .size = sizeof(vertices[0]) * vertices.size(),
+        .usage = vk::BufferUsageFlagBits::eVertexBuffer,
+        .sharingMode = vk::SharingMode::eExclusive
+    };
+
+    vertexBuffer = vk::raii::Buffer(device, bufferInfo);
+
+    vk::MemoryRequirements memRequirements = vertexBuffer.getMemoryRequirements();
+
+    vk::MemoryAllocateInfo memAllocateInfo {
+        .allocationSize = memRequirements.size, 
+        .memoryTypeIndex = find_memory_type(memRequirements.memoryTypeBits, vk::MemoryPropertyFlagBits::eHostVisible | vk::MemoryPropertyFlagBits::eHostCoherent)
+    };
+
+    vertexBufferMemory = vk::raii::DeviceMemory(device, memAllocateInfo);
+    vertexBuffer.bindMemory(*vertexBufferMemory, 0);
+
+    void* mapped = vertexBufferMemory.mapMemory(0, bufferInfo.size);
+    memcpy(mapped, vertices.data(), bufferInfo.size);
+    vertexBufferMemory.unmapMemory();
+}
+
+void renderer::vulkan_update_vertex_buffer(const data& data) {
+}
+
 std::chrono::nanoseconds renderer::render(const data& data) {
     auto s = std::chrono::high_resolution_clock::now();
+
+    vulkan_update_vertex_buffer(data);
 
     auto fenceResult = device.waitForFences(*inFlightFences[frameIndex], vk::True, UINT64_MAX);
     if (fenceResult != vk::Result::eSuccess) {
@@ -498,18 +527,6 @@ std::chrono::nanoseconds renderer::render(const data& data) {
 
     frameIndex = (frameIndex + 1) % MAX_FRAMES_IN_FLIGHT;
     return std::chrono::high_resolution_clock::now() - s;
-}
-
-void renderer::vulkan_vertex_buffer(size_t n) {
-    vk::BufferCreateInfo bufferInfo {
-        .size = sizeof(vertex) * n,
-        .usage = vk::BufferUsageFlagBits::eVertexBuffer,
-        .sharingMode = vk::SharingMode::eExclusive
-    };
-
-    vertexBuffer = vk::raii::Buffer(device, bufferInfo);
-
-    vk::MemoryRequirements memRequirements = vertexBuffer.getMemoryRequirements();
 }
 
 void renderer::cleanup() {

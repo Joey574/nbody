@@ -1,6 +1,5 @@
 /*
 Author: Joey Soroka
-Updated: 2/27/26
 Purpose: Implement various helper functions used in the renderer struct
 Comments:
 */
@@ -43,12 +42,19 @@ vk::SurfaceFormatKHR renderer::chooseSwapSurfaceFormat(const std::vector<vk::Sur
 }
 
 vk::PresentModeKHR renderer::chooseSwapPresentMode(const std::vector<vk::PresentModeKHR>& presentModes) {
+    bool hasImmediate = false;
+    bool hasMailbox = false;
+
     for (const auto& mode : presentModes) {
         if (mode == vk::PresentModeKHR::eImmediate) {
-            return mode;
+            hasImmediate = true;
+        } else if (mode == vk::PresentModeKHR::eMailbox) {
+            hasMailbox = true;
         }
     }
 
+    if (hasImmediate) { return vk::PresentModeKHR::eImmediate; }
+    if (hasMailbox) { return vk::PresentModeKHR::eMailbox; }
     return vk::PresentModeKHR::eFifo;
 }
 
@@ -98,6 +104,18 @@ uint32_t renderer::chooseSwapMinImageCount(const vk::SurfaceCapabilitiesKHR& cap
 }
 
 void renderer::framebufferResizeCallback(GLFWwindow* window, int width, int height) {
-    auto r = reinterpret_cast<renderer*>(glfwGetWindowUserPointer(window));
+    auto r    = reinterpret_cast<renderer*>(glfwGetWindowUserPointer(window));
     r->framebufferResized = true;
+}
+
+uint32_t renderer::find_memory_type(uint32_t typeFilter, vk::MemoryPropertyFlags properties) {
+    auto memProperties = physicalDevice.getMemoryProperties();
+    
+    for (uint32_t i = 0; i < memProperties.memoryTypeCount; i++) {
+        if ((typeFilter & (1 << i)) && (memProperties.memoryTypes[i].propertyFlags & properties) == properties) {
+            return i;
+        }
+    }
+
+    throw std::runtime_error("failed to find a suitable memory type");
 }

@@ -21,4 +21,4 @@ size_human=$(numfmt --to=iec --suffix=B "$file_size")
 end_time=$(date +%s.%N)
 elapsed=$(echo "$end_time - $start_time" | bc)
 
-printf "Build (%s) completed in %.2f seconds (%s)\n" "$MODE" "$elapsed" "$size_human"
+printf " -- %s build completed in %.2f seconds (%s)\n" "$MODE" "$elapsed" "$size_human"

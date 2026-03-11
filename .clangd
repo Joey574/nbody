@@ -3,3 +3,5 @@ CompileFlags:
     - -fmodules-ts
     - -fmodule-mapper=*
     - -fdeps-format=*
+  Add:
+    - -Wno-unknown-pragmas

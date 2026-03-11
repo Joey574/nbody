@@ -5,7 +5,6 @@ Comments:
 */
 
 #include "renderer.hpp"
-#include <fstream>
 #include <vector>
 
 vk::raii::ShaderModule renderer::createShaderModule(const std::vector<char>& code) {
@@ -53,9 +52,9 @@ vk::PresentModeKHR renderer::chooseSwapPresentMode(const std::vector<vk::Present
         }
     }
 
-    if (hasImmediate) { return vk::PresentModeKHR::eImmediate; }
-    if (hasMailbox) { return vk::PresentModeKHR::eMailbox; }
-    return vk::PresentModeKHR::eFifo;
+    return hasImmediate ? vk::PresentModeKHR::eImmediate : 
+           hasMailbox   ? vk::PresentModeKHR::eMailbox   :
+           vk::PresentModeKHR::eFifo;
 }
 
 vk::Extent2D renderer::chooseSwapExtent(const vk::SurfaceCapabilitiesKHR& capabilities) {
@@ -70,20 +69,6 @@ vk::Extent2D renderer::chooseSwapExtent(const vk::SurfaceCapabilitiesKHR& capabi
         std::clamp<uint32_t>(w, capabilities.minImageExtent.width, capabilities.maxImageExtent.width),
         std::clamp<uint32_t>(h, capabilities.minImageExtent.height, capabilities.maxImageExtent.height),
     };
-}
-
-std::vector<char> renderer::readFile(const std::string& path) {
-    std::ifstream file(path, std::ios::ate | std::ios::binary);
-    if (!file.is_open()) {
-        std::__throw_runtime_error(("failed to open file: " + path).c_str());
-    }
-
-    std::vector<char> buffer(file.tellg());
-    file.seekg(0, std::ios::beg);
-    file.read(buffer.data(), static_cast<std::streamsize>(buffer.size()));
-    file.close();
-
-    return buffer;
 }
 
 std::vector<const char*> renderer::getRequiredInstanceExtensions() {

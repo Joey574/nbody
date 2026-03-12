@@ -313,41 +313,29 @@ void renderer::transition_image_layout(
 void renderer::vulkan_vertex_buffer(const data& data) {
     vk::DeviceSize size = sizeof(vertices[0]) * vertices.size();
 
-    vk::BufferCreateInfo stagingInfo {
-        .size = size,
-        .usage = vk::BufferUsageFlagBits::eTransferSrc,
-        .sharingMode = vk::SharingMode::eExclusive
-    };
+    vk::raii::Buffer stagingBuffer = nullptr;
+    vk::raii::DeviceMemory stagingMem = nullptr;
+    createBuffer(
+        size,
+        vk::BufferUsageFlagBits::eTransferSrc,
+        vk::MemoryPropertyFlagBits::eHostVisible | vk::MemoryPropertyFlagBits::eHostCoherent,
+        stagingBuffer,
+        stagingMem        
+    );
 
-    vk::raii::Buffer stagingBuffer(ldevice, stagingInfo);
-    auto memRequirementsStaging = stagingBuffer.getMemoryRequirements();
-    vk::MemoryAllocateInfo memAllocInfoStaging {
-        .allocationSize = memRequirementsStaging.size,
-        .memoryTypeIndex = find_memory_type(memRequirementsStaging.memoryTypeBits, vk::MemoryPropertyFlagBits::eHostVisible | vk::MemoryPropertyFlagBits::eHostCoherent)
-    };
+    void* dataStaging = stagingMem.mapMemory(0, size);
+    memcpy(dataStaging, vertices.data(), size);
+    stagingMem.unmapMemory();
 
-    vk::raii::DeviceMemory stagingBufferMem(ldevice, memAllocInfoStaging);
-    stagingBuffer.bindMemory(stagingBufferMem, 0);
-    void* dataStaging = stagingBufferMem.mapMemory(0, stagingInfo.size);
-    memcpy(dataStaging, vertices.data(), stagingInfo.size);
-    stagingBufferMem.unmapMemory();
+    createBuffer(
+        size,
+        vk::BufferUsageFlagBits::eVertexBuffer | vk::BufferUsageFlagBits::eTransferDst,
+        vk::MemoryPropertyFlagBits::eDeviceLocal,
+        vertexBuffer,
+        vertexBufferMemory
+    );
 
-    vk::BufferCreateInfo bufferInfo {
-        .size = size,
-        .usage = vk::BufferUsageFlagBits::eVertexBuffer | vk::BufferUsageFlagBits::eTransferDst,
-        .sharingMode = vk::SharingMode::eExclusive
-    };
-    vertexBuffer = vk::raii::Buffer(ldevice, bufferInfo);
-
-    vk::MemoryRequirements memReqs = vertexBuffer.getMemoryRequirements();
-    vk::MemoryAllocateInfo memAllocInfo {
-        .allocationSize = memReqs.size,
-        .memoryTypeIndex = find_memory_type(memReqs.memoryTypeBits, vk::MemoryPropertyFlagBits::eDeviceLocal)
-    };
-    vertexBufferMemory = vk::raii::DeviceMemory(ldevice, memAllocInfo);
-
-    vertexBuffer.bindMemory(*vertexBufferMemory, 0);
-    copyBuffer(stagingBuffer, vertexBuffer, stagingInfo.size);
+    copyBuffer(stagingBuffer, vertexBuffer, size);
 }
 
 void renderer::vulkan_update_vertex_buffer(const data& data) {

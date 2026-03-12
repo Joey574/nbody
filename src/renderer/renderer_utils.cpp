@@ -64,7 +64,7 @@ void renderer::createBuffer(vk::DeviceSize size, vk::BufferUsageFlags usage, vk:
 
     buffer = vk::raii::Buffer(ldevice, bufferInfo);
     
-    vk::MemoryRequirements memRequirements = buffer.getMemoryRequirements();
+    auto memRequirements = buffer.getMemoryRequirements();
     vk::MemoryAllocateInfo allocInfo {
         .allocationSize = memRequirements.size,
         .memoryTypeIndex = find_memory_type(memRequirements.memoryTypeBits, properties)

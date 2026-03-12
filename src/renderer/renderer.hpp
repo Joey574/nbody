@@ -104,8 +104,12 @@ struct renderer {
     uint32_t find_memory_type(uint32_t typeFilter, vk::MemoryPropertyFlags properties);
 
     static std::vector<char> readFile(const std::string& path);
+    static uint32_t chooseSwapMinImageCount(const vk::SurfaceCapabilitiesKHR& capabilities);
     static uint32_t findQueueFamilies(vk::raii::PhysicalDevice physicalDevice);
     static void framebufferResizeCallback(GLFWwindow* window, int width, int height);
+
+    static const unsigned char shader_bytes[];
+    static const size_t shader_size;
     
     static const size_t width_ = 800;
     static const size_t height_ = 800;

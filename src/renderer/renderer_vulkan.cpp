@@ -72,8 +72,9 @@ void renderer::vulkan_surface() {
 }
 
 void renderer::vulkan_graphics_pipeline(const std::string& shaderPath) {
-    auto shaderCode = readFile(shaderPath);
-    vk::raii::ShaderModule shaderModule = createShaderModule(shaderCode);
+    vk::raii::ShaderModule shaderModule = createShaderModule(
+        std::vector<char>(renderer::shader_bytes, renderer::shader_bytes + renderer::shader_size)
+    );
 
     vk::PipelineShaderStageCreateInfo vertShaderStageInfo {
         .stage  = vk::ShaderStageFlagBits::eVertex,

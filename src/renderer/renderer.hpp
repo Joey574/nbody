@@ -3,13 +3,11 @@
 #include <cstdint>
 #include <string>
 
-#define VULKAN_HPP_HANDLE_ERROR_OUT_OF_DATE_AS_SUCCESS
-#define VULKAN_HPP_NO_STRUCT_CONSTRUCTORS
-#include <vulkan/vulkan_raii.hpp>
+#include "../definitions/graphics.hpp" // IWYU pragma: keep
 
-#define GLFW_INCLUDE_VULKAN
-#include <GLFW/glfw3.h>
-#include <glm/glm.hpp>
+#include "../graphics/logicaldevice/logicaldevice.hpp"
+#include "../graphics/physicaldevice/physicaldevice.hpp"
+#include "../graphics/swapchain/swapchain.hpp"
 
 #include "../data/data.hpp"
 
@@ -41,21 +39,19 @@ struct renderer {
     void poll_events() { glfwPollEvents(); }
 
     private:
+
+
+
     static constexpr int MAX_FRAMES_IN_FLIGHT       = 2;
     GLFWwindow*                      window         = nullptr;
     vk::raii::Context                context;
     vk::raii::Instance               instance       = nullptr;
     vk::raii::SurfaceKHR             surface        = nullptr;
-    vk::raii::PhysicalDevice         physicalDevice = nullptr;
-    vk::raii::Device                 device         = nullptr;
-    uint32_t                         queueIndex     = ~0;
-    vk::raii::Queue                  queue          = nullptr;
-    vk::raii::SwapchainKHR           swapChain      = nullptr;
-    std::vector<vk::Image>           swapChainImages;
-    vk::SurfaceFormatKHR             swapChainSurfaceFormat;
-    vk::Extent2D                     swapChainExtent;
-    std::vector<vk::raii::ImageView> swapChainImageViews;
-    
+
+    logicaldevice  ldevice;
+    physicaldevice pdevice;
+    swapchain      swapchain;
+
     vk::raii::PipelineLayout pipelineLayout   = nullptr;
     vk::raii::Pipeline       pipeline         = nullptr;
     vk::raii::CommandPool    commandPool      = nullptr;
@@ -85,19 +81,12 @@ struct renderer {
     void init_window();
     void vulkan_instance();
     void vulkan_surface();
-    void vulkan_physicaldevice();
-    void vulkan_device();
-    void vulkan_swapchain();
-    void vulkan_image_views();
     void vulkan_graphics_pipeline(const std::string& shaderPath);
     void vulkan_command_pool();
     void vulkan_command_buffer();
     void vulkan_sync_objects();
     void vulkan_vertex_buffer(const data& data);
 
-
-    void vulkan_cleanup_swapchain();
-    void vulkan_recreate_swapchain();
     void vulkan_update_vertex_buffer(const data& data);
     
     void vulkan_record_command_buffer(uint32_t imageIndex);
@@ -112,14 +101,10 @@ struct renderer {
     );
     std::vector<const char*> getRequiredInstanceExtensions();
     vk::raii::ShaderModule createShaderModule(const std::vector<char>& code);
-    vk::Extent2D chooseSwapExtent(const vk::SurfaceCapabilitiesKHR& capabilities);
     uint32_t find_memory_type(uint32_t typeFilter, vk::MemoryPropertyFlags properties);
 
     static std::vector<char> readFile(const std::string& path);
-    static uint32_t chooseSwapMinImageCount(const vk::SurfaceCapabilitiesKHR& capabilities);
     static uint32_t findQueueFamilies(vk::raii::PhysicalDevice physicalDevice);
-    static vk::SurfaceFormatKHR chooseSwapSurfaceFormat(const std::vector<vk::SurfaceFormatKHR>& formats);
-    static vk::PresentModeKHR chooseSwapPresentMode(const std::vector<vk::PresentModeKHR>& presentModes);
     static void framebufferResizeCallback(GLFWwindow* window, int width, int height);
     
     static const size_t width_ = 800;

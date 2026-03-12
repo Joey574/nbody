@@ -14,7 +14,7 @@ vk::raii::ShaderModule renderer::createShaderModule(const std::vector<char>& cod
         .pCode = reinterpret_cast<const uint32_t*>(code.data())
     };
 
-    vk::raii::ShaderModule shaderModule{device, createInfo};
+    vk::raii::ShaderModule shaderModule{ldevice.getDevice(), createInfo};
     return shaderModule;
 }
 
@@ -29,48 +29,7 @@ uint32_t renderer::findQueueFamilies(vk::raii::PhysicalDevice physicalDevice) {
                     []( vk::QueueFamilyProperties const & qfp ) { return qfp.queueFlags & vk::QueueFlagBits::eGraphics; } );
 
     return static_cast<uint32_t>( std::distance( queueFamilyProperties.begin(), graphicsQueueFamilyProperty ) );
-}
-
-vk::SurfaceFormatKHR renderer::chooseSwapSurfaceFormat(const std::vector<vk::SurfaceFormatKHR>& formats) {
-    for (const auto& f : formats) {
-        if (f.format == vk::Format::eB8G8R8A8Srgb && f.colorSpace == vk::ColorSpaceKHR::eSrgbNonlinear) {
-            return f;
-        }
-    }
-
-    return formats[0];
-}
-
-vk::PresentModeKHR renderer::chooseSwapPresentMode(const std::vector<vk::PresentModeKHR>& presentModes) {
-    bool hasImmediate = false;
-    bool hasMailbox = false;
-
-    for (const auto& mode : presentModes) {
-        if (mode == vk::PresentModeKHR::eImmediate) {
-            hasImmediate = true;
-        } else if (mode == vk::PresentModeKHR::eMailbox) {
-            hasMailbox = true;
-        }
-    }
-
-    if (hasImmediate) { return vk::PresentModeKHR::eImmediate; }
-    if (hasMailbox) { return vk::PresentModeKHR::eMailbox; }
-    return vk::PresentModeKHR::eFifo;
-}
-
-vk::Extent2D renderer::chooseSwapExtent(const vk::SurfaceCapabilitiesKHR& capabilities) {
-    if (capabilities.currentExtent.width != std::numeric_limits<uint32_t>::max()) {
-        return capabilities.currentExtent;
-    }
-
-    int w, h;
-    glfwGetFramebufferSize(window, &w, &h);
-
-    return {
-        std::clamp<uint32_t>(w, capabilities.minImageExtent.width, capabilities.maxImageExtent.width),
-        std::clamp<uint32_t>(h, capabilities.minImageExtent.height, capabilities.maxImageExtent.height),
-    };
-}
+} 
 
 std::vector<char> renderer::readFile(const std::string& path) {
     std::ifstream file(path, std::ios::ate | std::ios::binary);
@@ -94,22 +53,13 @@ std::vector<const char*> renderer::getRequiredInstanceExtensions() {
     return extensions;
 }
 
-uint32_t renderer::chooseSwapMinImageCount(const vk::SurfaceCapabilitiesKHR& capabilities) {
-    auto minImageCount = std::max(3u, capabilities.minImageCount);
-    if ((0 < capabilities.maxImageCount) && (capabilities.maxImageCount < minImageCount)) {
-        minImageCount = capabilities.maxImageCount;
-    }
-
-    return minImageCount;
-}
-
 void renderer::framebufferResizeCallback(GLFWwindow* window, int width, int height) {
     auto r    = reinterpret_cast<renderer*>(glfwGetWindowUserPointer(window));
     r->framebufferResized = true;
 }
 
 uint32_t renderer::find_memory_type(uint32_t typeFilter, vk::MemoryPropertyFlags properties) {
-    auto memProperties = physicalDevice.getMemoryProperties();
+    auto memProperties = pdevice.get().getMemoryProperties();
     
     for (uint32_t i = 0; i < memProperties.memoryTypeCount; i++) {
         if ((typeFilter & (1 << i)) && (memProperties.memoryTypes[i].propertyFlags & properties) == properties) {

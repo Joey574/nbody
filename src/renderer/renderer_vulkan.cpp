@@ -6,18 +6,16 @@ Comments: Most of this code is ripped from https://docs.vulkan.org/tutorial/late
 
 #include "renderer.hpp"
 #include <stdexcept>
-#include <map>
 
 void renderer::init(const data& data, const std::string& exePath) {
-    auto shaderPath = exePath.substr(0, exePath.find_last_of('/')) + "/slang.spv";
+    auto shaderPath = exePath.substr(0, exePath.find_last_of('/')) + "/tri.spv";
 
     init_window();
     vulkan_instance();
     vulkan_surface();
-    vulkan_physicaldevice();
-    vulkan_device();
-    vulkan_swapchain();
-    vulkan_image_views();
+    pdevice.init(instance);
+    ldevice.init(pdevice, surface);
+    swapchain.init(pdevice, ldevice, surface, window);
     vulkan_graphics_pipeline(shaderPath);
     vulkan_command_pool();
     vulkan_vertex_buffer(data);
@@ -71,125 +69,6 @@ void renderer::vulkan_surface() {
     }
 
     surface = vk::raii::SurfaceKHR(instance, _surface);
-}
-
-void renderer::vulkan_physicaldevice() {
-    auto devices = instance.enumeratePhysicalDevices();
-    if (devices.empty()) {
-        throw std::runtime_error("no devices :/");
-    }
-
-    std::multimap<int, vk::raii::PhysicalDevice> candidates;
-
-    for (const auto& d : devices) {
-        auto deviceProperties = d.getProperties();
-        auto deviceFeatures = d.getFeatures();
-        uint32_t score = 0;
-
-        if (deviceProperties.deviceType == vk::PhysicalDeviceType::eDiscreteGpu) {
-            score += 1000;
-        }
-
-        score += deviceProperties.limits.maxImageDimension2D;
-
-        if (!deviceFeatures.geometryShader) {
-            continue;
-        }
-
-        candidates.insert(std::make_pair(score, d));
-    }
-
-    if (candidates.rbegin()->first > 0) {
-        physicalDevice = candidates.rbegin()->second;
-    } else {
-        throw std::runtime_error("no suitable device found");
-    }
-}
-
-void renderer::vulkan_device() {
-    // find the index of the first queue family that supports graphics
-    std::vector<vk::QueueFamilyProperties> queueFamilyProperties = physicalDevice.getQueueFamilyProperties();
-    
-    for (uint32_t qfpIndex = 0; qfpIndex < queueFamilyProperties.size(); qfpIndex++) {
-        if ((queueFamilyProperties[qfpIndex].queueFlags & vk::QueueFlagBits::eGraphics) &&
-            physicalDevice.getSurfaceSupportKHR(qfpIndex, *surface)) {
-                queueIndex = qfpIndex;
-                break;
-            }
-    }
-    
-    if (queueIndex == ~0) {
-        throw std::runtime_error("could not find a queue for graphics and present");
-    }
-
-    vk::StructureChain<
-        vk::PhysicalDeviceFeatures2,
-        vk::PhysicalDeviceVulkan11Features,
-        vk::PhysicalDeviceVulkan13Features,
-        vk::PhysicalDeviceExtendedDynamicStateFeaturesEXT>
-        featureChain = {
-            {},
-            {.shaderDrawParameters = true},
-            {.synchronization2 = true, .dynamicRendering = true},
-            {.extendedDynamicState = true}
-        };
-
-    // create a device
-    float queuePriority = 0.5f;
-    vk::DeviceQueueCreateInfo deviceQueueCreateInfo { 
-        .queueFamilyIndex = queueIndex, 
-        .queueCount       = 1, 
-        .pQueuePriorities = &queuePriority 
-    };
-
-    vk::DeviceCreateInfo deviceCreateInfo {
-        .pNext                   = &featureChain.get<vk::PhysicalDeviceFeatures2>(),
-        .queueCreateInfoCount    = 1,
-        .pQueueCreateInfos       = &deviceQueueCreateInfo,
-        .enabledExtensionCount   = static_cast<uint32_t>(deviceExtensions.size()),
-        .ppEnabledExtensionNames = deviceExtensions.data()
-    };
-
-    device = vk::raii::Device(physicalDevice, deviceCreateInfo);
-    queue = vk::raii::Queue(device, queueIndex, 0);
-}
-
-void renderer::vulkan_swapchain() {
-    auto surfaceCapabilities = physicalDevice.getSurfaceCapabilitiesKHR(*surface);
-    swapChainExtent = chooseSwapExtent(surfaceCapabilities);
-    swapChainSurfaceFormat = chooseSwapSurfaceFormat(physicalDevice.getSurfaceFormatsKHR(*surface));
-    
-    vk::SwapchainCreateInfoKHR swapChainCreateInfo {
-        .surface          = *surface,
-        .minImageCount    = chooseSwapMinImageCount(surfaceCapabilities),
-        .imageFormat      = swapChainSurfaceFormat.format,
-        .imageColorSpace  = swapChainSurfaceFormat.colorSpace,
-        .imageExtent      = swapChainExtent,
-        .imageArrayLayers = 1,
-        .imageUsage       = vk::ImageUsageFlagBits::eColorAttachment,
-        .imageSharingMode = vk::SharingMode::eExclusive,
-        .preTransform     = surfaceCapabilities.currentTransform,
-        .compositeAlpha   = vk::CompositeAlphaFlagBitsKHR::eOpaque,
-        .presentMode      = chooseSwapPresentMode(physicalDevice.getSurfacePresentModesKHR(*surface)),
-        .clipped = true
-    };
-
-    swapChain = vk::raii::SwapchainKHR(device, swapChainCreateInfo);
-    swapChainImages = swapChain.getImages();
-}
-
-void renderer::vulkan_image_views() {
-    swapChainImageViews.clear();
-    vk::ImageViewCreateInfo imageViewCreateInfo {
-        .viewType = vk::ImageViewType::e2D,
-        .format = swapChainSurfaceFormat.format,
-        .subresourceRange = { vk::ImageAspectFlagBits::eColor, 0, 1, 0, 1 }
-    };
-
-    for (auto image : swapChainImages) {
-        imageViewCreateInfo.image = image;
-        swapChainImageViews.emplace_back(device, imageViewCreateInfo);
-    }
 }
 
 void renderer::vulkan_graphics_pipeline(const std::string& shaderPath) {
@@ -428,26 +307,6 @@ void renderer::transition_image_layout(
     commandBuffer.pipelineBarrier2(dependencyInfo);
 }
 
-void renderer::vulkan_cleanup_swapchain() {
-    swapChainImageViews.clear();
-    swapChain = nullptr;
-}
-
-void renderer::vulkan_recreate_swapchain() {
-    int w, h = 0;
-    glfwGetFramebufferSize(window, &w, &h);
-    while (w == 0 || h == 0) {
-        glfwGetFramebufferSize(window, &w, &h);
-        glfwWaitEvents();
-    } 
-
-    device.waitIdle();
-
-    vulkan_cleanup_swapchain();
-    vulkan_swapchain();
-    vulkan_image_views();
-}
-
 void renderer::vulkan_vertex_buffer(const data& data) {
     vk::BufferCreateInfo bufferInfo {
         .size = sizeof(vertices[0]) * vertices.size(),
@@ -531,7 +390,6 @@ std::chrono::nanoseconds renderer::render(const data& data) {
 
 void renderer::cleanup() {
     device.waitIdle();
-    vulkan_cleanup_swapchain();
 
     if (window) { glfwDestroyWindow(window); }
     glfwTerminate();

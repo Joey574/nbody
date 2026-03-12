@@ -13,11 +13,11 @@ find_package(OpenMP REQUIRED)
 find_package(Vulkan REQUIRED)
 find_package(glfw3 REQUIRED)
 
-target_link_libraries(nbody PRIVATE 
-    OpenMP::OpenMP_CXX 
+target_link_libraries(nbody PRIVATE
+    OpenMP::OpenMP_CXX
     Vulkan::Vulkan
-    glfw 
-    dl 
+    glfw
+    dl
     pthread
 )
 

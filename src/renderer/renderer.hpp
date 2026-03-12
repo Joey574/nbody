@@ -9,6 +9,7 @@
 #include "../graphics/PhysicalDevice/PhysicalDevice.hpp"
 #include "../graphics/Swapchain/Swapchain.hpp"
 #include "../graphics/CommandBuffer/CommandBuffer.hpp"
+#include "../graphics/SoABuffers/SoABuffers.hpp"
 
 #include "../data/data.hpp"
 
@@ -27,7 +28,6 @@ struct vertex {
         };
     }
 };
-
 
 struct renderer {
     public:
@@ -64,20 +64,14 @@ struct renderer {
     uint32_t                             frameIndex;
     bool                                 framebufferResized = false;
 
-    vk::raii::Buffer vertexBuffer = nullptr;
-    vk::raii::DeviceMemory vertexBufferMemory = nullptr;
-
-    std::vector<const char*> deviceExtensions = {
-        vk::KHRSwapchainExtensionName
-    };
-
-    // TODO : used just for the vulkan tutorial stuff, remove later
-    std::vector<vertex> vertices = {
-    {{0.0f, -0.5f}, {1.0f, 0.0f, 0.0f}},
-    {{0.5f, 0.5f}, {0.0f, 1.0f, 0.0f}},
-    {{-0.5f, 0.5f}, {0.0f, 0.0f, 1.0f}}};
-
+    std::vector<const char*> deviceExtensions = { vk::KHRSwapchainExtensionName };
     vk::PresentModeKHR presentMode = vk::PresentModeKHR::eFifo;
+
+    SoABuffers frames[MAX_FRAMES_IN_FLIGHT];
+    
+    vk::raii::DescriptorPool descriptorPool = nullptr;
+    vk::raii::DescriptorSetLayout descriptorSetLayout = nullptr;
+    std::vector<vk::raii::DescriptorSet> descriptorSets;
 
     void init_window();
     void vulkan_instance();
@@ -86,11 +80,10 @@ struct renderer {
     void vulkan_command_pool();
     void vulkan_command_buffer();
     void vulkan_sync_objects();
-    void vulkan_vertex_buffer(const data& data);
+    void vulkan_init_descriptors();
+    void vulkan_write_descriptors(size_t i);
 
-    void vulkan_update_vertex_buffer(const data& data);
-    
-    void vulkan_record_command_buffer(uint32_t imageIndex);
+    void vulkan_record_command_buffer(uint32_t imageIndex, size_t n);
     void transition_image_layout(
         uint32_t imageIndex,
         vk::ImageLayout oldLayout,
@@ -102,17 +95,13 @@ struct renderer {
     );
     std::vector<const char*> getRequiredInstanceExtensions();
     vk::raii::ShaderModule createShaderModule(const std::vector<char>& code);
-    uint32_t find_memory_type(uint32_t typeFilter, vk::MemoryPropertyFlags properties);
     
-    void createBuffer(vk::DeviceSize size, vk::BufferUsageFlags usage, vk::MemoryPropertyFlags properties, vk::raii::Buffer& buffer, vk::raii::DeviceMemory& bufferMemory);
-    void copyBuffer(vk::raii::Buffer& src, vk::raii::Buffer& dst, vk::DeviceSize size);
-
     static uint32_t chooseSwapMinImageCount(const vk::SurfaceCapabilitiesKHR& capabilities);
     static uint32_t findQueueFamilies(vk::raii::PhysicalDevice physicalDevice);
     static void framebufferResizeCallback(GLFWwindow* window, int width, int height);
 
     static constexpr const unsigned char shader_bytes[] = { 
-        #embed "../shaders/tri.spv"
+        #embed "../shaders/circles.spv"
     };
     static constexpr const size_t shader_size = sizeof(renderer::shader_bytes);
     

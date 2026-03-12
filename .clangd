@@ -5,5 +5,4 @@ CompileFlags:
     - -fdeps-format=*
   Add:
     - -Wno-unknown-pragmas
-    - -std=c++2c
     - -Wno-c23-extensions

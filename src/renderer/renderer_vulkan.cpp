@@ -16,9 +16,13 @@ void renderer::init(const data& data, const std::string& exePath) {
     pdevice.init(instance);
     ldevice.init(pdevice, surface);
     swapchain.init(pdevice, ldevice, surface, window);
+    vulkan_init_descriptors();
     vulkan_graphics_pipeline(shaderPath);
     vulkan_command_pool();
-    vulkan_vertex_buffer(data);
+    for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) { 
+        frames[i].init(data, ldevice, pdevice); 
+        vulkan_write_descriptors(i);
+    }
     // TODO : reimplment below line eventually
     //command.init(ldevice, MAX_FRAMES_IN_FLIGHT);
     vulkan_command_buffer();
@@ -95,14 +99,11 @@ void renderer::vulkan_graphics_pipeline(const std::string& shaderPath) {
         fragShaderStageInfo
     };
 
-    auto bindingDescription    = vertex::getBindingDescription();
-    auto attributeDescriptions = vertex::getAttributeDescriptions();
-
     vk::PipelineVertexInputStateCreateInfo vertexInputInfo {
-        .vertexBindingDescriptionCount   = 1,
-        .pVertexBindingDescriptions      = &bindingDescription,
-        .vertexAttributeDescriptionCount = static_cast<uint32_t>(attributeDescriptions.size()),
-        .pVertexAttributeDescriptions    = attributeDescriptions.data()
+        .vertexBindingDescriptionCount   = 0,
+        .pVertexBindingDescriptions      = nullptr,
+        .vertexAttributeDescriptionCount = 0,
+        .pVertexAttributeDescriptions    = nullptr
     };
 
     vk::PipelineInputAssemblyStateCreateInfo inputAssembly {
@@ -141,8 +142,17 @@ void renderer::vulkan_graphics_pipeline(const std::string& shaderPath) {
     };
 
     vk::PipelineColorBlendAttachmentState colorBlendAttachment {
-        .blendEnable    = vk::False,
-        .colorWriteMask = vk::ColorComponentFlagBits::eR | vk::ColorComponentFlagBits::eG | vk::ColorComponentFlagBits::eB | vk::ColorComponentFlagBits::eA
+        .blendEnable    = vk::True,
+        .srcColorBlendFactor = vk::BlendFactor::eSrcAlpha,
+        .dstColorBlendFactor = vk::BlendFactor::eOneMinusSrcAlpha,
+        .colorBlendOp        = vk::BlendOp::eAdd,
+        .srcAlphaBlendFactor = vk::BlendFactor::eOne,
+        .dstAlphaBlendFactor = vk::BlendFactor::eZero,
+        .alphaBlendOp        = vk::BlendOp::eAdd,
+        .colorWriteMask      = vk::ColorComponentFlagBits::eR |
+                               vk::ColorComponentFlagBits::eG |
+                               vk::ColorComponentFlagBits::eB |
+                               vk::ColorComponentFlagBits::eA
     };
 
     vk::PipelineColorBlendStateCreateInfo colorBlending {
@@ -152,9 +162,17 @@ void renderer::vulkan_graphics_pipeline(const std::string& shaderPath) {
         .pAttachments    = &colorBlendAttachment
     };
 
+    vk::PushConstantRange pushRange {
+        .stageFlags = vk::ShaderStageFlagBits::eFragment,
+        .offset     = 0,
+        .size       = 20  // float4 color + float edgeSoftness = 20 bytes
+    };
+
     vk::PipelineLayoutCreateInfo pipelineLayoutInfo {
-        .setLayoutCount         = 0,
-        .pushConstantRangeCount = 0
+        .setLayoutCount         = 1,
+        .pSetLayouts            = &*descriptorSetLayout,
+        .pushConstantRangeCount = 1,
+        .pPushConstantRanges    = &pushRange
     };
 
     pipelineLayout = vk::raii::PipelineLayout(ldevice, pipelineLayoutInfo);
@@ -218,9 +236,79 @@ void renderer::vulkan_sync_objects() {
     }
 }
 
-void renderer::vulkan_record_command_buffer(uint32_t imageIndex) {
-    auto& commandBuffer = commandBuffers[frameIndex];
-    commandBuffer.begin({});
+void renderer::vulkan_init_descriptors() {
+    vk::DescriptorPoolSize poolSize {
+        .type            = vk::DescriptorType::eStorageBuffer,
+        .descriptorCount = 3 * MAX_FRAMES_IN_FLIGHT
+    };
+
+    descriptorPool = vk::raii::DescriptorPool(ldevice, vk::DescriptorPoolCreateInfo{
+        .maxSets       = MAX_FRAMES_IN_FLIGHT,
+        .poolSizeCount = 1,
+        .pPoolSizes    = &poolSize
+    });
+
+    std::array<vk::DescriptorSetLayoutBinding, 3> bindings {{
+        { 0, vk::DescriptorType::eStorageBuffer, 1, vk::ShaderStageFlagBits::eVertex },
+        { 1, vk::DescriptorType::eStorageBuffer, 1, vk::ShaderStageFlagBits::eVertex },
+        { 2, vk::DescriptorType::eStorageBuffer, 1, vk::ShaderStageFlagBits::eVertex },
+    }};
+
+    descriptorSetLayout = vk::raii::DescriptorSetLayout(ldevice, vk::DescriptorSetLayoutCreateInfo{
+        .bindingCount = bindings.size(),
+        .pBindings = bindings.data()
+    });
+
+    std::vector<vk::DescriptorSetLayout> layouts(MAX_FRAMES_IN_FLIGHT, *descriptorSetLayout);
+    vk::DescriptorSetAllocateInfo allocInfo {
+        .descriptorPool = *descriptorPool,
+        .descriptorSetCount = MAX_FRAMES_IN_FLIGHT,
+        .pSetLayouts = layouts.data()
+    };
+
+    descriptorSets = ldevice.Device().allocateDescriptorSets(allocInfo);
+}
+
+void renderer::vulkan_write_descriptors(size_t i) {
+    auto& s = frames[i];
+
+    auto xInfo = s.xInfo();
+    auto yInfo = s.yInfo();
+    auto rInfo = s.rInfo();
+
+    std::array<vk::WriteDescriptorSet, 3> writes = {{
+        {
+            .dstSet = *descriptorSets[i],
+            .dstBinding = 0,
+            .dstArrayElement = 0,
+            .descriptorCount = 1,
+            .descriptorType = vk::DescriptorType::eStorageBuffer,
+            .pBufferInfo = &xInfo,
+        },
+        {
+            .dstSet = *descriptorSets[i],
+            .dstBinding = 1,
+            .dstArrayElement = 0,
+            .descriptorCount = 1,
+            .descriptorType = vk::DescriptorType::eStorageBuffer,
+            .pBufferInfo = &yInfo,
+        },
+        {
+            .dstSet = *descriptorSets[i],
+            .dstBinding = 2,
+            .dstArrayElement = 0,
+            .descriptorCount = 1,
+            .descriptorType = vk::DescriptorType::eStorageBuffer,
+            .pBufferInfo = &rInfo,
+        },
+    }};
+
+    ldevice.Device().updateDescriptorSets(writes, {});
+}
+
+void renderer::vulkan_record_command_buffer(uint32_t imageIndex, size_t n) {
+    auto& cmd = commandBuffers[frameIndex];
+    cmd.begin({});
 
     transition_image_layout(
         imageIndex,
@@ -251,13 +339,20 @@ void renderer::vulkan_record_command_buffer(uint32_t imageIndex) {
         .pColorAttachments    = &attachmentInfo
     };
 
-    commandBuffer.beginRendering(renderingInfo);
-    commandBuffer.bindPipeline(vk::PipelineBindPoint::eGraphics, pipeline);
-    commandBuffer.bindVertexBuffers(0, *vertexBuffer, {0});
-    commandBuffer.setViewport(0, vk::Viewport(0.0f, 0.0f, static_cast<float>(swapchain.Extent().width), static_cast<float>(swapchain.Extent().height), 0.0f, 1.0f));
-    commandBuffer.setScissor(0, vk::Rect2D(vk::Offset2D(0, 0), swapchain.Extent()));
-    commandBuffer.draw(3, 1, 0, 0);
-    commandBuffer.endRendering();
+    cmd.beginRendering(renderingInfo);
+    cmd.bindPipeline(vk::PipelineBindPoint::eGraphics, pipeline);
+    cmd.setViewport(0, vk::Viewport(0.0f, 0.0f, static_cast<float>(swapchain.Extent().width), static_cast<float>(swapchain.Extent().height), 0.0f, 1.0f));
+    cmd.setScissor(0, vk::Rect2D(vk::Offset2D(0, 0), swapchain.Extent()));
+    
+    cmd.bindDescriptorSets(
+        vk::PipelineBindPoint::eGraphics,
+        *pipelineLayout,
+        0,
+        { *descriptorSets[frameIndex] },
+        {}
+    );
+    cmd.draw(6, n, 0, 0);
+    cmd.endRendering();
 
     transition_image_layout(
         imageIndex,
@@ -269,7 +364,7 @@ void renderer::vulkan_record_command_buffer(uint32_t imageIndex) {
         vk::PipelineStageFlagBits2::eBottomOfPipe
     );
 
-    commandBuffer.end();
+    cmd.end();
 }
 
 void renderer::transition_image_layout(
@@ -310,41 +405,8 @@ void renderer::transition_image_layout(
     commandBuffer.pipelineBarrier2(dependencyInfo);
 }
 
-void renderer::vulkan_vertex_buffer(const data& data) {
-    vk::DeviceSize size = sizeof(vertices[0]) * vertices.size();
-
-    vk::raii::Buffer stagingBuffer = nullptr;
-    vk::raii::DeviceMemory stagingMem = nullptr;
-    createBuffer(
-        size,
-        vk::BufferUsageFlagBits::eTransferSrc,
-        vk::MemoryPropertyFlagBits::eHostVisible | vk::MemoryPropertyFlagBits::eHostCoherent,
-        stagingBuffer,
-        stagingMem        
-    );
-
-    void* dataStaging = stagingMem.mapMemory(0, size);
-    memcpy(dataStaging, vertices.data(), size);
-    stagingMem.unmapMemory();
-
-    createBuffer(
-        size,
-        vk::BufferUsageFlagBits::eVertexBuffer | vk::BufferUsageFlagBits::eTransferDst,
-        vk::MemoryPropertyFlagBits::eDeviceLocal,
-        vertexBuffer,
-        vertexBufferMemory
-    );
-
-    copyBuffer(stagingBuffer, vertexBuffer, size);
-}
-
-void renderer::vulkan_update_vertex_buffer(const data& data) {
-}
-
 std::chrono::nanoseconds renderer::render(const data& data) {
     auto s = std::chrono::high_resolution_clock::now();
-
-    vulkan_update_vertex_buffer(data);
 
     auto fenceResult = ldevice.Device().waitForFences(*inFlightFences[frameIndex], vk::True, UINT64_MAX);
     if (fenceResult != vk::Result::eSuccess) {
@@ -361,8 +423,10 @@ std::chrono::nanoseconds renderer::render(const data& data) {
 
     ldevice.Device().resetFences(*inFlightFences[frameIndex]);
 
+    frames[frameIndex].update(data);
+
     commandBuffers[frameIndex].reset();
-    vulkan_record_command_buffer(imageIndex);
+    vulkan_record_command_buffer(imageIndex, data.bodies());
 
     vk::PipelineStageFlags waitDestinationStageMask(vk::PipelineStageFlagBits::eColorAttachmentOutput);
     const vk::SubmitInfo submitInfo {

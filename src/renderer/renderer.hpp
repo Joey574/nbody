@@ -108,8 +108,10 @@ struct renderer {
     static uint32_t findQueueFamilies(vk::raii::PhysicalDevice physicalDevice);
     static void framebufferResizeCallback(GLFWwindow* window, int width, int height);
 
-    static const unsigned char shader_bytes[];
-    static const size_t shader_size;
+    static constexpr const unsigned char shader_bytes[] = { 
+        #embed "../shaders/tri.spv" 
+    };
+    static constexpr const size_t shader_size = sizeof(renderer::shader_bytes);
     
     static const size_t width_ = 800;
     static const size_t height_ = 800;

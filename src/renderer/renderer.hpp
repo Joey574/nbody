@@ -103,8 +103,10 @@ struct renderer {
     std::vector<const char*> getRequiredInstanceExtensions();
     vk::raii::ShaderModule createShaderModule(const std::vector<char>& code);
     uint32_t find_memory_type(uint32_t typeFilter, vk::MemoryPropertyFlags properties);
+    
+    void createBuffer(vk::DeviceSize size, vk::BufferUsageFlags usage, vk::MemoryPropertyFlags properties, vk::raii::Buffer& buffer, vk::raii::DeviceMemory& bufferMemory);
+    void copyBuffer(vk::raii::Buffer& src, vk::raii::Buffer& dst, vk::DeviceSize size);
 
-    static std::vector<char> readFile(const std::string& path);
     static uint32_t chooseSwapMinImageCount(const vk::SurfaceCapabilitiesKHR& capabilities);
     static uint32_t findQueueFamilies(vk::raii::PhysicalDevice physicalDevice);
     static void framebufferResizeCallback(GLFWwindow* window, int width, int height);

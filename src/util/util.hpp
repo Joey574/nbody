@@ -9,7 +9,25 @@ namespace util {
     }
 
     inline float frsqrt(float x) {
-    return _mm_cvtss_f32(_mm_rsqrt_ss(_mm_set_ss(x)));
+        return _mm_cvtss_f32(_mm_rsqrt_ss(_mm_set_ss(x)));
+    }
+
+    inline size_t parse_string(const std::string& s) {
+        if (s.empty()) { return 0; }
+
+        size_t pos = 0;
+        size_t base = std::stoul(s, &pos);
+
+        if (pos < s.length()) {
+            char modifier = std::toupper(s[pos]);
+            switch (modifier) {
+                case 'K': base *= 1000;       break;
+                case 'M': base *= 1000000;    break;
+                case 'B': base *= 1000000000; break;
+            }
+        }
+
+        return base;
     }
 
     std::string executable_path(char* argv[]);

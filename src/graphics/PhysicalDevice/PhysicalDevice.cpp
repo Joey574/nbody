@@ -1,7 +1,7 @@
-#include "physicaldevice.hpp"
+#include "PhysicalDevice.hpp"
 #include <map>
 
-void physicaldevice::init(const vk::raii::Instance& instance) {
+void PhysicalDevice::init(const vk::raii::Instance& instance) {
     auto devices = instance.enumeratePhysicalDevices();
     if (devices.empty()) {
         throw std::runtime_error("no devices");

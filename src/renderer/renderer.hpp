@@ -5,9 +5,9 @@
 
 #include "../definitions/graphics.hpp" // IWYU pragma: keep
 
-#include "../graphics/logicaldevice/logicaldevice.hpp"
-#include "../graphics/physicaldevice/physicaldevice.hpp"
-#include "../graphics/swapchain/swapchain.hpp"
+#include "../graphics/LogicalDevice/LogicalDevice.hpp"
+#include "../graphics/PhysicalDevice/PhysicalDevice.hpp"
+#include "../graphics/Swapchain/Swapchain.hpp"
 
 #include "../data/data.hpp"
 
@@ -48,9 +48,9 @@ struct renderer {
     vk::raii::Instance               instance       = nullptr;
     vk::raii::SurfaceKHR             surface        = nullptr;
 
-    logicaldevice  ldevice;
-    physicaldevice pdevice;
-    swapchain      swapchain;
+    LogicalDevice  ldevice;
+    PhysicalDevice pdevice;
+    Swapchain      swapchain;
 
     vk::raii::PipelineLayout pipelineLayout   = nullptr;
     vk::raii::Pipeline       pipeline         = nullptr;

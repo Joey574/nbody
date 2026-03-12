@@ -1,6 +1,6 @@
-#include "logicaldevice.hpp"
+#include "LogicalDevice.hpp"
 
-void logicaldevice::init(const physicaldevice& pdevice, const vk::raii::SurfaceKHR& surface) {
+void LogicalDevice::init(const PhysicalDevice& pdevice, const vk::raii::SurfaceKHR& surface) {
     const auto& pd = pdevice.get();
     
     auto queueFamilyProperties = pd.getQueueFamilyProperties();

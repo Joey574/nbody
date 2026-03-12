@@ -1,6 +1,6 @@
-#include "swapchain.hpp"
+#include "Swapchain.hpp"
 
-void swapchain::init(const physicaldevice& pdevice, const logicaldevice& ldevice, const vk::raii::SurfaceKHR& surface, GLFWwindow* window) {
+void Swapchain::init(const PhysicalDevice& pdevice, const LogicalDevice& ldevice, const vk::raii::SurfaceKHR& surface, GLFWwindow* window) {
     const auto& pd = pdevice.get();
     const auto& ld = ldevice.getDevice();
 
@@ -32,7 +32,7 @@ void swapchain::init(const physicaldevice& pdevice, const logicaldevice& ldevice
     image_views(ld);
 }
 
-void swapchain::recreate(const physicaldevice& pdevice, const logicaldevice& ldevice, const vk::raii::SurfaceKHR& surface, GLFWwindow* window) {
+void Swapchain::recreate(const PhysicalDevice& pdevice, const LogicalDevice& ldevice, const vk::raii::SurfaceKHR& surface, GLFWwindow* window) {
     const auto& ld = ldevice.getDevice();
 
     int w, h = 0;
@@ -46,7 +46,7 @@ void swapchain::recreate(const physicaldevice& pdevice, const logicaldevice& lde
     init(pdevice, ldevice, surface, window);
 }
 
-void swapchain::image_views(const vk::raii::Device& ldevice) {
+void Swapchain::image_views(const vk::raii::Device& ldevice) {
     swapChainImageViews.clear();
     vk::ImageViewCreateInfo imageViewCreateInfo {
         .viewType = vk::ImageViewType::e2D,
@@ -60,7 +60,7 @@ void swapchain::image_views(const vk::raii::Device& ldevice) {
     }
 }
 
-uint32_t swapchain::chooseSwapMinImageCount(const vk::SurfaceCapabilitiesKHR& capabilities) {
+uint32_t Swapchain::chooseSwapMinImageCount(const vk::SurfaceCapabilitiesKHR& capabilities) {
     auto minImageCount = std::max(3u, capabilities.minImageCount);
     if (0 < capabilities.maxImageCount && capabilities.maxImageCount < minImageCount) {
         minImageCount = capabilities.maxImageCount;
@@ -69,7 +69,7 @@ uint32_t swapchain::chooseSwapMinImageCount(const vk::SurfaceCapabilitiesKHR& ca
     return minImageCount;
 }
 
-vk::PresentModeKHR swapchain::chooseSwapPresentMode(const std::vector<vk::PresentModeKHR>& modes) {
+vk::PresentModeKHR Swapchain::chooseSwapPresentMode(const std::vector<vk::PresentModeKHR>& modes) {
     bool hasImmediate = false;
     bool hasMailbox = false;
 
@@ -83,7 +83,7 @@ vk::PresentModeKHR swapchain::chooseSwapPresentMode(const std::vector<vk::Presen
            vk::PresentModeKHR::eFifo;
 }
 
-vk::SurfaceFormatKHR swapchain::chooseSwapSurfaceFormat(const std::vector<vk::SurfaceFormatKHR>& formats) {
+vk::SurfaceFormatKHR Swapchain::chooseSwapSurfaceFormat(const std::vector<vk::SurfaceFormatKHR>& formats) {
     for (const auto& f : formats) {
         if (f.format == vk::Format::eB8G8R8A8Srgb && f.colorSpace == vk::ColorSpaceKHR::eSrgbNonlinear) {
             return f;
@@ -93,7 +93,7 @@ vk::SurfaceFormatKHR swapchain::chooseSwapSurfaceFormat(const std::vector<vk::Su
     return formats[0];
 }
 
-vk::Extent2D swapchain::chooseSwapExtent(const vk::SurfaceCapabilitiesKHR& capabilities, GLFWwindow* window) {
+vk::Extent2D Swapchain::chooseSwapExtent(const vk::SurfaceCapabilitiesKHR& capabilities, GLFWwindow* window) {
     if (capabilities.currentExtent.width != std::numeric_limits<uint32_t>::max()) {
         return capabilities.currentExtent;
     }

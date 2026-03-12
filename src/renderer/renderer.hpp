@@ -8,6 +8,7 @@
 #include "../graphics/LogicalDevice/LogicalDevice.hpp"
 #include "../graphics/PhysicalDevice/PhysicalDevice.hpp"
 #include "../graphics/Swapchain/Swapchain.hpp"
+#include "../graphics/CommandBuffer/CommandBuffer.hpp"
 
 #include "../data/data.hpp"
 
@@ -40,8 +41,6 @@ struct renderer {
 
     private:
 
-
-
     static constexpr int MAX_FRAMES_IN_FLIGHT       = 2;
     GLFWwindow*                      window         = nullptr;
     vk::raii::Context                context;
@@ -51,6 +50,8 @@ struct renderer {
     LogicalDevice  ldevice;
     PhysicalDevice pdevice;
     Swapchain      swapchain;
+
+    CommandBuffer command;
 
     vk::raii::PipelineLayout pipelineLayout   = nullptr;
     vk::raii::Pipeline       pipeline         = nullptr;
@@ -109,7 +110,7 @@ struct renderer {
     static void framebufferResizeCallback(GLFWwindow* window, int width, int height);
 
     static constexpr const unsigned char shader_bytes[] = { 
-        #embed "../shaders/tri.spv" 
+        #embed "../shaders/tri.spv"
     };
     static constexpr const size_t shader_size = sizeof(renderer::shader_bytes);
     

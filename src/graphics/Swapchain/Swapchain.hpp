@@ -12,20 +12,19 @@ struct Swapchain {
     inline operator vk::raii::SwapchainKHR&() { return swapChain; }
     inline operator const vk::raii::SwapchainKHR&() const { return swapChain; }
     
-    inline auto& getSwapChain() { return swapChain; }
-    inline auto& getImages() { return swapChainImages; }
-    inline auto& getSurfaceFormat() { return swapChainSurfaceFormat; }
-    inline auto& getExtent() { return swapChainExtent; }
-    inline auto& getImageViews() { return swapChainImageViews; }
+    inline auto& SwapChain() { return swapChain; }
+    inline auto& Images() { return swapChainImages; }
+    inline auto& SurfaceFormat() { return swapChainSurfaceFormat; }
+    inline auto& Extent() { return swapChainExtent; }
+    inline auto& ImageViews() { return swapChainImageViews; }
 
-    inline const auto& getSwapChain() const { return swapChain; }
-    inline const auto& getImages() const { return swapChainImages; }
-    inline const auto& getSurfaceFormat() const { return swapChainSurfaceFormat; }
-    inline const auto& getExtent() const { return swapChainExtent; }
-    inline const auto& getImageViews() const { return swapChainImageViews; }
+    inline const auto& SwapChain() const { return swapChain; }
+    inline const auto& Images() const { return swapChainImages; }
+    inline const auto& SurfaceFormat() const { return swapChainSurfaceFormat; }
+    inline const auto& Extent() const { return swapChainExtent; }
+    inline const auto& ImageViews() const { return swapChainImageViews; }
 
     private:
-
     vk::raii::SwapchainKHR           swapChain = nullptr;
     std::vector<vk::Image>           swapChainImages;
     vk::SurfaceFormatKHR             swapChainSurfaceFormat;

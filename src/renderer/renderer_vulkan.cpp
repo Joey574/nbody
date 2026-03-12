@@ -19,6 +19,8 @@ void renderer::init(const data& data, const std::string& exePath) {
     vulkan_graphics_pipeline(shaderPath);
     vulkan_command_pool();
     vulkan_vertex_buffer(data);
+    // TODO : reimplment below line eventually
+    //command.init(ldevice, MAX_FRAMES_IN_FLIGHT);
     vulkan_command_buffer();
     vulkan_sync_objects();
 }
@@ -159,7 +161,7 @@ void renderer::vulkan_graphics_pipeline(const std::string& shaderPath) {
 
     vk::PipelineRenderingCreateInfo pipelineRenderingCreateInfo {
         .colorAttachmentCount    = 1,
-        .pColorAttachmentFormats = &swapchain.getSurfaceFormat().format
+        .pColorAttachmentFormats = &swapchain.SurfaceFormat().format
     };
 
     vk::GraphicsPipelineCreateInfo pipelineInfo {
@@ -183,7 +185,7 @@ void renderer::vulkan_graphics_pipeline(const std::string& shaderPath) {
 void renderer::vulkan_command_pool() {
     vk::CommandPoolCreateInfo poolInfo {
         .flags = vk::CommandPoolCreateFlagBits::eResetCommandBuffer,
-        .queueFamilyIndex = ldevice.getQueueIdx()
+        .queueFamilyIndex = ldevice.QueueIdx()
     };
 
     commandPool = vk::raii::CommandPool(ldevice, poolInfo);
@@ -204,7 +206,7 @@ void renderer::vulkan_command_buffer() {
 void renderer::vulkan_sync_objects() {
     assert(presentCompleteSemaphores.empty() && renderFinishedSemaphores.empty() && inFlightFences.empty());
 
-    for (size_t i = 0; i < swapchain.getImages().size(); i++) {
+    for (size_t i = 0; i < swapchain.Images().size(); i++) {
         renderFinishedSemaphores.emplace_back(ldevice, vk::SemaphoreCreateInfo());
     }
 
@@ -232,7 +234,7 @@ void renderer::vulkan_record_command_buffer(uint32_t imageIndex) {
 
     vk::ClearValue clearColor = vk::ClearColorValue(0.0f, 0.0f, 0.0f, 1.0f);
     vk::RenderingAttachmentInfo attachmentInfo = {
-        .imageView = swapchain.getImageViews()[imageIndex],
+        .imageView = swapchain.ImageViews()[imageIndex],
         .imageLayout = vk::ImageLayout::eColorAttachmentOptimal,
         .loadOp = vk::AttachmentLoadOp::eClear,
         .storeOp = vk::AttachmentStoreOp::eStore,
@@ -242,7 +244,7 @@ void renderer::vulkan_record_command_buffer(uint32_t imageIndex) {
     vk::RenderingInfo renderingInfo = {
         .renderArea = { 
             .offset = { 0, 0}, 
-            .extent = swapchain.getExtent() 
+            .extent = swapchain.Extent() 
         },
         .layerCount           = 1,
         .colorAttachmentCount = 1,
@@ -252,8 +254,8 @@ void renderer::vulkan_record_command_buffer(uint32_t imageIndex) {
     commandBuffer.beginRendering(renderingInfo);
     commandBuffer.bindPipeline(vk::PipelineBindPoint::eGraphics, pipeline);
     commandBuffer.bindVertexBuffers(0, *vertexBuffer, {0});
-    commandBuffer.setViewport(0, vk::Viewport(0.0f, 0.0f, static_cast<float>(swapchain.getExtent().width), static_cast<float>(swapchain.getExtent().height), 0.0f, 1.0f));
-    commandBuffer.setScissor(0, vk::Rect2D(vk::Offset2D(0, 0), swapchain.getExtent()));
+    commandBuffer.setViewport(0, vk::Viewport(0.0f, 0.0f, static_cast<float>(swapchain.Extent().width), static_cast<float>(swapchain.Extent().height), 0.0f, 1.0f));
+    commandBuffer.setScissor(0, vk::Rect2D(vk::Offset2D(0, 0), swapchain.Extent()));
     commandBuffer.draw(3, 1, 0, 0);
     commandBuffer.endRendering();
 
@@ -289,7 +291,7 @@ void renderer::transition_image_layout(
         .newLayout = newLayout,
         .srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
         .dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
-        .image = swapchain.getImages()[imageIndex],
+        .image = swapchain.Images()[imageIndex],
         .subresourceRange = {
             .aspectMask = vk::ImageAspectFlagBits::eColor,
             .baseMipLevel = 0,
@@ -340,12 +342,12 @@ std::chrono::nanoseconds renderer::render(const data& data) {
 
     vulkan_update_vertex_buffer(data);
 
-    auto fenceResult = ldevice.getDevice().waitForFences(*inFlightFences[frameIndex], vk::True, UINT64_MAX);
+    auto fenceResult = ldevice.Device().waitForFences(*inFlightFences[frameIndex], vk::True, UINT64_MAX);
     if (fenceResult != vk::Result::eSuccess) {
         throw std::runtime_error("failed to wait for fence");
     }
 
-    auto [result, imageIndex] = swapchain.getSwapChain().acquireNextImage(UINT64_MAX, *presentCompleteSemaphores[frameIndex], nullptr);
+    auto [result, imageIndex] = swapchain.SwapChain().acquireNextImage(UINT64_MAX, *presentCompleteSemaphores[frameIndex], nullptr);
     if (result == vk::Result::eErrorOutOfDateKHR) {
         swapchain.recreate(pdevice, ldevice, surface, window);
         return std::chrono::high_resolution_clock::now() - s;
@@ -353,7 +355,7 @@ std::chrono::nanoseconds renderer::render(const data& data) {
         throw std::runtime_error("failed to acquire swap chain image");
     }
 
-    ldevice.getDevice().resetFences(*inFlightFences[frameIndex]);
+    ldevice.Device().resetFences(*inFlightFences[frameIndex]);
 
     commandBuffers[frameIndex].reset();
     vulkan_record_command_buffer(imageIndex);
@@ -369,17 +371,17 @@ std::chrono::nanoseconds renderer::render(const data& data) {
         .pSignalSemaphores = &*renderFinishedSemaphores[frameIndex]
     };
 
-    ldevice.getQueue().submit(submitInfo, *inFlightFences[frameIndex]);
+    ldevice.Queue().submit(submitInfo, *inFlightFences[frameIndex]);
 
     const vk::PresentInfoKHR presentInfoKHR {
         .waitSemaphoreCount = 1,
         .pWaitSemaphores = &*renderFinishedSemaphores[frameIndex],
         .swapchainCount = 1,
-        .pSwapchains = &*swapchain.getSwapChain(),
+        .pSwapchains = &*swapchain.SwapChain(),
         .pImageIndices = &imageIndex
     };
 
-    result = ldevice.getQueue().presentKHR(presentInfoKHR);
+    result = ldevice.Queue().presentKHR(presentInfoKHR);
     if (result == vk::Result::eSuboptimalKHR || result == vk::Result::eErrorOutOfDateKHR || framebufferResized) {
         framebufferResized = false;
         swapchain.recreate(pdevice, ldevice, surface, window);
@@ -390,7 +392,7 @@ std::chrono::nanoseconds renderer::render(const data& data) {
 }
 
 void renderer::cleanup() {
-    ldevice.getDevice().waitIdle();
+    ldevice.Device().waitIdle();
 
     if (window) { glfwDestroyWindow(window); }
     glfwTerminate();

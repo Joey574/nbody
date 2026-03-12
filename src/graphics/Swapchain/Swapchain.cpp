@@ -1,10 +1,9 @@
 #include "Swapchain.hpp"
 
 void Swapchain::init(const PhysicalDevice& pdevice, const LogicalDevice& ldevice, const vk::raii::SurfaceKHR& surface, GLFWwindow* window) {
-    const auto& pd = pdevice.get();
-    const auto& ld = ldevice.getDevice();
+    const auto& pd = pdevice.Device();
+    const auto& ld = ldevice.Device();
 
-    swapChainImageViews.clear();
     swapChain = nullptr;
     
     auto sfCapabilities = pd.getSurfaceCapabilitiesKHR(surface);
@@ -33,7 +32,7 @@ void Swapchain::init(const PhysicalDevice& pdevice, const LogicalDevice& ldevice
 }
 
 void Swapchain::recreate(const PhysicalDevice& pdevice, const LogicalDevice& ldevice, const vk::raii::SurfaceKHR& surface, GLFWwindow* window) {
-    const auto& ld = ldevice.getDevice();
+    const auto& ld = ldevice.Device();
 
     int w, h = 0;
     glfwGetFramebufferSize(window, &w, &h);

@@ -1,7 +1,7 @@
 #include "LogicalDevice.hpp"
 
 void LogicalDevice::init(const PhysicalDevice& pdevice, const vk::raii::SurfaceKHR& surface) {
-    const auto& pd = pdevice.get();
+    const auto& pd = pdevice.Device();
     
     auto queueFamilyProperties = pd.getQueueFamilyProperties();
     for (uint32_t qfpIndex = 0; qfpIndex < queueFamilyProperties.size(); qfpIndex++) {

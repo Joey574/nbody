@@ -13,7 +13,7 @@ vk::raii::ShaderModule renderer::createShaderModule(const std::vector<char>& cod
         .pCode = reinterpret_cast<const uint32_t*>(code.data())
     };
 
-    vk::raii::ShaderModule shaderModule{ldevice.getDevice(), createInfo};
+    vk::raii::ShaderModule shaderModule{ldevice, createInfo};
     return shaderModule;
 }
 
@@ -44,7 +44,7 @@ void renderer::framebufferResizeCallback(GLFWwindow* window, int width, int heig
 }
 
 uint32_t renderer::find_memory_type(uint32_t typeFilter, vk::MemoryPropertyFlags properties) {
-    auto memProperties = pdevice.get().getMemoryProperties();
+    auto memProperties = pdevice.Device().getMemoryProperties();
     
     for (uint32_t i = 0; i < memProperties.memoryTypeCount; i++) {
         if ((typeFilter & (1 << i)) && (memProperties.memoryTypes[i].propertyFlags & properties) == properties) {

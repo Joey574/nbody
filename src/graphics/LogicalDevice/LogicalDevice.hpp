@@ -6,12 +6,12 @@ struct LogicalDevice {
     public:
     void init(const PhysicalDevice& pdevice, const vk::raii::SurfaceKHR& surface);
 
-    inline vk::raii::Device& getDevice() noexcept { return device; }
-    inline vk::raii::Queue& getQueue() noexcept { return queue; }
-    inline uint32_t getQueueIdx() const noexcept { return queueIdx; }
+    inline auto& Device() noexcept { return device; }
+    inline auto& Queue() noexcept { return queue; }
 
-    inline const vk::raii::Device& getDevice() const noexcept { return device; }
-    inline const vk::raii::Queue& getQueue() const noexcept { return queue; }
+    inline const auto& Device() const noexcept { return device; }
+    inline const auto& Queue() const noexcept { return queue; }
+    inline uint32_t QueueIdx() const noexcept { return queueIdx; }
 
     inline operator vk::raii::Device&() { return device; }
     inline operator const vk::raii::Device&() const { return device; }

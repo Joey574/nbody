@@ -1,6 +1,6 @@
-#include "SoABuffers.hpp"
+#include "FrameData.hpp"
 
-void SoABuffers::init(const data& d, const LogicalDevice& ld, const PhysicalDevice& pd) {
+void FrameData::init(const data& d, const LogicalDevice& ld, const PhysicalDevice& pd) {
     count = d.bodies();
     vk::DeviceSize size = d.bodies() * sizeof(float);
 
@@ -16,26 +16,26 @@ void SoABuffers::init(const data& d, const LogicalDevice& ld, const PhysicalDevi
     r = static_cast<float*>(rMem.mapMemory(0, size));
 }
 
-void SoABuffers::update(const data& d) {
+void FrameData::update(const data& d) {
     const size_t bytes = d.bodies() * sizeof(float);
     memcpy(x, d.posx(), bytes);
     memcpy(y, d.posy(), bytes);
     memcpy(r, d.mass(), bytes);
 }
 
-vk::DescriptorBufferInfo SoABuffers::xInfo() const {
+vk::DescriptorBufferInfo FrameData::xInfo() const {
     return { *xBuf, 0, count * sizeof(float)};
 }
 
-vk::DescriptorBufferInfo SoABuffers::yInfo() const {
+vk::DescriptorBufferInfo FrameData::yInfo() const {
     return { *yBuf, 0, count * sizeof(float)};
 }
 
-vk::DescriptorBufferInfo SoABuffers::rInfo() const {
+vk::DescriptorBufferInfo FrameData::rInfo() const {
     return { *rBuf, 0, count * sizeof(float)};
 }
 
-uint32_t SoABuffers::findMemType(const PhysicalDevice& pd, uint32_t f, vk::MemoryPropertyFlags p) {
+uint32_t FrameData::findMemType(const PhysicalDevice& pd, uint32_t f, vk::MemoryPropertyFlags p) {
     auto memP = pd.Device().getMemoryProperties();
     
     for (uint32_t i = 0; i < memP.memoryTypeCount; i++) {
@@ -47,7 +47,7 @@ uint32_t SoABuffers::findMemType(const PhysicalDevice& pd, uint32_t f, vk::Memor
     throw std::runtime_error("failed to find a suitable memory type");
 }
 
-void SoABuffers::createBuffer(const LogicalDevice& ld, const PhysicalDevice& pd, vk::DeviceSize size, vk::BufferUsageFlags usage, vk::MemoryPropertyFlags properties, vk::raii::Buffer& buffer, vk::raii::DeviceMemory& bufferMemory) {
+void FrameData::createBuffer(const LogicalDevice& ld, const PhysicalDevice& pd, vk::DeviceSize size, vk::BufferUsageFlags usage, vk::MemoryPropertyFlags properties, vk::raii::Buffer& buffer, vk::raii::DeviceMemory& bufferMemory) {
     vk::BufferCreateInfo bufferInfo {
         .size = size,
         .usage = usage,

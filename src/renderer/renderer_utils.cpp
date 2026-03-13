@@ -7,10 +7,10 @@ Comments:
 #include "renderer.hpp"
 #include <vector>
 
-vk::raii::ShaderModule renderer::createShaderModule(const std::vector<char>& code) {
+vk::raii::ShaderModule renderer::createShaderModule(const char* code, const size_t size) {
     vk::ShaderModuleCreateInfo createInfo {
-        .codeSize = code.size() * sizeof(char),
-        .pCode = reinterpret_cast<const uint32_t*>(code.data())
+        .codeSize = size * sizeof(char),
+        .pCode = reinterpret_cast<const uint32_t*>(code)
     };
 
     vk::raii::ShaderModule shaderModule{ldevice, createInfo};

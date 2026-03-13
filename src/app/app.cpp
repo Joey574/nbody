@@ -29,10 +29,12 @@ int app::main_loop(const cliargs& f) {
 
     while (!ren.should_close()) {
         count++;
+        float dt = glfwGetTime() - lastFrameTime;
+
         auto sim_time = std::invoke(sim.update, sim, f.fixedtime).count() * 0.000001;
         sim_sum += sim_time;
 
-        auto ren_time = ren.render(sim.get_data()).count() * 0.000001;
+        auto ren_time = ren.render(sim.get_data(), dt).count() * 0.000001;
         ren_sum += ren_time;
         tot_sum += sim_time + ren_time;
 
@@ -60,6 +62,8 @@ int app::main_loop(const cliargs& f) {
 
             last_print = std::chrono::high_resolution_clock::now();
         }
+
+        lastFrameTime = glfwGetTime();
     }
 
     return 0;

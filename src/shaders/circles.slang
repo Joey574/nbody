@@ -3,11 +3,10 @@ struct UBO {
     float4x4 proj;
 };
 
-ParameterBlock<UBO> ubo;
-
 [[vk::binding(0, 0)]] StructuredBuffer<float> x;
 [[vk::binding(1, 0)]] StructuredBuffer<float> y;
 [[vk::binding(2, 0)]] StructuredBuffer<float> r;
+[[vk::binding(3, 0)]] ConstantBuffer<UBO> ubo;
 
 struct VSOut {
     float4 position : SV_Position;
@@ -23,6 +22,13 @@ static const float2 QUAD_OFFSETS[6] = {
     float2(1, -1),
     float2(1, 1),
 };
+
+struct PushConstants {
+    float4 color;
+    float softness;
+}
+
+[[vk::push_constant]] PushConstants pc;
 
 [shader("vertex")]
 VSOut vertMain(uint vID: SV_VertexID, uint iID: SV_InstanceID) {
@@ -42,13 +48,6 @@ VSOut vertMain(uint vID: SV_VertexID, uint iID: SV_InstanceID) {
     return out;
 }
 
-struct PushConstants {
-    float4 color;
-    float softness;
-}
-
-[[vk::push_constant]] PushConstants pc;
-
 [shader("fragment")]
 float4 fragMain(VSOut in) : SV_TARGET {
     float dist = length(in.offset);
@@ -58,5 +57,6 @@ float4 fragMain(VSOut in) : SV_TARGET {
     }
 
     float alpha = 1.0 - smoothstep(1.0 - pc.softness, 1.0, dist);
-    return float4(pc.color.rgb, pc.color.a * alpha);
+    //return float4(pc.color.rgb, pc.color.a * alpha);
+    return float4(1.0f, 1.0f, 1.0f, 1.0f);
 }

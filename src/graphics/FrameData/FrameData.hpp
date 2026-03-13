@@ -5,7 +5,7 @@
 #include "../PhysicalDevice/PhysicalDevice.hpp"
 #include "../LogicalDevice/LogicalDevice.hpp"
 
-struct SoABuffers {
+struct FrameData {
     private:
     size_t count;
     vk::raii::Buffer       xBuf = nullptr, yBuf = nullptr, rBuf = nullptr;

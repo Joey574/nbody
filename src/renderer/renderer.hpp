@@ -9,30 +9,15 @@
 #include "../graphics/PhysicalDevice/PhysicalDevice.hpp"
 #include "../graphics/Swapchain/Swapchain.hpp"
 #include "../graphics/CommandBuffer/CommandBuffer.hpp"
-#include "../graphics/SoABuffers/SoABuffers.hpp"
+#include "../graphics/FrameData/FrameData.hpp"
+#include "../graphics/UBOBuffer/UBOBuffer.hpp"
 
+#include "../camera/camera.hpp"
 #include "../data/data.hpp"
-
-struct vertex {
-    glm::vec2 pos;
-    glm::vec3 color;
-
-    static vk::VertexInputBindingDescription getBindingDescription() {
-        return {0, sizeof(vertex), vk::VertexInputRate::eVertex};
-    }
-
-    static std::array<vk::VertexInputAttributeDescription, 2> getAttributeDescriptions() {
-        return {
-            vk::VertexInputAttributeDescription(0, 0, vk::Format::eR32G32Sfloat, offsetof(vertex, pos)),
-            vk::VertexInputAttributeDescription(1, 0, vk::Format::eR32G32B32Sfloat, offsetof(vertex, color))
-        };
-    }
-};
 
 struct renderer {
     public:
-
-    std::chrono::nanoseconds render(const data& data);
+    std::chrono::nanoseconds render(const data& data, float dt);
     void cleanup();
 
     void init(const data& data, const std::string& exePath);
@@ -40,18 +25,20 @@ struct renderer {
     void poll_events() { glfwPollEvents(); }
 
     private:
-
     static constexpr int MAX_FRAMES_IN_FLIGHT       = 2;
     GLFWwindow*                      window         = nullptr;
     vk::raii::Context                context;
     vk::raii::Instance               instance       = nullptr;
     vk::raii::SurfaceKHR             surface        = nullptr;
 
+    camera         cam;
     LogicalDevice  ldevice;
     PhysicalDevice pdevice;
     Swapchain      swapchain;
 
     CommandBuffer command;
+    FrameData frames[MAX_FRAMES_IN_FLIGHT];
+    UBOBuffer uboBuffers[MAX_FRAMES_IN_FLIGHT];
 
     vk::raii::PipelineLayout pipelineLayout   = nullptr;
     vk::raii::Pipeline       pipeline         = nullptr;
@@ -67,16 +54,16 @@ struct renderer {
     std::vector<const char*> deviceExtensions = { vk::KHRSwapchainExtensionName };
     vk::PresentModeKHR presentMode = vk::PresentModeKHR::eFifo;
 
-    SoABuffers frames[MAX_FRAMES_IN_FLIGHT];
     
     vk::raii::DescriptorPool descriptorPool = nullptr;
     vk::raii::DescriptorSetLayout descriptorSetLayout = nullptr;
-    std::vector<vk::raii::DescriptorSet> descriptorSets;
+    vk::raii::DescriptorSets descriptorSets = nullptr;
+
 
     void init_window();
     void vulkan_instance();
     void vulkan_surface();
-    void vulkan_graphics_pipeline(const std::string& shaderPath);
+    void vulkan_graphics_pipeline();
     void vulkan_command_pool();
     void vulkan_command_buffer();
     void vulkan_sync_objects();
@@ -94,7 +81,7 @@ struct renderer {
         vk::PipelineStageFlags2 dstStageMask    
     );
     std::vector<const char*> getRequiredInstanceExtensions();
-    vk::raii::ShaderModule createShaderModule(const std::vector<char>& code);
+    vk::raii::ShaderModule createShaderModule(const char* code, const size_t size);
     
     static uint32_t chooseSwapMinImageCount(const vk::SurfaceCapabilitiesKHR& capabilities);
     static uint32_t findQueueFamilies(vk::raii::PhysicalDevice physicalDevice);

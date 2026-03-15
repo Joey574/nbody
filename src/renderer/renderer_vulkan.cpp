@@ -63,8 +63,26 @@ void renderer::vulkan_instance() {
 
     auto requiredExtensions = getRequiredInstanceExtensions();
 
+    std::vector<char const*> requiredLayers;
+    if (enableValidationLayers) {
+        requiredLayers.assign(validationLayers.begin(), validationLayers.end());
+    }
+
+    auto layerProperties = context.enumerateInstanceLayerProperties();
+    auto unsupportedLayerIt = std::ranges::find_if(requiredLayers, [&layerProperties](auto const& requiredLayer) {
+        return std::ranges::none_of(layerProperties, [requiredLayer](auto const& layerProperty){
+            return strcmp(layerProperty.layerName, requiredLayer) == 0;
+        });
+    });
+
+    if (unsupportedLayerIt != requiredLayers.end()) {
+        throw std::runtime_error("required layer not supported: " + std::string(*unsupportedLayerIt));
+    }
+
     vk::InstanceCreateInfo createInfo {
         .pApplicationInfo = &appInfo,
+        .enabledLayerCount = static_cast<uint32_t>(requiredLayers.size()),
+        .ppEnabledLayerNames = requiredLayers.data(),
         .enabledExtensionCount = static_cast<uint32_t>(requiredExtensions.size()),
         .ppEnabledExtensionNames = requiredExtensions.data()
     };
@@ -226,15 +244,15 @@ void renderer::vulkan_command_buffer() {
 void renderer::vulkan_sync_objects() {
     assert(presentCompleteSemaphores.empty() && renderFinishedSemaphores.empty() && inFlightFences.empty());
 
-    for (size_t i = 0; i < swapchain.Images().size(); i++) {
-        renderFinishedSemaphores.emplace_back(ldevice, vk::SemaphoreCreateInfo());
-    }
-
-    for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
+    for (size_t i = 0; i <MAX_FRAMES_IN_FLIGHT; i++) {
         presentCompleteSemaphores.emplace_back(ldevice, vk::SemaphoreCreateInfo());
-        inFlightFences.emplace_back(ldevice, vk::FenceCreateInfo{
+        inFlightFences.emplace_back(ldevice, vk::FenceCreateInfo {
             .flags = vk::FenceCreateFlagBits::eSignaled
         });
+    }
+
+    for (size_t i = 0; i < swapchain.Images().size(); i++) {
+        renderFinishedSemaphores.emplace_back(ldevice, vk::SemaphoreCreateInfo());
     }
 }
 
@@ -244,10 +262,11 @@ void renderer::vulkan_init_descriptors() {
         { .type = vk::DescriptorType::eUniformBuffer, .descriptorCount = 1 * MAX_FRAMES_IN_FLIGHT},
     }};
 
-    descriptorPool = vk::raii::DescriptorPool(ldevice, vk::DescriptorPoolCreateInfo{
+    descriptorPool = vk::raii::DescriptorPool(ldevice, vk::DescriptorPoolCreateInfo {
+        .flags = vk::DescriptorPoolCreateFlagBits::eFreeDescriptorSet,
         .maxSets       = MAX_FRAMES_IN_FLIGHT,
         .poolSizeCount = poolSize.size(),
-        .pPoolSizes    = poolSize.data()
+        .pPoolSizes    = poolSize.data(),
     });
 
     std::array<vk::DescriptorSetLayoutBinding, 4> bindings {{
@@ -366,6 +385,8 @@ void renderer::vulkan_record_command_buffer(uint32_t imageIndex, size_t n) {
     struct PushConstants { glm::vec4 color; float softness; };
     PushConstants pc { {1.0f, 0.5f, 0.0f, 1.0f}, 0.02f };
     cmd.pushConstants<PushConstants>(*pipelineLayout, vk::ShaderStageFlagBits::eFragment, 0, pc);
+    
+    printf("body count: %zu\n", n);
     cmd.draw(6, n, 0, 0);
     cmd.endRendering();
 
@@ -457,14 +478,14 @@ std::chrono::nanoseconds renderer::render(const data& data, float dt) {
         .commandBufferCount = 1,
         .pCommandBuffers = &*commandBuffers[frameIndex],
         .signalSemaphoreCount = 1,
-        .pSignalSemaphores = &*renderFinishedSemaphores[frameIndex]
+        .pSignalSemaphores = &*renderFinishedSemaphores[imageIndex]
     };
 
     ldevice.Queue().submit(submitInfo, *inFlightFences[frameIndex]);
 
     const vk::PresentInfoKHR presentInfoKHR {
         .waitSemaphoreCount = 1,
-        .pWaitSemaphores = &*renderFinishedSemaphores[frameIndex],
+        .pWaitSemaphores = &*renderFinishedSemaphores[imageIndex],
         .swapchainCount = 1,
         .pSwapchains = &*swapchain.SwapChain(),
         .pImageIndices = &imageIndex

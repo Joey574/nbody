@@ -36,7 +36,8 @@ VSOut vertMain(uint vID: SV_VertexID, uint iID: SV_InstanceID) {
 
     float cx = x[iID];
     float cy = x[iID];
-    float r = r[iID];
+    // float r = r[iID];
+    float r = 100.0f;
 
     float2 wPos = float2(cx, cy) + offset * r;
     float4x4 mvp = mul(ubo.proj, ubo.view);

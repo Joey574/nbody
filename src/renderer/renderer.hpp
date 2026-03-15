@@ -52,6 +52,12 @@ struct renderer {
     bool                                 framebufferResized = false;
 
     std::vector<const char*> deviceExtensions = { vk::KHRSwapchainExtensionName };
+    std::vector<const char*> validationLayers = { "VK_LAYER_KHRONOS_validation" };
+    #ifdef DEBUG
+    static constexpr bool enableValidationLayers = true;
+    #else
+    static constexpr bool enableValidationLayers = false;
+    #endif
     vk::PresentModeKHR presentMode = vk::PresentModeKHR::eFifo;
 
     
@@ -86,11 +92,10 @@ struct renderer {
     static uint32_t chooseSwapMinImageCount(const vk::SurfaceCapabilitiesKHR& capabilities);
     static uint32_t findQueueFamilies(vk::raii::PhysicalDevice physicalDevice);
     static void framebufferResizeCallback(GLFWwindow* window, int width, int height);
-
-    static constexpr const unsigned char shader_bytes[] = { 
-        #embed "../shaders/circles.spv"
-    };
-    static constexpr const size_t shader_size = sizeof(renderer::shader_bytes);
+    static VKAPI_ATTR vk::Bool32 VKAPI_CALL debugCallback(vk::DebugUtilsMessageSeverityFlagBitsEXT severity, vk::DebugUtilsMessageTypeFlagsEXT type, const vk::DebugUtilsMessengerCallbackDataEXT* pCallbackData, void* pUserData);
+    
+    static const unsigned char shader_bytes[];
+    static const size_t shader_size;
     
     static const size_t width_ = 800;
     static const size_t height_ = 800;

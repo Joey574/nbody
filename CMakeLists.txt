@@ -32,7 +32,7 @@ set(COMMON_FLAGS
 # Switch compiler flags based on build mode
 target_compile_options(nbody PRIVATE
     ${COMMON_FLAGS}
-    $<$<CONFIG:Debug>:-O0 -g>
+    $<$<CONFIG:Debug>:-O0 -g -DDEBUG>
     $<$<CONFIG:Release>:-O3 -s>
     $<$<CONFIG:RelWithDebInfo>:-O3 -g -fno-omit-frame-pointer>
 )

@@ -6,6 +6,7 @@ Comments:
 
 #include "renderer.hpp"
 #include <vector>
+#include <iostream>
 
 vk::raii::ShaderModule renderer::createShaderModule(const char* code, const size_t size) {
     vk::ShaderModuleCreateInfo createInfo {
@@ -35,10 +36,18 @@ std::vector<const char*> renderer::getRequiredInstanceExtensions() {
     auto glfwExtensions = glfwGetRequiredInstanceExtensions(&glfwExtensionCount);
 
     std::vector extensions(glfwExtensions, glfwExtensions + glfwExtensionCount);
+    if (enableValidationLayers) {
+        extensions.push_back(vk::EXTDebugUtilsExtensionName);
+    }
     return extensions;
 }
 
 void renderer::framebufferResizeCallback(GLFWwindow* window, int width, int height) {
     auto r    = reinterpret_cast<renderer*>(glfwGetWindowUserPointer(window));
     r->framebufferResized = true;
+}
+
+VKAPI_ATTR vk::Bool32 VKAPI_CALL renderer::debugCallback(vk::DebugUtilsMessageSeverityFlagBitsEXT severity, vk::DebugUtilsMessageTypeFlagsEXT type, const vk::DebugUtilsMessengerCallbackDataEXT* pCallbackData, void* pUserData) {
+    std::cerr << "validation layer: type " << to_string(type) << " msg: " << pCallbackData->pMessage << std::endl;
+    return vk::False;
 }

@@ -3,7 +3,7 @@
 void UBOBuffer::init(const LogicalDevice& ld, const PhysicalDevice& pd) {
     vk::DeviceSize size = sizeof(UBO);
 
-    constexpr const vk::BufferUsageFlags usage = vk::BufferUsageFlagBits::eStorageBuffer;
+    constexpr const vk::BufferUsageFlags usage = vk::BufferUsageFlagBits::eUniformBuffer;
     constexpr const vk::MemoryPropertyFlags properties = vk::MemoryPropertyFlagBits::eHostVisible | vk::MemoryPropertyFlagBits::eHostCoherent;
 
     createBuffer(ld, pd, size, usage, properties, buffer, memory);

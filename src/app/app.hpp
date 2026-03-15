@@ -7,7 +7,6 @@ struct app {
     private:
     simulation sim = simulation();
     renderer   ren = renderer();
-    float lastFrameTime = 0.0f;
 
     int main_loop(const cliargs& f);
     void cleanup();

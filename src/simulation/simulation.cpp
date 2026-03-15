@@ -16,22 +16,22 @@ std::chrono::nanoseconds simulation::update_gpu(const float dt) noexcept {
 }
 
 void simulation::init_cluster() noexcept {
-    std::default_random_engine gen(737274);
+    std::default_random_engine urng(737274);
 
-    std::normal_distribution<float>pos(0.0f, 0.5f);
-    std::uniform_real_distribution<float>vel(0, 0.5f);
+    std::normal_distribution<float>pos(0.0f, 15.0f);
+    std::uniform_real_distribution<float>vel(0, 1.5f);
     std::normal_distribution<float>mass(0.005f, 0.05f);
 
     // do not parallelize, creates undeterministic results
     for (size_t i = 0; i < data_.bodies(); i++) {
-        data_.posx()[i] = pos(gen);
-        data_.posy()[i] = pos(gen);
+        data_.posx()[i] = pos(urng);
+        data_.posy()[i] = pos(urng);
 
-        float temp = vel(gen) * TAU;
+        float temp = vel(urng) * TAU;
         data_.velx()[i] = cosf(temp);
-        data_.vely()[i] = sinf(temp) * pos(gen);
+        data_.vely()[i] = sinf(temp) * pos(urng);
 
-        data_.mass()[i] = 0.001f + abs(mass(gen) * 0.5f);
+        data_.mass()[i] = 0.001f + abs(mass(urng) * 0.5f);
     }
 }
 
@@ -85,7 +85,17 @@ void simulation::init_spiral() noexcept {
         inc += 0.001f;
     }
 
-    // TODO : sort and scale velocities
+    // TODO : sort velocities
+
+    // scale velocites
+    for (size_t i = 0; i < data_.bodies(); i++) {
+        float x = data_.posx()[i];
+        float y = data_.posy()[i];
+        float v = std::sqrtf(float(i) / std::sqrt(x*x+y*y));
+
+        data_.velx()[i] *= v;
+        data_.vely()[i] *= v;
+    }
 }
 
 #undef TAU

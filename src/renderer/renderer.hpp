@@ -22,7 +22,6 @@ struct renderer {
 
     void init(const data& data, const std::string& exePath);
     bool should_close() { return glfwWindowShouldClose(window); }
-    void poll_events() { glfwPollEvents(); }
 
     private:
     static constexpr int MAX_FRAMES_IN_FLIGHT       = 2;

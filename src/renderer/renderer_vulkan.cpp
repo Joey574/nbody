@@ -70,7 +70,7 @@ void renderer::vulkan_instance() {
 
     auto layerProperties = context.enumerateInstanceLayerProperties();
     auto unsupportedLayerIt = std::ranges::find_if(requiredLayers, [&layerProperties](auto const& requiredLayer) {
-        return std::ranges::none_of(layerProperties, [requiredLayer](auto const& layerProperty){
+        return std::ranges::none_of(layerProperties, [requiredLayer](auto const& layerProperty) {
             return strcmp(layerProperty.layerName, requiredLayer) == 0;
         });
     });
@@ -149,7 +149,7 @@ void renderer::vulkan_graphics_pipeline() {
         .depthClampEnable        = vk::False,
         .rasterizerDiscardEnable = vk::False,
         .polygonMode             = vk::PolygonMode::eFill,
-        .cullMode                = vk::CullModeFlagBits::eBack,
+        .cullMode                = vk::CullModeFlagBits::eNone,
         .frontFace               = vk::FrontFace::eClockwise,
         .depthBiasEnable         = vk::False,
         .depthBiasSlopeFactor    = 1.0f,
@@ -183,9 +183,9 @@ void renderer::vulkan_graphics_pipeline() {
     };
 
     vk::PushConstantRange pushRange {
-        .stageFlags = vk::ShaderStageFlagBits::eFragment,
+        .stageFlags = vk::ShaderStageFlagBits::eFragment | vk::ShaderStageFlagBits::eVertex,
         .offset     = 0,
-        .size       = 20  // float4 color + float edgeSoftness = 20 bytes
+        .size       = 28  // float4 color + float edgeSoftness + float width + float height = 28 bytes
     };
 
     vk::PipelineLayoutCreateInfo pipelineLayoutInfo {
@@ -270,10 +270,10 @@ void renderer::vulkan_init_descriptors() {
     });
 
     std::array<vk::DescriptorSetLayoutBinding, 4> bindings {{
-        { 0, vk::DescriptorType::eStorageBuffer, 1, vk::ShaderStageFlagBits::eVertex },
-        { 1, vk::DescriptorType::eStorageBuffer, 1, vk::ShaderStageFlagBits::eVertex },
-        { 2, vk::DescriptorType::eStorageBuffer, 1, vk::ShaderStageFlagBits::eVertex },
-        { 3, vk::DescriptorType::eUniformBuffer, 1, vk::ShaderStageFlagBits::eVertex },
+        { 0, vk::DescriptorType::eStorageBuffer, 1, vk::ShaderStageFlagBits::eVertex, nullptr },
+        { 1, vk::DescriptorType::eStorageBuffer, 1, vk::ShaderStageFlagBits::eVertex, nullptr },
+        { 2, vk::DescriptorType::eStorageBuffer, 1, vk::ShaderStageFlagBits::eVertex, nullptr },
+        { 3, vk::DescriptorType::eUniformBuffer, 1, vk::ShaderStageFlagBits::eVertex, nullptr },
     }};
 
     descriptorSetLayout = vk::raii::DescriptorSetLayout(ldevice, vk::DescriptorSetLayoutCreateInfo{
@@ -382,11 +382,9 @@ void renderer::vulkan_record_command_buffer(uint32_t imageIndex, size_t n) {
     cmd.setViewport(0, vk::Viewport(0.0f, 0.0f, static_cast<float>(swapchain.Extent().width), static_cast<float>(swapchain.Extent().height), 0.0f, 1.0f));
     cmd.setScissor(0, vk::Rect2D(vk::Offset2D(0, 0), swapchain.Extent()));
     
-    struct PushConstants { glm::vec4 color; float softness; };
-    PushConstants pc { {1.0f, 0.5f, 0.0f, 1.0f}, 0.02f };
-    cmd.pushConstants<PushConstants>(*pipelineLayout, vk::ShaderStageFlagBits::eFragment, 0, pc);
-    
-    printf("body count: %zu\n", n);
+    struct PushConstants { glm::vec4 color; float softness; float width; float height; };
+    PushConstants pc { {1.0f, 1.0f, 1.0f, 1.0f}, 0.02f, (float)swapchain.Extent().width, (float)swapchain.Extent().height };
+    cmd.pushConstants<PushConstants>(*pipelineLayout, vk::ShaderStageFlagBits::eFragment | vk::ShaderStageFlagBits::eVertex, 0, pc);
     cmd.draw(6, n, 0, 0);
     cmd.endRendering();
 
@@ -443,6 +441,7 @@ void renderer::transition_image_layout(
 
 std::chrono::nanoseconds renderer::render(const data& data, float dt) {
     auto s = std::chrono::high_resolution_clock::now();
+    glfwPollEvents();
     cam.update(window, dt);
 
     auto fenceResult = ldevice.Device().waitForFences(*inFlightFences[frameIndex], vk::True, UINT64_MAX);
@@ -462,8 +461,8 @@ std::chrono::nanoseconds renderer::render(const data& data, float dt) {
 
     frames[frameIndex].update(data);
     UBO ubo {
-        .view = glm::transpose(cam.viewMatrix()),
-        .proj = glm::transpose(cam.projMatrix(swapchain.Extent().width, swapchain.Extent().height))
+        .view = cam.viewMatrix(),
+        .proj = cam.projMatrix(swapchain.Extent().width, swapchain.Extent().height)
     };
     uboBuffers[frameIndex].update(ubo);
 

@@ -5,7 +5,7 @@ struct camera {
     private:
     glm::vec2 position = { 0.0f, 0.0f };
     float zoom         = 1.0f;
-    float speed        = 1.0f;
+    float speed        = 500.0f;
     float zoomSpeed    = 0.1f;
 
     public:
@@ -20,7 +20,7 @@ struct camera {
 
     void onScroll(float yOffset) {
         zoom *= (1.0f + yOffset * zoomSpeed);
-        zoom = glm::clamp(zoom, 0.0f, 100.0f);
+        zoom = glm::clamp(zoom, 1e-9f, 100.0f);
     }
 
     glm::mat4 viewMatrix() const {
@@ -34,7 +34,7 @@ struct camera {
         auto p = glm::ortho(
             -w / 2.0f, w / 2.0f,
             -h / 2.0f, h / 2.0f,
-            -1.0f, -1.0f
+            -1.0f, 1.0f
         );
 
         p[1][1] *= -1.0f;

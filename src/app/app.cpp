@@ -20,16 +20,20 @@ int app::run(const cliargs& f) {
 }
 
 int app::main_loop(const cliargs& f) {
+    using namespace std::chrono;
     double sim_sum = 0.0;
     double ren_sum = 0.0;
     double tot_sum = 0.0;
     size_t count = 0;
 
-    auto last_print = std::chrono::high_resolution_clock::now();
+    auto frame_start = high_resolution_clock::now();
+    auto last_print = high_resolution_clock::now();
 
     while (!ren.should_close()) {
         count++;
-        float dt = glfwGetTime() - lastFrameTime;
+        auto time = high_resolution_clock::now();
+        float dt = duration<float>(high_resolution_clock::now() - frame_start).count();
+        frame_start = time;
 
         auto sim_time = std::invoke(sim.update, sim, f.fixedtime).count() * 0.000001;
         sim_sum += sim_time;
@@ -38,10 +42,8 @@ int app::main_loop(const cliargs& f) {
         ren_sum += ren_time;
         tot_sum += sim_time + ren_time;
 
-        ren.poll_events();
-
         // lock debugging output to 100ms refresh
-        if (!f.quiet && std::chrono::high_resolution_clock::now() - last_print >= std::chrono::milliseconds(f.refresh)) {
+        if (!f.quiet && high_resolution_clock::now() - last_print >= milliseconds(f.refresh)) {
             printf(
                 "\033[H"
                 "Frame %zu"
@@ -60,10 +62,8 @@ int app::main_loop(const cliargs& f) {
                 1000.00 / (tot_sum / count)
             );
 
-            last_print = std::chrono::high_resolution_clock::now();
+            last_print = high_resolution_clock::now();
         }
-
-        lastFrameTime = glfwGetTime();
     }
 
     return 0;

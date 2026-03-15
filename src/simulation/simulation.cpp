@@ -28,12 +28,6 @@ void simulation::init_cluster() noexcept {
 
         data_.mass()[i] = 0.0025f + abs(mass(urng) * 0.5f);
     }
-
-    data_.posx()[0] = 0.0f;
-    data_.posy()[0] = 0.0f;
-    data_.velx()[0] = 0.0f;
-    data_.vely()[0] = 0.0f;
-    data_.mass()[0] = 10;
 }
 
 void simulation::init_spiral() noexcept {
@@ -86,7 +80,8 @@ void simulation::init_spiral() noexcept {
         inc += 0.001f;
     }
 
-    // TODO : sort velocities
+    // sort based on distance
+    data_.sort();
 
     // scale velocites
     for (size_t i = 0; i < data_.bodies(); i++) {

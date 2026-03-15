@@ -3,6 +3,8 @@
 #include <string.h>
 #include <cstddef>
 #include <omp.h>
+#include <vector>
+#include <algorithm>
 
 #include "../definitions/macros.hpp"
 #include "../matrix/matrix.hpp"
@@ -142,6 +144,34 @@ struct data {
     matrix& accy() noexcept { return accy_; }
 
     inline void zero_acc() noexcept { accx_.zero(); accy_.zero(); }
+
+    inline void sort() noexcept {
+        std::vector<std::pair<float, size_t>> values(bodies_);
+
+        #pragma omp parallel for simd schedule(static)
+        for (size_t i = 0; i < bodies_; i++) {
+            values[i] = { posx_[i]*posx_[i]+posy_[i]*posy_[i], i };
+        }
+
+        std::sort(values.begin(), values.end());
+
+        for (size_t i = 0; i < bodies_-1; i++) {
+            size_t cur = i;
+            size_t next = values[cur].second;
+
+            while (next != i) {
+                std::swap(posx_[cur], posx_[next]);
+                std::swap(posy_[cur], posy_[next]);
+                std::swap(velx_[cur], velx_[next]);
+                std::swap(vely_[cur], vely_[next]);
+                std::swap(mass_[cur], mass_[next]);
+                values[cur].second = cur;
+                cur = next;
+                next = values[cur].second;
+            }
+            values[cur].second = cur;
+        }
+    }
 
     private:
     size_t bodies_;

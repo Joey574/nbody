@@ -39,7 +39,7 @@ VSOut vertMain(uint vID: SV_VertexID, uint iID: SV_InstanceID) {
     float zoom = ubo.view[0][0];
     float cx = xb[iID];
     float cy = yb[iID];
-    float r = rb[iID];
+    float r = log(rb[iID]+1);
 
     float4x4 mvp = mul(ubo.proj, ubo.view);
 

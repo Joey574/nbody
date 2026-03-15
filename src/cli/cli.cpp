@@ -26,6 +26,7 @@ void cliargs::parse(int argc, char* argv[]) {
             cluster = true;
         } else if (v == "--spiral") {
             spiral = true;
+            cluster = false;
         } else if (v == "--cpu") {
             cpu = true;
         } else if (v == "-b" || v == "--bodies") {

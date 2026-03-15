@@ -10,17 +10,12 @@ Comments: Currently contains the update_gpu method implementation, which doesn't
 
 #define TAU 6.28318530718
 
-std::chrono::nanoseconds simulation::update_gpu(const float dt) noexcept {
-    auto s = std::chrono::high_resolution_clock::now();
-    return std::chrono::high_resolution_clock::now() - s;
-}
-
 void simulation::init_cluster() noexcept {
     std::default_random_engine urng(737274);
 
     std::normal_distribution<float>pos(0.0f, 15.0f);
-    std::uniform_real_distribution<float>vel(0, 1.5f);
-    std::normal_distribution<float>mass(0.005f, 0.05f);
+    std::uniform_real_distribution<float>vel(0.2f, 0.5f);
+    std::normal_distribution<float>mass(0.05f, 0.005f);
 
     // do not parallelize, creates undeterministic results
     for (size_t i = 0; i < data_.bodies(); i++) {
@@ -31,15 +26,21 @@ void simulation::init_cluster() noexcept {
         data_.velx()[i] = cosf(temp);
         data_.vely()[i] = sinf(temp) * pos(urng);
 
-        data_.mass()[i] = 0.001f + abs(mass(urng) * 0.5f);
+        data_.mass()[i] = 0.0025f + abs(mass(urng) * 0.5f);
     }
+
+    data_.posx()[0] = 0.0f;
+    data_.posy()[0] = 0.0f;
+    data_.velx()[0] = 0.0f;
+    data_.vely()[0] = 0.0f;
+    data_.mass()[0] = 10;
 }
 
 void simulation::init_spiral() noexcept {
     std::default_random_engine gen(4285482);
 
-    std::normal_distribution<float> pos(0.0f, 0.05f);
-    std::normal_distribution<float> mass(0.005f, 0.05f);
+    std::normal_distribution<float> pos(0.001f, 0.075f);
+    std::normal_distribution<float> mass(0.025f, 0.005f);
 
     float rx = 0.5f;
     float ry = 0.5f;

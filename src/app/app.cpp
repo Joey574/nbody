@@ -28,6 +28,7 @@ int app::main_loop(const cliargs& f) {
 
     auto frame_start = high_resolution_clock::now();
     auto last_print = high_resolution_clock::now();
+    auto fixedtime = f.config.Fixedtime();
 
     while (!ren.should_close()) {
         count++;
@@ -35,7 +36,7 @@ int app::main_loop(const cliargs& f) {
         float dt = duration<float>(high_resolution_clock::now() - frame_start).count();
         frame_start = time;
 
-        auto sim_time = std::invoke(sim.update, sim, f.fixedtime).count() * 0.000001;
+        auto sim_time = std::invoke(sim.update, sim, fixedtime).count() * 0.000001;
         sim_sum += sim_time;
 
         auto ren_time = ren.render(sim.get_data(), dt).count() * 0.000001;

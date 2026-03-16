@@ -28,11 +28,11 @@ struct simulation {
 
     // custom constructor
     simulation(const cliargs& f) :
-        data_(f.bodies, f.cpu) {
-            if (f.cluster) {
-                init_cluster();
-            } else if (f.spiral) {
-                init_spiral();
+        data_(f.config.Points(), f.cpu) {
+            if (f.config.Type() == "cluster") {
+                init_cluster(f.config.Cluster(), f.config.Seed());
+            } else if (f.config.Type() == "spiral") {
+                init_spiral(f.config.Spiral(), f.config.Seed());
             }
 
             if (f.cpu) {
@@ -81,6 +81,6 @@ struct simulation {
 
     std::chrono::nanoseconds update_gpu(const float ft) noexcept;
 
-    void init_cluster() noexcept;
-    void init_spiral() noexcept;
+    void init_cluster(const ClusterConfig& conf, size_t seed) noexcept;
+    void init_spiral(const SpiralConfig& conf, size_t seed) noexcept;
 }; // struct simulation

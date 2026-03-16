@@ -1,19 +1,17 @@
 #pragma once
 #include <cstddef>
 #include <string>
+#include "../config/config.hpp"
 
 struct cliargs {
     public:
-    cliargs() : bodies(100), refresh(100), fixedtime(0.0001f), cluster(true), spiral(false), cpu(false), quiet(false), path("") {}
+    cliargs() : refresh(100), cpu(false), quiet(false), path("") {}
 
     void parse(int argc, char* argv[]);
 
+    Config config;
     std::string path;
-    size_t bodies;
     size_t refresh;
-    float fixedtime;
-    bool cluster;
-    bool spiral;
     bool cpu;
     bool quiet;
 };

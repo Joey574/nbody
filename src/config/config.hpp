@@ -1,30 +1,39 @@
 #pragma once
-#include <variant>
-#include <cstddef>
+#include <yaml-cpp/yaml.h>
 
-struct spiral_config {
-    float rx = 0.5f;
-    float ry = 0.5f;
-    float rot = 0.0f;
-    float inc = 0.075f;
-    float pos_meam = 0.001f;
-    float pos_std = 0.075f;
-    float mass_mean = 0.025f;
-    float mass_std = 0.005f;
-    size_t ellipses = 25;
-    size_t segments = 100;
+struct SpiralConfig {
+    float rx;
+    float rx_scale;
+    float ry;
+    float rot_start;
+    float rot_delta;
+    float inc_start;
+    float inc_delta;
+    float pos_mean;
+    float pos_std;
+    float mass_mean;
+    float mass_std;
+    size_t ellipses;
+    size_t segments;
 };
 
-struct cluster_config {
+struct ClusterConfig {
 
 };
 
-struct config {
+
+struct Config {
     private:
-    std::variant<spiral_config, cluster_config> conf;
+    YAML::Node conf;
 
     public:
-    std::variant<spiral_config, cluster_config> Config() const {
-        return conf;
-    }    
+    void Load(const std::string& path);
+
+    size_t Seed() const noexcept;
+    size_t Points() const noexcept;
+    float Fixedtime() const noexcept;
+    std::string Type() const noexcept;
+
+    SpiralConfig Spiral() const noexcept;
+    ClusterConfig Cluster() const noexcept;
 };

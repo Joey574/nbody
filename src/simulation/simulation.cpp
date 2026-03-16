@@ -10,7 +10,7 @@ Comments: Currently contains the update_gpu method implementation, which doesn't
 
 #define TAU 6.28318530718
 
-void simulation::init_cluster() noexcept {
+void simulation::init_cluster(const ClusterConfig& conf, size_t seed) noexcept {
     std::default_random_engine urng(737274);
 
     std::normal_distribution<float>pos(0.0f, 15.0f);
@@ -30,25 +30,24 @@ void simulation::init_cluster() noexcept {
     }
 }
 
-void simulation::init_spiral() noexcept {
-    std::default_random_engine gen(4285482);
+void simulation::init_spiral(const SpiralConfig& conf, size_t seed) noexcept { 
+    std::default_random_engine gen(seed);
 
-    std::normal_distribution<float> pos(0.001f, 0.075f);
-    std::normal_distribution<float> mass(0.025f, 0.005f);
+    std::normal_distribution<float> pos(conf.pos_mean, conf.pos_std);
+    std::normal_distribution<float> mass(conf.mass_mean, conf.mass_std);
 
-    float rx = 0.5f;
-    float ry = 0.5f;
-    float rot = 0.0f;
-    float inc = 0.075f;
+    float rx = conf.rx;
+    float ry = conf.ry;
+    float rot = conf.rot_start;
+    float inc = conf.inc_start;
 
-    size_t ellipses = 25;
-    size_t segments = 100;
+    size_t ellipses = conf.ellipses;
+    size_t segments = conf.segments;
+    size_t per_point = std::max<size_t>((data_.bodies() / (segments * ellipses))+1, 1);
 
-    size_t per_point = data_.bodies() / (segments * ellipses);
     size_t b_idx = 0;
-
-    for (size_t e = 0; e < ellipses; e++) {
-        for (size_t s = 0; s < segments; s++) {
+    for (size_t e = 0; e < ellipses && b_idx < data_.bodies(); e++) {
+        for (size_t s = 0; s < segments && b_idx < data_.bodies(); s++) {
             float theta = TAU * s / (float)segments;
 
             float x = rx + cosf(theta);
@@ -57,7 +56,7 @@ void simulation::init_spiral() noexcept {
             float rot_x = x * cosf(rot) - y * sinf(rot);
             float rot_y = x * sinf(rot) + y * cosf(rot);
 
-            for (size_t i = 0; i < per_point; i++) {
+            for (size_t i = 0; i < per_point && b_idx < data_.bodies(); i++) {
                 data_.posx()[b_idx] = rot_x + pos(gen);
                 data_.posy()[b_idx] = rot_y + pos(gen);
                 data_.mass()[b_idx] = mass(gen);
@@ -72,12 +71,11 @@ void simulation::init_spiral() noexcept {
             }
         }
 
-        rot += 0.35f;
-
-        rx += inc * 1.2f;
+        rx += inc * conf.rx_scale;
         ry += inc;
 
-        inc += 0.001f;
+        rot += conf.rot_delta;
+        inc += conf.inc_delta;
     }
 
     // sort based on distance

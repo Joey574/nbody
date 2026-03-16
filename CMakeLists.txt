@@ -12,9 +12,11 @@ target_sources(nbody PRIVATE ${CXX_SOURCE_FILES})
 find_package(OpenMP REQUIRED)
 find_package(Vulkan REQUIRED)
 find_package(glfw3 REQUIRED)
+find_package(yaml-cpp REQUIRED)
 
 target_link_libraries(nbody PRIVATE
     OpenMP::OpenMP_CXX
+    yaml-cpp::yaml-cpp
     Vulkan::Vulkan
     glfw
     dl

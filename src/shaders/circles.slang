@@ -14,13 +14,10 @@ struct VSOut {
     float radius    : TEXCOORD1;
 };
 
-static const float2 QUAD_OFFSETS[6] = {
+static const float2 QUAD_OFFSETS[3] = {
     float2(-1, -1),
-    float2(1, -1),
-    float2(-1, 1),
-    float2(-1, 1),
-    float2(1, -1),
-    float2(1, 1),
+    float2(3, -1),
+    float2(-1, 3),
 };
 
 struct PushConstants {

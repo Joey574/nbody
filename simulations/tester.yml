@@ -1,9 +1,8 @@
-type: spiral
+type: video
 points: 20000
-seed: 1234567890
-ellipses: 39
-segments: 20
+fixedtime: 0.0005
 
-posmean: 0.0
-posstd: 0.25
-rxscale: 2.5
+seed: 1234567890
+posmean: 0
+posstd: 1
+zscale: 10

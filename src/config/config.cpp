@@ -21,6 +21,9 @@
 #define ELLIPSES "ellipses"
 #define SEGMENTS "segments"
 
+// video config data
+#define ZSCALE "zscale"
+
 void Config::Load(const std::string& path) {
     conf = YAML::LoadFile(path);
 }
@@ -61,5 +64,13 @@ SpiralConfig Config::Spiral() const noexcept {
 ClusterConfig Config::Cluster() const noexcept {
     return {
 
+    };
+}
+
+VideoConfig Config::Video() const noexcept {
+    return {
+        .pos_mean = conf[POSMEAN].as<float>(0.0f),
+        .pos_std  = conf[POSSTD ].as<float>(1.0f),
+        .z_scale  = conf[ZSCALE ].as<float>(10.0f)
     };
 }

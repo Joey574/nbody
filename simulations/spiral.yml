@@ -1,0 +1,10 @@
+type: spiral
+points: 20000
+
+massmean: 1
+massstd: 0
+
+rxscale: 15
+
+posmean: 0
+posstd: 25

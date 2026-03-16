@@ -92,4 +92,42 @@ void simulation::init_spiral(const SpiralConfig& conf, size_t seed) noexcept {
     }
 }
 
+void simulation::init_video(const VideoConfig& conf, size_t seed) noexcept {
+    std::default_random_engine gen(seed);
+    std::uniform_real_distribution<float> pos(conf.pos_mean, conf.pos_std);
+
+    for (size_t i = 0; i < data_.bodies(); i++) {
+        float a = pos(gen) * TAU;
+        float sina = sinf(a);
+        float cosa = cosf(a);
+
+        float r = 0.0f;
+        for (size_t j = 0; j < 6; j++) {
+            r += pos(gen);
+        }
+
+        r = fabsf(r / 3.0f - 1.0f);
+        
+        float z = sqrtf((float)data_.bodies()) * conf.z_scale * r;
+        data_.posx()[i] = cosa*z;
+        data_.posy()[i] = sina*z;
+        data_.velx()[i] = sina;
+        data_.vely()[i] = -cosa;
+    }
+
+    // sort based on distance
+    data_.sort();
+
+    // scale velocites
+    for (size_t i = 0; i < data_.bodies(); i++) {
+        float x = data_.posx()[i];
+        float y = data_.posy()[i];
+        float v = std::sqrtf(float(i) / std::sqrtf(x*x+y*y));
+
+        data_.velx()[i] *= v;
+        data_.vely()[i] *= v;
+        data_.mass()[i] = 1.0f;
+    }
+}
+
 #undef TAU

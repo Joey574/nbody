@@ -4,6 +4,7 @@
 #include <omp.h>
 #include <chrono>
 
+#include "../quadtree/quadtree.hpp"
 #include "../data/data.hpp"
 #include "../cli/cli.hpp"
 
@@ -33,6 +34,10 @@ struct simulation {
                 init_cluster(f.config.Cluster(), f.config.Seed());
             } else if (f.config.Type() == "spiral") {
                 init_spiral(f.config.Spiral(), f.config.Seed());
+            } else if (f.config.Type() == "video") {
+                init_video(f.config.Video(), f.config.Seed());
+            } else {
+                throw std::runtime_error("invalid initilization");
             }
 
             if (f.cpu) {
@@ -71,6 +76,7 @@ struct simulation {
     size_t bodies() const noexcept { return data_.bodies(); }
 
     private:
+    quadtree qt;
     data data_;
 
     std::chrono::nanoseconds update_cpu_bh(const float ft) noexcept;
@@ -83,4 +89,5 @@ struct simulation {
 
     void init_cluster(const ClusterConfig& conf, size_t seed) noexcept;
     void init_spiral(const SpiralConfig& conf, size_t seed) noexcept;
+    void init_video(const VideoConfig& conf, size_t seed) noexcept;
 }; // struct simulation

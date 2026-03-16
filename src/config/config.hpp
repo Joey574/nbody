@@ -21,6 +21,12 @@ struct ClusterConfig {
 
 };
 
+struct VideoConfig {
+    float pos_mean;
+    float pos_std;
+    float z_scale;
+};
+
 
 struct Config {
     private:
@@ -36,4 +42,5 @@ struct Config {
 
     SpiralConfig Spiral() const noexcept;
     ClusterConfig Cluster() const noexcept;
+    VideoConfig Video() const noexcept;
 };

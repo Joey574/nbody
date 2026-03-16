@@ -12,11 +12,17 @@
 
 /// @brief Hold the raw underlying simulation data and provides a simple interface to access it
 struct data {
+    private:
+    size_t bodies_;
+    float* __restrict posx_;
+    float* __restrict posy_;
+    float* __restrict velx_;
+    float* __restrict vely_;
+    float* __restrict mass_;
+    matrix accx_;
+    matrix accy_;
+
     public:
-    struct float2 {
-        float* x;
-        float* y;
-    };
 
     // default constructor
     data() : 
@@ -173,13 +179,42 @@ struct data {
         }
     }
 
-    private:
-    size_t bodies_;
-    float* __restrict posx_;
-    float* __restrict posy_;
-    float* __restrict velx_;
-    float* __restrict vely_;
-    float* __restrict mass_;
-    matrix accx_;
-    matrix accy_;
+    inline void zcurve() noexcept {
+        std::vector<std::pair<uint64_t, size_t>> values(bodies_);
+
+        auto [minx, maxx] = std::minmax_element(posx_, posx_+bodies_);
+        auto [miny, maxy] = std::minmax_element(posy_, posy_+bodies_);
+
+        float rx = (*maxx > *minx) ? (*maxx - *minx) : 1.0f;
+        float ry = (*maxy > *miny) ? (*maxy - *miny) : 1.0f;
+
+        #pragma omp parallel for simd schedule(static)
+        for (size_t i = 0; i < bodies_; i++) {
+            // get normalized x, y values
+            uint32_t x = (uint32_t)std::min((double)(posx_[i] - *minx) / rx * 0x100000000, (double)0xFFFFFFFFu);
+            uint32_t y = (uint32_t)std::min((double)(posy_[i] - *miny) / ry * 0x100000000, (double)0xFFFFFFFFu);
+            uint64_t code = _pdep_u64((uint64_t)x, 0x5555555555555555ULL) | _pdep_u64((uint64_t)y, 0xAAAAAAAAAAAAAAAAULL);
+
+            values[i] = { code, i };
+        }
+
+        std::sort(values.begin(), values.end());
+
+        for (size_t i = 0; i < bodies_-1; i++) {
+            size_t cur = i;
+            size_t next = values[cur].second;
+
+            while (next != i) {
+                std::swap(posx_[cur], posx_[next]);
+                std::swap(posy_[cur], posy_[next]);
+                std::swap(velx_[cur], velx_[next]);
+                std::swap(vely_[cur], vely_[next]);
+                std::swap(mass_[cur], mass_[next]);
+                values[cur].second = cur;
+                cur = next;
+                next = values[cur].second;
+            }
+            values[cur].second = cur;
+        }
+    }
 };

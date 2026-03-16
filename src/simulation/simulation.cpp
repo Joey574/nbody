@@ -94,39 +94,84 @@ void simulation::init_spiral(const SpiralConfig& conf, size_t seed) noexcept {
 
 void simulation::init_video(const VideoConfig& conf, size_t seed) noexcept {
     std::default_random_engine gen(seed);
-    std::uniform_real_distribution<float> pos(conf.pos_mean, conf.pos_std);
+    std::uniform_real_distribution<float> angle(0.0f, 1.0f);
 
-    for (size_t i = 0; i < data_.bodies(); i++) {
-        float a = pos(gen) * TAU;
+    const float irad = 25.0f;
+    const float orad = sqrtf((float)data_.bodies()) * 5.0f;
+
+    // centeral body
+    data_.posx()[0] = 0.0f;
+    data_.posy()[0] = 0.0f;
+    data_.velx()[0] = 0.0f;
+    data_.vely()[0] = 0.0f;
+    data_.mass()[0] = 1e6f;
+
+    for (size_t i = 1; i < data_.bodies(); i++) {
+        float a = angle(gen) * TAU;
         float sina = sinf(a);
         float cosa = cosf(a);
 
-        float r = 0.0f;
-        for (size_t j = 0; j < 6; j++) {
-            r += pos(gen);
-        }
+        float t = irad / orad;
+        float r = angle(gen) * (1.0f - t*t) + t*t;
+        float scale = orad * sqrtf(r);
 
-        r = fabsf(r / 3.0f - 1.0f);
-        
-        float z = sqrtf((float)data_.bodies()) * conf.z_scale * r;
-        data_.posx()[i] = cosa*z;
-        data_.posy()[i] = sina*z;
+        data_.posx()[i] = cosa*scale;
+        data_.posy()[i] = sina*scale;
         data_.velx()[i] = sina;
         data_.vely()[i] = -cosa;
+        data_.mass()[i] = 1.0f;
     }
 
     // sort based on distance
     data_.sort();
 
     // scale velocites
+    #pragma omp parallel for simd schedule(static)
     for (size_t i = 0; i < data_.bodies(); i++) {
         float x = data_.posx()[i];
         float y = data_.posy()[i];
-        float v = std::sqrtf(float(i) / std::sqrtf(x*x+y*y));
+        float v = sqrtf(float(i) / sqrtf(1e-12f+x*x+y*y));
 
         data_.velx()[i] *= v;
         data_.vely()[i] *= v;
-        data_.mass()[i] = 1.0f;
+    }
+}
+
+void simulation::init_voronoi(const VoronoiConfig& conf, size_t seed) noexcept {
+    std::default_random_engine gen(seed);
+    std::uniform_real_distribution<float> cluster_rad(0.1f, 0.85f);
+    std::uniform_real_distribution<float> cluster_angle(0.0f, 1.0f);
+    std::uniform_real_distribution<float> cluster_weight(0.03, 1.2f);
+    std::uniform_real_distribution<float> cluster_spread(0.04, 0.12f);
+
+    size_t clusters = 5;
+    float rad = 25.0f;
+
+    std::vector<float> seedx(clusters);
+    std::vector<float> seedy(clusters);
+    std::vector<float> seedw(clusters);
+    std::vector<float> seedp(clusters);
+
+    seedx[0] = 0;
+    seedy[0] = 0;
+    seedw[0] = 3.0f;
+    seedp[0] = rad * 0.08f;
+
+    float sumw = seedw[0];
+
+    for (size_t c = 1; c < clusters; c++) {
+        float r = cluster_rad(gen) * rad;
+        float angle = cluster_angle(gen) * TAU;
+        
+        seedx[c] = r * cosf(angle);
+        seedy[c] = r * sinf(angle);
+        seedw[c] = cluster_weight(gen);
+        seedp[c] = cluster_spread(gen) * rad;
+        sumw += seedw[c];
+    }
+
+    for (size_t i = 0; i < data_.bodies(); i++) {
+        
     }
 }
 

@@ -1,8 +1,2 @@
 type: video
-points: 20000
-fixedtime: 0.0005
-
-seed: 1234567890
-posmean: 0
-posstd: 1
-zscale: 10
+points: 30000

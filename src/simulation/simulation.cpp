@@ -191,7 +191,7 @@ void simulation::init_voronoi(const VoronoiConfig& conf, size_t seed) noexcept {
     data_.posy()[0] = 0.0f;
     data_.velx()[0] = 0.0f;
     data_.vely()[0] = 0.0f;
-    data_.mass()[0] = 5000.0f;
+    data_.mass()[0] = 1e7f;
 
     // initialize positions and velocities
     for (size_t i = 1; i < data_.bodies(); i++) {

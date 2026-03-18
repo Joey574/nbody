@@ -77,8 +77,8 @@ void simulation::attract_points(const float ft) noexcept {
                 const auto _ivy = _dy * _inv3;
 
                 // compute and store accelerations
-                util::storeu(&ax_row[j], (_ivx * _p1m) + util::loadu(&ax_row[j]));
-                util::storeu(&ay_row[j], (_ivy * _p1m) + util::loadu(&ay_row[j]));
+                util::storeu(&ax_row[j], util::loadu(&ax_row[j]) - (_ivx * _p1m));
+                util::storeu(&ay_row[j], util::loadu(&ay_row[j]) - (_ivy * _p1m));
                 _a1x_sum += _ivx * _p2m;
                 _a1y_sum += _ivy * _p2m;
             }
@@ -108,8 +108,8 @@ void simulation::attract_points(const float ft) noexcept {
                 // update acceleration values
                 a1x_final += ivx * p2m;
                 a1y_final += ivy * p2m;
-                ax_row[j] += ivx * p1m;
-                ay_row[j] += ivy * p1m;
+                ax_row[j] -= ivx * p1m;
+                ay_row[j] -= ivy * p1m;
             }
 
             ax_row[i] = a1x_final;
@@ -169,7 +169,7 @@ void simulation::move_points(const float ft) noexcept {
     }
 
     size_t r = n - (n%util::width);
-    for (size_t i = r; r < n; r++) {
+    for (size_t i = r; i < n; i++) {
         vx[i] += ax[i] * ft;
         vy[i] += ay[i] * ft;
 

@@ -92,7 +92,7 @@ void simulation::init_spiral(const SpiralConfig& conf, size_t seed) noexcept {
     }
 }
 
-void simulation::init_video(const VideoConfig& conf, size_t seed) noexcept {
+void simulation::init_uniform(const UniformConfig& conf, size_t seed) noexcept {
     std::default_random_engine gen(seed);
     std::uniform_real_distribution<float> angle(0.0f, 1.0f);
 
@@ -138,14 +138,17 @@ void simulation::init_video(const VideoConfig& conf, size_t seed) noexcept {
 }
 
 void simulation::init_voronoi(const VoronoiConfig& conf, size_t seed) noexcept {
-    std::default_random_engine gen(seed);
-    std::uniform_real_distribution<float> cluster_rad(0.1f, 0.85f);
-    std::uniform_real_distribution<float> cluster_angle(0.0f, 1.0f);
-    std::uniform_real_distribution<float> cluster_weight(0.03, 1.2f);
-    std::uniform_real_distribution<float> cluster_spread(0.04, 0.12f);
+    size_t clusters = 50;
+    float rad = 50.0f;
 
-    size_t clusters = 5;
-    float rad = 25.0f;
+    std::default_random_engine urng(seed);
+    std::uniform_real_distribution<float> cluster_rad(0.3f, rad);
+    std::uniform_real_distribution<float> cluster_angle(0.0f, 1.0f);
+    std::uniform_real_distribution<float> cluster_weight(0.05f, 1.1f);
+    std::uniform_real_distribution<float> cluster_spread(0.15f, 0.4f);
+
+    std::normal_distribution<float> pos_x;
+    std::normal_distribution<float> pos_y;
 
     std::vector<float> seedx(clusters);
     std::vector<float> seedy(clusters);
@@ -154,24 +157,73 @@ void simulation::init_voronoi(const VoronoiConfig& conf, size_t seed) noexcept {
 
     seedx[0] = 0;
     seedy[0] = 0;
-    seedw[0] = 3.0f;
-    seedp[0] = rad * 0.08f;
+    seedw[0] = 4.0f;
+    seedp[0] = rad*20.0f;
 
     float sumw = seedw[0];
 
     for (size_t c = 1; c < clusters; c++) {
-        float r = cluster_rad(gen) * rad;
-        float angle = cluster_angle(gen) * TAU;
+        float r = cluster_rad(urng) * rad;
+        float angle = cluster_angle(urng) * TAU;
         
         seedx[c] = r * cosf(angle);
         seedy[c] = r * sinf(angle);
-        seedw[c] = cluster_weight(gen);
-        seedp[c] = cluster_spread(gen) * rad;
+        seedw[c] = cluster_weight(urng);
+        seedp[c] = cluster_spread(urng) * rad;
         sumw += seedw[c];
     }
 
+    auto weighted_pick = [&](){
+        std::uniform_real_distribution<float> dist(0.0f, sumw);
+        float v = dist(urng);
+
+        for (size_t i = 0; i < seedw.size(); i++) {
+            v -= seedw[i];
+            if (v <= 0.0f) {
+                return i;
+            }
+        }
+
+        return seedw.size()-1;
+    };
+
+    data_.posx()[0] = 0.0f;
+    data_.posy()[0] = 0.0f;
+    data_.velx()[0] = 0.0f;
+    data_.vely()[0] = 0.0f;
+    data_.mass()[0] = 5000.0f;
+
+    // initialize positions and velocities
+    for (size_t i = 1; i < data_.bodies(); i++) {
+        size_t sidx = weighted_pick();
+
+        pos_x.param(std::normal_distribution<float>::param_type(0.0f, seedp[sidx]));
+        pos_y.param(std::normal_distribution<float>::param_type(0.0f, seedp[sidx]));
+
+        float x = seedx[sidx] + pos_x(urng);
+        float y = seedy[sidx] + pos_y(urng);
+        float d = 1e-12f + sqrtf(x*x+y*y);
+
+        float sina = y/d;
+        float cosa = x/d;
+        data_.posx()[i] = x;
+        data_.posy()[i] = y;
+        data_.velx()[i] = sina;
+        data_.vely()[i] = -cosa;
+        data_.mass()[i] = 1.0f;
+    }
+
+    // sort based on distance
+    data_.sort();
+
+    // scale velocites
     for (size_t i = 0; i < data_.bodies(); i++) {
-        
+        float x = data_.posx()[i];
+        float y = data_.posy()[i];
+        float v = std::sqrtf(float(i) / (1e-12f + std::sqrt(x*x+y*y)));
+
+        data_.velx()[i] *= v;
+        data_.vely()[i] *= v;
     }
 }
 

@@ -67,10 +67,16 @@ ClusterConfig Config::Cluster() const noexcept {
     };
 }
 
-VideoConfig Config::Video() const noexcept {
+UniformConfig Config::Uniform() const noexcept {
     return {
         .pos_mean = conf[POSMEAN].as<float>(0.0f),
         .pos_std  = conf[POSSTD ].as<float>(1.0f),
         .z_scale  = conf[ZSCALE ].as<float>(10.0f)
+    };
+}
+
+VoronoiConfig Config::Voronoi() const noexcept {
+    return {
+
     };
 }

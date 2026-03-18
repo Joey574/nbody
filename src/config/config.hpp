@@ -21,10 +21,14 @@ struct ClusterConfig {
 
 };
 
-struct VideoConfig {
+struct UniformConfig {
     float pos_mean;
     float pos_std;
     float z_scale;
+};
+
+struct VoronoiConfig {
+
 };
 
 
@@ -42,5 +46,6 @@ struct Config {
 
     SpiralConfig Spiral() const noexcept;
     ClusterConfig Cluster() const noexcept;
-    VideoConfig Video() const noexcept;
+    UniformConfig Uniform() const noexcept;
+    VoronoiConfig Voronoi() const noexcept;
 };

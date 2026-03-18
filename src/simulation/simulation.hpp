@@ -34,8 +34,10 @@ struct simulation {
                 init_cluster(f.config.Cluster(), f.config.Seed());
             } else if (f.config.Type() == "spiral") {
                 init_spiral(f.config.Spiral(), f.config.Seed());
-            } else if (f.config.Type() == "video") {
-                init_video(f.config.Video(), f.config.Seed());
+            } else if (f.config.Type() == "uniform") {
+                init_uniform(f.config.Uniform(), f.config.Seed());
+            } else if (f.config.Type() == "voronoi") {
+                init_voronoi(f.config.Voronoi(), f.config.Seed());
             } else {
                 throw std::runtime_error("invalid initilization");
             }
@@ -89,5 +91,6 @@ struct simulation {
 
     void init_cluster(const ClusterConfig& conf, size_t seed) noexcept;
     void init_spiral(const SpiralConfig& conf, size_t seed) noexcept;
-    void init_video(const VideoConfig& conf, size_t seed) noexcept;
+    void init_uniform(const UniformConfig& conf, size_t seed) noexcept;
+    void init_voronoi(const VoronoiConfig& conf, size_t seed) noexcept;
 }; // struct simulation

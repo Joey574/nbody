@@ -138,14 +138,14 @@ void simulation::init_uniform(const UniformConfig& conf, size_t seed) noexcept {
 }
 
 void simulation::init_voronoi(const VoronoiConfig& conf, size_t seed) noexcept {
-    size_t clusters = 50;
-    float rad = 50.0f;
+    size_t clusters = 100;
+    float rad = 20.0f;
 
     std::default_random_engine urng(seed);
     std::uniform_real_distribution<float> cluster_rad(0.3f, rad);
     std::uniform_real_distribution<float> cluster_angle(0.0f, 1.0f);
     std::uniform_real_distribution<float> cluster_weight(0.05f, 1.1f);
-    std::uniform_real_distribution<float> cluster_spread(0.15f, 0.4f);
+    std::uniform_real_distribution<float> cluster_spread(1.0f, 5.0f);
 
     std::normal_distribution<float> pos_x;
     std::normal_distribution<float> pos_y;
@@ -158,7 +158,7 @@ void simulation::init_voronoi(const VoronoiConfig& conf, size_t seed) noexcept {
     seedx[0] = 0;
     seedy[0] = 0;
     seedw[0] = 4.0f;
-    seedp[0] = rad*20.0f;
+    seedp[0] = rad*rad;
 
     float sumw = seedw[0];
 

@@ -62,8 +62,8 @@ namespace util {
             __m128 high128 = _mm256_extractf128_ps(res256, 1);
             __m128 res128  = _mm_add_ps(low128, high128);
 
-            __m128 shuf64  = _mm_movehdup_ps(res128);        // Broadcast odds/evens or shuffle
-            __m128 res64   = _mm_add_ps(res128, _mm_unpackhi_ps(res128, res128));
+            __m128 shuf64  = _mm_movehdup_ps(res128);
+            __m128 res64   = _mm_add_ps(res128, shuf64);
 
             __m128 final   = _mm_add_ss(res64, _mm_movehl_ps(res64, res64));
 
@@ -102,6 +102,29 @@ namespace util {
             __m128 v32   = _mm_add_ss(v64, swiz);
 
             return _mm_cvtss_f32(v32);
+        }
+    #else
+        using reg = float;
+        static inline constexpr size_t width = 1;
+        static inline constexpr size_t last = 0;
+        static inline const float _epsl = 1e-12f;
+        static inline const float _opf = 1.5f;
+        static inline const float _pf = 0.5f;
+
+        static inline reg load(const float* p) { return *p; }
+        static inline void store(float* p, reg r) { *p = r; }
+
+        static inline reg loadu(const float* p) { return load(p); }
+        static inline void storeu(float* p, reg r) { store(p, r); }
+        
+        static inline reg set1(float f) { return f; }
+        static inline reg zero() { return 0.0f; }
+        
+        static inline reg rsqrt(reg d2) {
+            return frsqrt(d2);
+        }
+        static inline float hsum(reg r) { 
+           return r;
         }
     #endif
 };

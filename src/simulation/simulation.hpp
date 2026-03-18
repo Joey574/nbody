@@ -78,14 +78,16 @@ struct simulation {
     size_t bodies() const noexcept { return data_.bodies(); }
 
     private:
-    quadtree qt;
+    zcurve zcurve_;
     data data_;
+
 
     std::chrono::nanoseconds update_cpu_bh(const float ft) noexcept;
 
     std::chrono::nanoseconds update_cpu(const float ft) noexcept;
-    std::chrono::nanoseconds update_cpu_simd(const float ft) noexcept;
-    std::chrono::nanoseconds update_cpu_fallback(const float ft) noexcept;
+    void attract_points(const float ft) noexcept;
+    void move_points(const float ft) noexcept;
+    void sum_acc() noexcept;
 
     std::chrono::nanoseconds update_gpu(const float ft) noexcept;
 

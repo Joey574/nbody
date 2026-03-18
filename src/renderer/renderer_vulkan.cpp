@@ -383,7 +383,7 @@ void renderer::vulkan_record_command_buffer(uint32_t imageIndex, size_t n) {
     cmd.setScissor(0, vk::Rect2D(vk::Offset2D(0, 0), swapchain.Extent()));
     
     struct PushConstants { glm::vec4 color; float softness; float width; float height; };
-    PushConstants pc { {1.0f, 1.0f, 1.0f, 1.0f}, 0.02f, (float)swapchain.Extent().width, (float)swapchain.Extent().height };
+    PushConstants pc { {1.0f, 0.0f, 0.0f, 1.0f}, 0.02f, (float)swapchain.Extent().width, (float)swapchain.Extent().height };
     cmd.pushConstants<PushConstants>(*pipelineLayout, vk::ShaderStageFlagBits::eFragment | vk::ShaderStageFlagBits::eVertex, 0, pc);
     cmd.draw(3, n, 0, 0);
     cmd.endRendering();

@@ -8,21 +8,21 @@ compiler for vectorization
 */
 
 #include "simulation.hpp"
-#include <chrono>
 
 std::chrono::nanoseconds simulation::update_cpu(const float ft) noexcept {
-    #if defined(__AVX512__) || defined(__AVX2__)
-        return update_cpu_simd(ft);
-    #else
-        return update_cpu_fallback(ft);
-    #endif
+    auto s = std::chrono::high_resolution_clock::now();
+    
+    attract_points(ft);
+    sum_acc();
+    move_points(ft);
+
+    return std::chrono::high_resolution_clock::now() - s;
 }
 
 /// @brief Generic custom simd update function
 /// @param ft Fixed time used for update
 /// @return Nanoseconds it took to run update
-std::chrono::nanoseconds simulation::update_cpu_simd(const float ft) noexcept {
-    auto s = std::chrono::high_resolution_clock::now();
+void simulation::attract_points(const float ft) noexcept {
     data_.zero_acc();
 
     // aliasing
@@ -115,132 +115,65 @@ std::chrono::nanoseconds simulation::update_cpu_simd(const float ft) noexcept {
             ax_row[i] = a1x_final;
             ay_row[i] = a1y_final;
         }
-
-        // explicit barrier
-        #pragma omp barrier
-
-        float* __restrict ax_top = ax.row(0);
-        float* __restrict ay_top = ay.row(0);
-
-        // sum acceleration into top row
-        for (size_t r = 1; r < ax.rows(); r++) {
-
-            #pragma omp for simd schedule(static)
-            for (size_t c = 0; c < ax.cols(); c++) {
-                ax_top[c] += ax(r, c);
-                ay_top[c] += ay(r, c);
-            }
-        }
-
-        // explicit barrier
-        #pragma omp barrier
-
-        // update body positions and velocities
-        #pragma omp for simd schedule(static)
-        for (size_t i = 0; i < n; i++) {
-            vx[i] += ax_top[i] * ft;
-            vy[i] += ay_top[i] * ft;
-
-            px[i] += vx[i] * ft;
-            py[i] += vy[i] * ft;
-        }
     }
-
-    return std::chrono::high_resolution_clock::now() - s;
 }
 
-/// @brief Fall back funciton for cpu updates, uses compiler for vectorization
-/// @param ft Fixed time used for update
-/// @return Nanoseconds it took to run update
-std::chrono::nanoseconds simulation::update_cpu_fallback(const float ft) noexcept {
-    auto s = std::chrono::high_resolution_clock::now();
-    data_.zero_acc();
+void simulation::sum_acc() noexcept {
+    // aliasing
+    matrix& ax = data_.accx();
+    matrix& ay = data_.accy();
+    float* __restrict ax_top = ax.row(0);
+    float* __restrict ay_top = ay.row(0);
 
+    // sum acceleration into top row
+    for (size_t r = 1; r < ax.rows(); r++) {
+
+        #pragma omp parallel for simd schedule(static)
+        for (size_t c = 0; c < ax.cols(); c++) {
+            ax_top[c] += ax(r, c);
+            ay_top[c] += ay(r, c);
+        }
+    }
+}
+
+void simulation::move_points(const float ft) noexcept {
     // aliasing
     const size_t n = data_.bodies();
     float* __restrict px = data_.posx();
     float* __restrict py = data_.posy();
     float* __restrict vx = data_.velx();
     float* __restrict vy = data_.vely();
-    const float* __restrict ma = data_.mass();
-    matrix& ax = data_.accx();
-    matrix& ay = data_.accy();
+    const float* ax = data_.accx().row(0);
+    const float* ay = data_.accy().row(0);
 
-    // gravitational constant is set to 1 for purposes of this simulation
-    #pragma omp parallel
-    {
-        int tid = omp_get_thread_num();
-        float* __restrict ax_row = ax.row(tid);
-        float* __restrict ay_row = ay.row(tid);
+    const auto _ft = util::set1(ft);
 
-        #pragma omp for schedule(static)
-        for (size_t i = 0; i < n; i++) {
-            const float p1x = px[i];
-            const float p1y = py[i];
-            const float p1m = ma[i];
+    #pragma omp parallel for schedule(static)
+    for (size_t i = 0; i < ssize_t(n)-ssize_t(util::last); i += util::width) {
+        const auto _ax = util::load(&ax[i]);
+        const auto _ay = util::load(&ay[i]);
+        auto _vx = util::load(vx+i);
+        auto _vy = util::load(vy+i);
+        auto _px = util::load(px+i);
+        auto _py = util::load(py+i);
 
-            float a1x_final = 0.0f;
-            float a1y_final = 0.0f;
-
-            #pragma omp simd
-            for(size_t j = i+1; j < n; j++) {
-                const float p2x = px[j];
-                const float p2y = py[j];
-                const float p2m = ma[j];
-
-                const float dx = p2x - p1x;
-                const float dy = p2y - p1y;
-                const float dsq = 1e-12f + (dx*dx) + (dy*dy);
-
-                // fast rsqrt with netwon step
-                float inv = util::frsqrt(dsq);
-                inv = inv * (1.5f - 0.5f * dsq * inv * inv);
-
-                // compute intermediate values
-                float inv_dis3 = inv * inv * inv;
-                float ivx = dx * inv_dis3;
-                float ivy = dy * inv_dis3;
-
-                // update acceleration values
-                a1x_final += ivx * p2m;
-                a1y_final += ivy * p2m;
-                ax_row[j] += ivx * p1m;
-                ay_row[j] += ivy * p1m;
-            }
-
-            ax_row[i] = a1x_final;
-            ay_row[i] = a1y_final;
-        }
-
-        // explicit barrier
-        #pragma omp barrier
-
-        float* __restrict ax_top = ax.row(0);
-        float* __restrict ay_top = ay.row(0);
-
-        // sum acceleration into top row
-        for (size_t r = 1; r < ax.rows(); r++) {
-
-            #pragma omp for simd schedule(static)
-            for (size_t c = 0; c < ax.cols(); c++) {
-                ax_top[c] += ax(r, c);
-                ay_top[c] += ay(r, c);
-            }
-        }
-
-        // explicit barrier
-        #pragma omp barrier
-
-        // update body positions and velocities
-        #pragma omp for simd schedule(static)
-        for (size_t i = 0; i < n; i++) {
-            vx[i] += ax_top[i] * ft;
-            vy[i] += ay_top[i] * ft;
-
-            px[i] += vx[i] * ft;
-            py[i] += vy[i] * ft;
-        }
+        _vx += _ax * _ft;
+        _vy += _ay * _ft;
+        _px += _vx * _ft;
+        _py += _vy * _ft;
+        
+        util::store(vx+i, _vx);
+        util::store(vy+i, _vy);
+        util::store(px+i, _px);
+        util::store(py+i, _py);
     }
 
-    return std::chrono::high_resolution_clock::now() - s;
+    size_t r = n - (n%util::width);
+    for (size_t i = r; r < n; r++) {
+        vx[i] += ax[i] * ft;
+        vy[i] += ay[i] * ft;
+
+        px[i] += vx[i] * ft;
+        py[i] += vy[i] * ft;
+    }
 }

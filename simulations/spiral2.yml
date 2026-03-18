@@ -1,13 +1,15 @@
 type: spiral
 points: 30000
-fixedtime: 0.00005
+fixedtime: 0.0005
 
 seed: 1234567890
-ellipses: 100
-segments: 10
+ellipses: 1000
+segments: 5
 
-#posmean: 0.0
-posstd: 0.25
+massmean: 1
+massstd: 0
+
+posstd: 0.9
 incdelta: 0.0001
 rxscale: 1.0001
 rotdelta: 0.2

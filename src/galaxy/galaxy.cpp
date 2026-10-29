@@ -18,6 +18,7 @@
 
 #define Y_UN_INNER_RADIUS "inner_radius"
 #define Y_UN_OUTER_RADIUS "outer_radius"
+#define Y_UN_DISTRIBUTION "distribution"
 
 data Galaxy::New() const {
     // for now we're just gonna hard code a uniform generation
@@ -26,7 +27,11 @@ data Galaxy::New() const {
     const float inner_rad = std::any_cast<float>(this->conf.at(Options::UN_INNER_RADIUS));
     const float outer_rad = std::any_cast<float>(this->conf.at(Options::UN_OUTER_RADIUS));
 
+    if (this->conf.contains(Options::UN_DISTRIBUTION)) {}
+    //const std::string distribution = std::any_cast<std::string>(this->conf.at(Options::UN_DISTRIBUTION));
+
     std::uniform_real_distribution<float> angle(0.0f, 1.0f);
+    std::normal_distribution<float> pos(0.0f, 0.5f);
 
     size_t i = 0;
     if (this->center_mass > 0.0f) {
@@ -44,7 +49,7 @@ data Galaxy::New() const {
     for (; i < this->points; i++) {
         const float a = angle(gen) * TAU;
 
-        const float r = angle(gen) * (1.0f - t2) + t2;
+        const float r = abs(pos(gen)) * (1.0f - t2) + t2;
         const float scale = outer_rad * sqrtf(r);
 
         const float sin_a = sinf(a);

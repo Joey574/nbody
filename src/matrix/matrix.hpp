@@ -56,7 +56,7 @@ struct matrix {
         cols_ = other.cols_;
         stride_ = other.stride_;
 
-        if (data_) { free(data_); }
+        free(data_);
         data_ = other.data_;
 
         other.rows_ = 0;
@@ -70,7 +70,7 @@ struct matrix {
     matrix& operator = (const matrix& other) {
         if (this == &other) return *this;
 
-        if (data_) { free(data_); }
+        free(data_);
         rows_ = other.rows_;
         cols_ = other.cols_;
         stride_ = other.stride_;
@@ -86,7 +86,8 @@ struct matrix {
         rows_ = 0;
         cols_ = 0;
         stride_ = 0;
-        if (data_) { free(data_); data_ = nullptr; }
+        free(data_);
+        data_ = nullptr;
     }
 
     void zero() noexcept {
@@ -108,8 +109,8 @@ struct matrix {
     constexpr size_t cols() const noexcept { return cols_; }
 
     private:
-    float* __restrict data_;
-    size_t stride_;
-    size_t rows_;
-    size_t cols_;
+    float* __restrict data_ = nullptr;
+    size_t stride_ = 0;
+    size_t rows_ = 0;
+    size_t cols_ = 0;
 };

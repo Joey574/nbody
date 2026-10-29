@@ -33,7 +33,8 @@ struct Galaxy {
     private:
         enum class Options {
             UN_INNER_RADIUS,
-            UN_OUTER_RADIUS
+            UN_OUTER_RADIUS,
+            UN_DISTRIBUTION
         };
 
         Type type;

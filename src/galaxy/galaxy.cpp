@@ -27,6 +27,7 @@ data Galaxy::New() const {
     const float inner_rad = std::any_cast<float>(this->conf.at(Options::UN_INNER_RADIUS));
     const float outer_rad = std::any_cast<float>(this->conf.at(Options::UN_OUTER_RADIUS));
 
+    // TODO
     if (this->conf.contains(Options::UN_DISTRIBUTION)) {}
     //const std::string distribution = std::any_cast<std::string>(this->conf.at(Options::UN_DISTRIBUTION));
 

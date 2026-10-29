@@ -19,7 +19,7 @@ struct matrix {
         data_(nullptr) {}
 
     // move constructor
-    matrix(matrix&& other) noexcept : 
+    matrix(matrix&& other) noexcept :
         rows_(other.rows_),
         cols_(other.cols_),
         stride_(other.stride_),
@@ -41,23 +41,24 @@ struct matrix {
         }
 
     // custom constructor
-    matrix(size_t r, size_t c) : 
-    rows_(r),
-    cols_(c),
-    stride_(util::aligned_size(c*sizeof(float))/sizeof(float)),
-    data_((float*)aligned_alloc(MEM_ALIGNMENT, r*util::aligned_size(c*sizeof(float)))) {}
+    matrix(size_t r, size_t c) :
+        rows_(r),
+        cols_(c),
+        stride_(util::aligned_size(c*sizeof(float))/sizeof(float)),
+        data_((float*)aligned_alloc(MEM_ALIGNMENT, r*util::aligned_size(c*sizeof(float))))
+        {}
 
     // move operator
     matrix& operator = (matrix&& other) noexcept {
         if (this == &other) return *this;
-        
+
         rows_ = other.rows_;
         cols_ = other.cols_;
         stride_ = other.stride_;
 
         if (data_) { free(data_); }
         data_ = other.data_;
-        
+
         other.rows_ = 0;
         other.cols_ = 0;
         other.stride_ = 0;

@@ -2,7 +2,6 @@
 #include <cstdlib>
 #include <string.h>
 #include <cstddef>
-#include <cstdint>
 #include <vector>
 #include <algorithm>
 #include <omp.h>
@@ -14,12 +13,12 @@
 /// @brief Hold the raw underlying simulation data and provides a simple interface to access it
 struct data {
     private:
-    size_t bodies_;
-    float* __restrict posx_;
-    float* __restrict posy_;
-    float* __restrict velx_;
-    float* __restrict vely_;
-    float* __restrict mass_;
+    size_t bodies_ = 0;
+    float* __restrict posx_ = nullptr;
+    float* __restrict posy_ = nullptr;
+    float* __restrict velx_ = nullptr;
+    float* __restrict vely_ = nullptr;
+    float* __restrict mass_ = nullptr;
     matrix accx_;
     matrix accy_;
 

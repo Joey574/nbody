@@ -32,11 +32,13 @@ namespace util {
 
     std::string executable_path(char* argv[]);
 
+    static inline constexpr float epsl = 1e-12f;
+
     #ifdef __AVX512F__
         using reg = __m512;
         static inline constexpr size_t width = 16;
         static inline constexpr size_t last = 15;
-        static inline const __m512 _epsl = _mm512_set1_ps(1e-12f);
+        static inline const __m512 _epsl = _mm512_set1_ps(epsl);
         static inline const __m512 _opf = _mm512_set1_ps(1.5f);
         static inline const __m512 _pf = _mm512_set1_ps(0.5f);
 
@@ -75,7 +77,7 @@ namespace util {
         using reg = __m256;
         static inline constexpr size_t width = 8;
         static inline constexpr size_t last = 7;
-        static inline const __m256 _epsl = _mm256_set1_ps(1e-12f);
+        static inline const __m256 _epsl = _mm256_set1_ps(epsl);
         static inline const __m256 _opf = _mm256_set1_ps(1.5f);
         static inline const __m256 _pf = _mm256_set1_ps(0.5f);
 
@@ -111,7 +113,7 @@ namespace util {
         using reg = float;
         static inline constexpr size_t width = 1;
         static inline constexpr size_t last = 0;
-        static inline const float _epsl = 1e-12f;
+        static inline const float _epsl = epsl;
         static inline const float _opf = 1.5f;
         static inline const float _pf = 0.5f;
 

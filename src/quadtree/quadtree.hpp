@@ -13,15 +13,23 @@ struct quadtree {
     public:
 
         void insert(const data& d);
-        void compute_acc(const float ft, matrix& ax, matrix& ay);
+        void compute_acc(data& d);
 
         void debug_print_tree();
 
     private:
+        // TODO
+        // this can be made an SoA instead of an AoS
+        // this would match the memory order of data
+        // allowing easy copy first first element ma
+        // py and py. And is generally more performant
         struct Node {
             float cm = 0.0f;
             float cx = 0.0f;
             float cy = 0.0f;
+
+            float min_x;
+            float max_x;
 
             uint32_t ne = 0;
             uint32_t nw = 0;
@@ -34,4 +42,8 @@ struct quadtree {
 
         void grow(const size_t n);
         void zero();
+
+        void compute_acc_recurse(data& d, size_t i, size_t j);
+
+        void insert_assertions();
 };

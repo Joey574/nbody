@@ -71,7 +71,7 @@ struct simulation {
     std::chrono::nanoseconds update_cpu_bh(const float ft) noexcept;
 
     std::chrono::nanoseconds update_cpu(const float ft) noexcept;
-    void compute_acc(const float ft) noexcept;
+    void compute_acc() noexcept;
     void move_points(const float ft) noexcept;
     void sum_acc() noexcept;
 

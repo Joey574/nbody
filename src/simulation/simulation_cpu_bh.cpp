@@ -5,6 +5,7 @@ std::chrono::nanoseconds simulation::update_cpu_bh(const float ft) noexcept {
 
     tree_.insert(data_);
     tree_.compute_acc(data_);
+    sum_acc();
     move_points(ft);
 
     return std::chrono::high_resolution_clock::now() - start;

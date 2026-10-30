@@ -30,6 +30,10 @@ namespace util {
         return base;
     }
 
+    static inline bool is_near(float a, float b) {
+        return std::abs(a-b) < 1e-8f;
+    }
+
     std::string executable_path(char* argv[]);
 
     static inline constexpr float epsl = 1e-12f;

@@ -43,7 +43,7 @@ struct quadtree {
         void grow(const size_t n);
         void zero();
 
-        void compute_acc_recurse(data& d, size_t i, size_t j);
+        void compute_acc_recurse(data& d, size_t i, size_t j, int tid);
 
         void insert_assertions(const data& d);
 };

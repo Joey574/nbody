@@ -2,6 +2,7 @@
 #include <algorithm>
 #include <cstring>
 #include <assert.h>
+#include <yaml-cpp/node/detail/node.h>
 
 void quadtree::insert(const data& d) {
     const size_t n = d.bodies();
@@ -27,9 +28,12 @@ void quadtree::insert(const data& d) {
 
     const auto update_root = [&](size_t i, size_t j) {
         // update parent cm, cx, cy
+        const float old_mass = nodes_[j].cm;
         nodes_[j].cm += ma[i];
-        nodes_[j].cx += (ma[i] * px[i]) / nodes_[j].cm;
-        nodes_[j].cy += (ma[i] * py[i]) / nodes_[j].cm;
+
+        nodes_[j].cx = ((nodes_[j].cx * old_mass) + (ma[i] * px[i])) / (nodes_[j].cm);
+        nodes_[j].cy = ((nodes_[j].cy * old_mass) + (ma[i] * py[i])) / (nodes_[j].cm);
+
         nodes_[j].min_x = std::min(nodes_[j].min_x, px[i]);
         nodes_[j].max_x = std::max(nodes_[j].max_x, px[i]);
     };
@@ -37,7 +41,6 @@ void quadtree::insert(const data& d) {
     for (size_t i = 1; i < n; i++) {
         for (size_t j = 0;;) {
             if (i == j) break;
-
             update_root(i, j);
 
             if (px[i] > px[j] && py[i] > py[j]) { // NE
@@ -68,7 +71,7 @@ void quadtree::insert(const data& d) {
                     nodes_[j].se = i;
                     break;
                 } else {
-                    // node is populated, update k and recurse
+                    // node is populated, update j and recurse
                     j = nodes_[j].se;
                     continue;
                 }
@@ -79,7 +82,7 @@ void quadtree::insert(const data& d) {
                     nodes_[j].sw = i;
                     break;
                 } else {
-                    // node is populated, update k and recurse
+                    // node is populated, update j and recurse
                     j = nodes_[j].sw;
                     continue;
                 }
@@ -95,17 +98,26 @@ void quadtree::insert(const data& d) {
 void quadtree::compute_acc(data& d) {
     assert(d.bodies() == this->size_);
 
-    const size_t ne = nodes_[0].ne;
-    const size_t nw = nodes_[0].nw;
-    const size_t se = nodes_[0].se;
-    const size_t sw = nodes_[0].sw;
+    d.accx().zero();
+    d.accy().zero();
 
-    for (size_t i = 0; i < size_; i++) {
-        // for each node, check childen
-        compute_acc_recurse(d, i, ne);
-        compute_acc_recurse(d, i, nw);
-        compute_acc_recurse(d, i, se);
-        compute_acc_recurse(d, i, sw);
+    const uint32_t ne = nodes_[0].ne;
+    const uint32_t nw = nodes_[0].nw;
+    const uint32_t se = nodes_[0].se;
+    const uint32_t sw = nodes_[0].sw;
+
+    #pragma omp parallel
+    {
+        int tid = omp_get_thread_num();
+
+        #pragma omp for schedule(dynamic)
+        for (size_t i = 0; i < size_; i++) {
+            // for each node, check childen
+            compute_acc_recurse(d, i, ne, tid);
+            compute_acc_recurse(d, i, nw, tid);
+            compute_acc_recurse(d, i, se, tid);
+            compute_acc_recurse(d, i, sw, tid);
+        }
     }
 }
 
@@ -130,37 +142,50 @@ void quadtree::zero() {
     std::memset(this->nodes_, 0, size_*sizeof(Node));
 }
 
-void quadtree::compute_acc_recurse(data& d, size_t i, size_t j) {
+// TODO
+// this needs to be turned into a linear loop
+// this needs to make use of multithreading, should take a tid input
+void quadtree::compute_acc_recurse(data& d, size_t i, size_t j, int tid) {
     if (!j) return; // 0 means no child node, first call already ommits 0th j
 
     if (i == j) {
         // there still exists other nodes below this
         // that we may need to check, recurse into children
-        compute_acc_recurse(d, i, nodes_[i].ne);
-        compute_acc_recurse(d, i, nodes_[i].nw);
-        compute_acc_recurse(d, i, nodes_[i].se);
-        compute_acc_recurse(d, i, nodes_[i].sw);
+        compute_acc_recurse(d, i, nodes_[i].ne, tid);
+        compute_acc_recurse(d, i, nodes_[i].nw, tid);
+        compute_acc_recurse(d, i, nodes_[i].se, tid);
+        compute_acc_recurse(d, i, nodes_[i].sw, tid);
         return;
     };
 
-    const float theta = 0.1f;
+    const float theta = 1.0f;
+    const float thetasq = theta*theta;
     const size_t n = d.bodies();
     const float* __restrict ma = d.mass();
     const float* __restrict px = d.posx();
     const float* __restrict py = d.posy();
-    float* __restrict ax_row = d.accx().row(0);
-    float* __restrict ay_row = d.accy().row(0);
+    float* __restrict ax_row = d.accx().row(tid);
+    float* __restrict ay_row = d.accy().row(tid);
 
     const float size = nodes_[j].max_x - nodes_[j].min_x;
+    const float sizesq = size*size;
 
-    const float dx = px[i] - nodes_[j].cx;
-    const float dy = py[i] - nodes_[j].cy;
+    const float p1x = px[i];
+    const float p1y = py[i];
+    const float p1m = ma[i];
+
+    const float p2x = nodes_[j].cx;
+    const float p2y = nodes_[j].cy;
+    const float p2m = nodes_[j].cm;
+
+    const float dx = p2x - p1x;
+    const float dy = p2y - p2y;
     const float dsq = util::epsl + (dx*dx) + (dy*dy);
 
-    float inv = util::frsqrt(dsq);
-    inv = inv * (1.5f - 0.5f * dsq * inv * inv);
+    if (sizesq / dsq < thetasq) {
+        float inv = util::frsqrt(dsq);
+        inv = inv * (1.5f - 0.5f * dsq * inv * inv);
 
-    if (size*inv < theta) {
         const float inv3 = inv*inv*inv;
         const float p2m = nodes_[j].cm;
 
@@ -171,36 +196,91 @@ void quadtree::compute_acc_recurse(data& d, size_t i, size_t j) {
         ay_row[i] += ivy * p2m;
 
     } else {
-        compute_acc_recurse(d, i, nodes_[j].nw);
-        compute_acc_recurse(d, i, nodes_[j].ne);
-        compute_acc_recurse(d, i, nodes_[j].sw);
-        compute_acc_recurse(d, i, nodes_[j].se);
+        compute_acc_recurse(d, i, nodes_[j].nw, tid);
+        compute_acc_recurse(d, i, nodes_[j].ne, tid);
+        compute_acc_recurse(d, i, nodes_[j].sw, tid);
+        compute_acc_recurse(d, i, nodes_[j].se, tid);
     }
 }
 
 void quadtree::insert_assertions(const data& d) {
+    debug_print_tree();
+
     for (size_t i = 0; i < this->size_; i++) {
-        printf("%lu: root.cm='%.2f', cm='%.2f', ne.cm='%.2f', nw.cm='%.2f', se.cm='%.2f', sw.cm='%.2f'\n",
-            i, nodes_[i].cm, nodes_[nodes_[i].ne].cm +
-            nodes_[nodes_[i].nw].cm +
-            nodes_[nodes_[i].se].cm +
-            nodes_[nodes_[i].sw].cm + d.mass()[i], nodes_[nodes_[i].ne].cm, nodes_[nodes_[i].nw].cm, nodes_[nodes_[i].se].cm, nodes_[nodes_[i].sw].cm
+        const Node* n = &nodes_[i];
+        const Node* ne = n->ne != 0 ? &nodes_[n->ne] : nullptr;
+        const Node* nw = n->nw != 0 ? &nodes_[n->nw] : nullptr;
+        const Node* se = n->se != 0 ? &nodes_[n->se] : nullptr;
+        const Node* sw = n->sw != 0 ? &nodes_[n->sw] : nullptr;
+
+        printf("%lu\n", i);
+        printf("\tmass: root.cm='%.2f', cm='%.2f', ne.cm='%.2f', nw.cm='%.2f', se.cm='%.2f', sw.cm='%.2f'\n",
+            n->cm,
+            (ne ? ne->cm : 0) +
+            (nw ? nw->cm : 0) +
+            (se ? se->cm : 0) +
+            (sw ? sw->cm : 0) +
+            d.mass()[i],
+            (ne ? ne->cm : 0),
+            (nw ? nw->cm : 0),
+            (se ? se->cm : 0),
+            (sw ? sw->cm : 0)
         );
 
-        assert(nodes_[i].cm ==
-            nodes_[nodes_[i].ne].cm +
-            nodes_[nodes_[i].nw].cm +
-            nodes_[nodes_[i].se].cm +
-            nodes_[nodes_[i].sw].cm +
-            d.mass()[i]
+        assert(util::is_near(n->cm,
+            (ne ? ne->cm : 0) +
+            (nw ? nw->cm : 0) +
+            (se ? se->cm : 0) +
+            (sw ? sw->cm : 0) +
+            d.mass()[i])
         );
 
-        //assert(nodes_[i].cx ==
-        //    (nodes_[nodes_[i].ne].cm*nodes_[nodes_[i].ne].cx) / nodes_[i].cm +
-        //    (nodes_[nodes_[i].nw].cm*nodes_[nodes_[i].nw].cx) / nodes_[i].cm +
-        //    (nodes_[nodes_[i].se].cm*nodes_[nodes_[i].se].cx) / nodes_[i].cm +
-        //    (nodes_[nodes_[i].sw].cm*nodes_[nodes_[i].sw].cx) / nodes_[i].cm +
-        //    (d.mass()[i] * d.posx()[i]) / nodes_[i].cm
-        //);
+        printf("\tcx: root.cx='%.2f', cx='%.2f', ne.cx='%.2f', nw.cx='%.2f', se.cx='%.2f', sw.cx='%.2f'\n",
+            n->cx,
+            ((ne->cm * ne->cx) +
+            (nw->cm * nw->cx) +
+            (se->cm * se->cx) +
+            (sw->cm * sw->cx) +
+            (d.mass()[i] * d.posx()[i]))
+            / n[i].cm,
+            ne->cx,
+            nw->cx,
+            se->cx,
+            sw->cx
+        );
+
+        assert(util::is_near(n[i].cx, (
+           (ne->cm * ne->cx) +
+           (nw->cm * nw->cx) +
+           (se->cm * se->cx) +
+           (sw->cm * sw->cx) +
+           (d.mass()[i] * d.posx()[i]))
+           / n[i].cm)
+        );
+
+        printf("\tcy: root.cy='%.2f', cy='%.2f', ne.cy='%.2f', nw.cy='%.2f', se.cy='%.2f', sw.cy='%.2f'\n",
+            n->cy,
+            ((ne->cm * ne->cy) +
+            (nw->cm * nw->cy) +
+            (se->cm * se->cy) +
+            (sw->cm * sw->cy) +
+            (d.mass()[i] * d.posx()[i]))
+            / n[i].cm,
+            ne->cy,
+            nw->cy,
+            se->cy,
+            sw->cy
+        );
+
+        assert(util::is_near(n[i].cy, (
+           (ne->cm * ne->cy) +
+           (nw->cm * nw->cy) +
+           (se->cm * se->cy) +
+           (sw->cm * sw->cy) +
+           (d.mass()[i] * d.posx()[i]))
+           / n[i].cm)
+        );
     }
+
+    exit(0);
 }

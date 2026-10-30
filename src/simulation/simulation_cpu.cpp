@@ -11,19 +11,19 @@ compiler for vectorization
 #include <algorithm>
 
 std::chrono::nanoseconds simulation::update_cpu(const float ft) noexcept {
-    auto s = std::chrono::high_resolution_clock::now();
+    auto start = std::chrono::high_resolution_clock::now();
 
-    attract_points(ft);
+    compute_acc(ft);
     sum_acc();
     move_points(ft);
 
-    return std::chrono::high_resolution_clock::now() - s;
+    return std::chrono::high_resolution_clock::now() - start;
 }
 
 /// @brief Generic custom simd update function
 /// @param ft Fixed time used for update
 /// @return Nanoseconds it took to run update
-void simulation::attract_points(const float ft) noexcept {
+void simulation::compute_acc(const float ft) noexcept {
     data_.zero_acc();
 
     // aliasing

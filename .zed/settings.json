@@ -2,7 +2,10 @@
   "lsp": {
     "clangd": {
       "binary": {
-        "arguments": ["--query-driver=/nix/store/*/bin/*"]
+        "path": "clangd",
+        "arguments": [
+          "--query-driver=/nix/store/*/bin/g++"
+        ]
       }
     }
   }

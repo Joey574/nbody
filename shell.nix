@@ -4,13 +4,15 @@
 
 pkgs.mkShell {
   nativeBuildInputs = with pkgs; [
+    bc
     cmake
     ninja
     pkg-config
+    gcc
+    clang-tools
   ];
 
   buildInputs = with pkgs; [
-    bc
     shader-slang
     yaml-cpp
     vulkan-headers

@@ -1,30 +1,37 @@
 #pragma once
-#include <concepts>
 #include <cstdint>
 #include <cstddef>
 #include <cstdlib>
 
+#include "../data/data.hpp"
+
 /*
- * The main loop should go something like this
- *
- * Insert all bodies into a quadtree, each leaf has at most 1 body
- * CoM should likely be computed on the way down?
- *
  * Using this tree we can quickly compute attraction values
  */
 
 struct quadtree {
     public:
 
+        void insert(const data& d);
+        void compute_acc(const float ft, matrix& ax, matrix& ay);
+
+        void debug_print_tree();
+
     private:
         struct Node {
-            uint32_t nw;
-            uint32_t ne;
-            uint32_t sw;
-            uint32_t se;
+            float cm = 0.0f;
+            float cx = 0.0f;
+            float cy = 0.0f;
+
+            uint32_t ne = 0;
+            uint32_t nw = 0;
+            uint32_t se = 0;
+            uint32_t sw = 0;
         };
 
-        Node* data;
-        size_t size;
-        size_t capacity;
+        Node* nodes_;
+        size_t size_;
+
+        void grow(const size_t n);
+        void zero();
 };

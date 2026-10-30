@@ -13,5 +13,6 @@ struct cliargs {
     std::string path;
     size_t refresh;
     bool cpu;
+    bool bh;
     bool quiet;
 };

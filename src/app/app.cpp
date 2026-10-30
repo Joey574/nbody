@@ -2,7 +2,9 @@
 
 #include <functional>
 #include <chrono>
+#include <thread>
 
+#include "../quadtree/quadtree.hpp"
 
 /// @brief Handles application starting and managing the main loop
 /// @param f User defined cli arguments

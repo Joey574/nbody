@@ -15,6 +15,7 @@ void cliargs::parse(int argc, char* argv[]) {
                 "\nUsage: nbody [Options]"
                 "\n\nOPTIONS:"
                 "\n\t--cpu: use cpu computation"
+                "\n\t--bh: use barnes-hut algorithm"
                 "\n\t-q, --quiet: quiet perf output"
                 "\n\t--refresh: set refresh rate of perf output"
                 "\n\t-f, --file: config file for simulation"
@@ -22,16 +23,18 @@ void cliargs::parse(int argc, char* argv[]) {
             );
             exit(0);
         } else if (v == "--cpu") {
-            cpu = true;
+            this->cpu = true;
+        } else if (v == "--bh") {
+            this->bh = true;
         } else if (v == "-q" || v == "--quiet") {
-            quiet = true;
+            this->quiet = true;
         } else if (v == "--refresh") {
             if (argc > i+1) {
-                refresh = std::stoul(argv[++i]);
+                this->refresh = std::stoul(argv[++i]);
             }
         } else if (v == "-f" || v == "--file") {
             if (argc > i+1) {
-                config.Load(argv[++i]);
+                this->config.Load(argv[++i]);
             }
         } else {
             throw std::runtime_error(("unrecognized argument \"" + v + "\"").c_str());

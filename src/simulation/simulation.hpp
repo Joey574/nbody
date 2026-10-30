@@ -6,6 +6,7 @@
 
 #include "../data/data.hpp"
 #include "../cli/cli.hpp"
+#include "../quadtree/quadtree.hpp"
 
 struct simulation {
     public:
@@ -28,15 +29,16 @@ struct simulation {
     // custom constructor
     simulation(const cliargs& f) : data_(f.config.New()) {
         if (f.cpu) {
-            update = &simulation::update_cpu;
+            if (f.bh) {
+                update = &simulation::update_cpu_bh;
+            } else {
+                update = &simulation::update_cpu;
+            }
         } else {
             update = &simulation::update_gpu;
             throw std::runtime_error("not implemented");
         }
     }
-
-    // deconstructor
-    //~simulation() {}
 
     // move operator
     simulation& operator = (simulation&& other) noexcept {
@@ -64,11 +66,12 @@ struct simulation {
 
     private:
     data data_;
+    quadtree tree_;
 
     std::chrono::nanoseconds update_cpu_bh(const float ft) noexcept;
 
     std::chrono::nanoseconds update_cpu(const float ft) noexcept;
-    void attract_points(const float ft) noexcept;
+    void compute_acc(const float ft) noexcept;
     void move_points(const float ft) noexcept;
     void sum_acc() noexcept;
 

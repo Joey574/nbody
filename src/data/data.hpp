@@ -2,8 +2,8 @@
 #include <cstdlib>
 #include <string.h>
 #include <cstddef>
-#include <vector>
 #include <algorithm>
+#include <vector>
 #include <omp.h>
 
 #include "../definitions/macros.hpp"

@@ -2,21 +2,8 @@ fixed_time: 0.0000001
 
 galaxies:
   - type: uniform
-    points: 20000
+    points: 100
     seed: 1234
-    inner_radius: 50
-    outer_radius: 500
-    center_mass: 1.5e15
-    x_vel: 10000
-    y_vel: 500
-
-  - type: uniform
-    points: 5000
-    seed: 123456789
-    inner_radius: 40
-    outer_radius: 175
-    center_mass: 1e15
-    x_pos: 550
-    y_pos: 550
-    x_vel: -20000
-    y_vel: 120
+    inner_radius: 25
+    outer_radius: 50
+    center_mass: 1e3

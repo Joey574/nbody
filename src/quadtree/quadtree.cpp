@@ -9,7 +9,7 @@ void quadtree::insert(const data& d) {
     if (!n) return;
 
     this->grow(n);
-    this->zero();
+    this->zero_children();
 
     // alias
     const float* __restrict px = d.posx();
@@ -17,82 +17,45 @@ void quadtree::insert(const data& d) {
     const float* __restrict ma = d.mass();
 
     // insert node data
-    #pragma omp parallel for simd schedule(static)
-    for (size_t i = 0; i < n; i++) {
-        nodes_[i].cm = ma[i];
-        nodes_[i].cx = px[i];
-        nodes_[i].cy = py[i];
-        nodes_[i].min_x = px[i];
-        nodes_[i].max_x = px[i];
-    }
+    std::memcpy(cm_, ma, n*sizeof(float));
+    std::memcpy(cx_, px, n*sizeof(float));
+    std::memcpy(cy_, py, n*sizeof(float));
+    std::memcpy(min_x_, px, n*sizeof(float));
+    std::memcpy(max_x_, px, n*sizeof(float));
+    std::memcpy(min_y_, py, n*sizeof(float));
+    std::memcpy(max_y_, py, n*sizeof(float));
 
     const auto update_root = [&](size_t i, size_t j) {
         // update parent cm, cx, cy
-        const float old_mass = nodes_[j].cm;
-        nodes_[j].cm += ma[i];
+        const float old_mass = cm_[j];
+        cm_[j] += ma[i];
 
-        nodes_[j].cx = ((nodes_[j].cx * old_mass) + (ma[i] * px[i])) / (nodes_[j].cm);
-        nodes_[j].cy = ((nodes_[j].cy * old_mass) + (ma[i] * py[i])) / (nodes_[j].cm);
+        cx_[j] = ((cx_[j] * old_mass) + (ma[i] * px[i])) / (cm_[j]);
+        cy_[j] = ((cy_[j] * old_mass) + (ma[i] * py[i])) / (cm_[j]);
 
-        nodes_[j].min_x = std::min(nodes_[j].min_x, px[i]);
-        nodes_[j].max_x = std::max(nodes_[j].max_x, px[i]);
+        min_x_[j] = std::min(min_x_[j], px[i]);
+        max_x_[j] = std::max(max_x_[j], px[i]);
     };
 
     for (size_t i = 1; i < n; i++) {
         for (size_t j = 0;;) {
-            if (i == j) break;
             update_root(i, j);
 
-            if (px[i] > px[j] && py[i] > py[j]) { // NE
-                if (!nodes_[j].ne) {
-                    // node is empty, insert
-                    nodes_[j].ne = i;
-                    break;
-                } else {
-                    // node is populated, update k and recurse
-                    j = nodes_[j].ne;
-                    continue;
-                }
+            uint32_t* v =
+                (px[i] > px[j] && py[i] > py[j]) ? &ne_[j] :
+                (px[i] < px[j] && py[i] > py[j]) ? &nw_[j] :
+                (px[i] > px[j] && py[i] < py[j]) ? &se_[j] :
+                &sw_[j];
+            uint32_t k = *v;
 
-            } else if (px[i] < px[j] && py[i] > py[j]) { // NW
-                if (!nodes_[j].nw) {
-                    // node is empty, insert
-                    nodes_[j].nw = i;
-                    break;
-                } else {
-                    // node is populated, update k and recurse
-                    j = nodes_[j].nw;
-                    continue;
-                }
-
-            } else if (px[i] > px[j] && py[i] < py[j]) { // SE
-                if (!nodes_[j].se) {
-                    // node is empty, insert
-                    nodes_[j].se = i;
-                    break;
-                } else {
-                    // node is populated, update j and recurse
-                    j = nodes_[j].se;
-                    continue;
-                }
-
-            } else { // SW
-                if (!nodes_[j].sw) {
-                    // node is empty, insert
-                    nodes_[j].sw = i;
-                    break;
-                } else {
-                    // node is populated, update j and recurse
-                    j = nodes_[j].sw;
-                    continue;
-                }
+            if (!k) {
+                v[0] = i;
+                break;
             }
+
+            j = k;
         }
     }
-
-    #ifdef DEBUG
-    this->insert_assertions(d);
-    #endif
 }
 
 void quadtree::compute_acc(data& d) {
@@ -114,9 +77,8 @@ void quadtree::compute_acc(data& d) {
 
 void quadtree::debug_print_tree() {
     for (size_t i = 0; i < size_; i++) {
-        const auto n = &nodes_[i];
         printf("%lu: cm='%.2f', cx='%.2f', cy='%.2f', ne='%du', nw='%du', se='%du', sw='%du'\n",
-            i, n->cm, n->cx, n->cy, n->ne, n->nw, n->se, n->sw
+            i, cm_[i], cx_[i], cy_[i], ne_[i], nw_[i], se_[i], sw_[i]
         );
     }
 }
@@ -125,30 +87,65 @@ void quadtree::grow(const size_t n) {
     if (!n || size_ >= n) return;
 
     this->size_ = n;
-    free(nodes_);
-    nodes_ = (Node*)aligned_alloc(MEM_ALIGNMENT, util::aligned_size(n*sizeof(Node)));
+    free(cm_);
+    free(cx_);
+    free(cy_);
+    free(min_x_);
+    free(max_x_);
+    free(min_y_);
+    free(max_y_);
+    free(ne_);
+    free(nw_);
+    free(se_);
+    free(sw_);
+
+    cm_ = (float*)aligned_alloc(MEM_ALIGNMENT, util::aligned_size(n*sizeof(float)));
+    cx_ = (float*)aligned_alloc(MEM_ALIGNMENT, util::aligned_size(n*sizeof(float)));
+    cy_ = (float*)aligned_alloc(MEM_ALIGNMENT, util::aligned_size(n*sizeof(float)));
+    min_x_ = (float*)aligned_alloc(MEM_ALIGNMENT, util::aligned_size(n*sizeof(float)));
+    max_x_ = (float*)aligned_alloc(MEM_ALIGNMENT, util::aligned_size(n*sizeof(float)));
+    min_y_ = (float*)aligned_alloc(MEM_ALIGNMENT, util::aligned_size(n*sizeof(float)));
+    max_y_ = (float*)aligned_alloc(MEM_ALIGNMENT, util::aligned_size(n*sizeof(float)));
+    ne_ = (uint32_t*)aligned_alloc(MEM_ALIGNMENT, util::aligned_size(n*sizeof(uint32_t)));
+    nw_ = (uint32_t*)aligned_alloc(MEM_ALIGNMENT, util::aligned_size(n*sizeof(uint32_t)));
+    se_ = (uint32_t*)aligned_alloc(MEM_ALIGNMENT, util::aligned_size(n*sizeof(uint32_t)));
+    sw_ = (uint32_t*)aligned_alloc(MEM_ALIGNMENT, util::aligned_size(n*sizeof(uint32_t)));
 }
 
 void quadtree::zero() {
-    std::memset(this->nodes_, 0, size_*sizeof(Node));
+    std::memset(cm_, 0, size_*sizeof(float));
+    std::memset(cx_, 0, size_*sizeof(float));
+    std::memset(cy_, 0, size_*sizeof(float));
+    std::memset(min_x_, 0, size_*sizeof(float));
+    std::memset(max_x_, 0, size_*sizeof(float));
+    std::memset(min_y_, 0, size_*sizeof(float));
+    std::memset(max_y_, 0, size_*sizeof(float));
+    std::memset(ne_, 0, size_*sizeof(uint32_t));
+    std::memset(nw_, 0, size_*sizeof(uint32_t));
+    std::memset(se_, 0, size_*sizeof(uint32_t));
+    std::memset(sw_, 0, size_*sizeof(uint32_t));
+}
+
+void quadtree::zero_children() {
+    std::memset(ne_, 0, size_*sizeof(uint32_t));
+    std::memset(nw_, 0, size_*sizeof(uint32_t));
+    std::memset(se_, 0, size_*sizeof(uint32_t));
+    std::memset(sw_, 0, size_*sizeof(uint32_t));
 }
 
 // TODO
 // this needs to be turned into a linear loop
-// this needs to make use of multithreading, should take a tid input
 void quadtree::compute_acc_recurse(data& d, size_t i, size_t j, int tid) {
     if (i == j) {
         // there still exists other nodes below this
         // that we may need to check, recurse into children
-        if (nodes_[i].ne) compute_acc_recurse(d, i, nodes_[i].ne, tid);
-        if (nodes_[i].nw) compute_acc_recurse(d, i, nodes_[i].nw, tid);
-        if (nodes_[i].se) compute_acc_recurse(d, i, nodes_[i].se, tid);
-        if (nodes_[i].sw) compute_acc_recurse(d, i, nodes_[i].sw, tid);
+        if (ne_[i]) compute_acc_recurse(d, i, ne_[i], tid);
+        if (nw_[i]) compute_acc_recurse(d, i, nw_[i], tid);
+        if (se_[i]) compute_acc_recurse(d, i, se_[i], tid);
+        if (sw_[i]) compute_acc_recurse(d, i, sw_[i], tid);
         return;
     };
 
-    const float theta = 1.0f;
-    const float thetasq = theta*theta;
     const size_t n = d.bodies();
 
     const float* __restrict ma = d.mass();
@@ -157,22 +154,22 @@ void quadtree::compute_acc_recurse(data& d, size_t i, size_t j, int tid) {
     float* __restrict ax_row = d.accx().row(tid);
     float* __restrict ay_row = d.accy().row(tid);
 
-    const float size = nodes_[j].max_x - nodes_[j].min_x;
+    const float size = ((max_x_[j] - min_x_[j]) + (max_y_[j] - min_y_[j])) * 0.5f;
     const float sizesq = size*size;
 
     const float p1x = px[i];
     const float p1y = py[i];
     const float p1m = ma[i];
 
-    const float g2x = nodes_[j].cx;
-    const float g2y = nodes_[j].cy;
-    const float g2m = nodes_[j].cm;
+    const float g2x = cx_[j];
+    const float g2y = cy_[j];
+    const float g2m = cm_[j];
 
     const float dx = g2x - p1x;
     const float dy = g2y - p1y;
     const float dsq = util::epsl + (dx*dx) + (dy*dy);
 
-    if (sizesq / dsq < thetasq) {
+    if (sizesq / dsq < this->thetasq_) {
         // this group is far enough away to be approximated
         // as a single group
 
@@ -189,91 +186,9 @@ void quadtree::compute_acc_recurse(data& d, size_t i, size_t j, int tid) {
             &ax_row[i], &ay_row[i]
         );
 
-        if (nodes_[j].nw) compute_acc_recurse(d, i, nodes_[j].nw, tid);
-        if (nodes_[j].ne) compute_acc_recurse(d, i, nodes_[j].ne, tid);
-        if (nodes_[j].sw) compute_acc_recurse(d, i, nodes_[j].sw, tid);
-        if (nodes_[j].se) compute_acc_recurse(d, i, nodes_[j].se, tid);
+        if (nw_[j]) compute_acc_recurse(d, i, nw_[j], tid);
+        if (ne_[j]) compute_acc_recurse(d, i, ne_[j], tid);
+        if (sw_[j]) compute_acc_recurse(d, i, sw_[j], tid);
+        if (se_[j]) compute_acc_recurse(d, i, se_[j], tid);
     }
-}
-
-void quadtree::insert_assertions(const data& d) {
-    debug_print_tree();
-
-    for (size_t i = 0; i < this->size_; i++) {
-        const Node* n = &nodes_[i];
-        const Node* ne = n->ne != 0 ? &nodes_[n->ne] : nullptr;
-        const Node* nw = n->nw != 0 ? &nodes_[n->nw] : nullptr;
-        const Node* se = n->se != 0 ? &nodes_[n->se] : nullptr;
-        const Node* sw = n->sw != 0 ? &nodes_[n->sw] : nullptr;
-
-        printf("%lu\n", i);
-        printf("\tmass: root.cm='%.2f', cm='%.2f', ne.cm='%.2f', nw.cm='%.2f', se.cm='%.2f', sw.cm='%.2f'\n",
-            n->cm,
-            (ne ? ne->cm : 0) +
-            (nw ? nw->cm : 0) +
-            (se ? se->cm : 0) +
-            (sw ? sw->cm : 0) +
-            d.mass()[i],
-            (ne ? ne->cm : 0),
-            (nw ? nw->cm : 0),
-            (se ? se->cm : 0),
-            (sw ? sw->cm : 0)
-        );
-
-        assert(util::is_near(n->cm,
-            (ne ? ne->cm : 0) +
-            (nw ? nw->cm : 0) +
-            (se ? se->cm : 0) +
-            (sw ? sw->cm : 0) +
-            d.mass()[i])
-        );
-
-        printf("\tcx: root.cx='%.2f', cx='%.2f', ne.cx='%.2f', nw.cx='%.2f', se.cx='%.2f', sw.cx='%.2f'\n",
-            n->cx, (
-            (ne ? ne->cm * ne->cx : 0.0f) +
-            (nw ? nw->cm * nw->cx : 0.0f) +
-            (se ? se->cm * se->cx : 0.0f) +
-            (sw ? sw->cm * sw->cx : 0.0f) +
-            (d.mass()[i] * d.posx()[i]))
-            / n->cm,
-            ne->cx,
-            nw->cx,
-            se->cx,
-            sw->cx
-        );
-
-        assert(util::is_near(n->cx, (
-           (ne ? ne->cm * ne->cx : 0.0f) +
-           (nw ? nw->cm * nw->cx : 0.0f) +
-           (se ? se->cm * se->cx : 0.0f) +
-           (sw ? sw->cm * sw->cx : 0.0f) +
-           (d.mass()[i] * d.posx()[i]))
-            / n->cm)
-        );
-
-        printf("\tcy: root.cy='%.2f', cy='%.2f', ne.cy='%.2f', nw.cy='%.2f', se.cy='%.2f', sw.cy='%.2f'\n",
-            n->cy, (
-            (ne ? ne->cm * ne->cy : 0.0f) +
-            (nw ? nw->cm * nw->cy : 0.0f) +
-            (se ? se->cm * se->cy : 0.0f) +
-            (sw ? sw->cm * sw->cy : 0.0f) +
-            (d.mass()[i] * d.posx()[i]))
-            / n->cm,
-            ne->cy,
-            nw->cy,
-            se->cy,
-            sw->cy
-        );
-
-        assert(util::is_near(n->cy, (
-           (ne ? ne->cm * ne->cy : 0.0f) +
-           (nw ? nw->cm * nw->cy : 0.0f) +
-           (se ? se->cm * se->cy : 0.0f) +
-           (sw ? sw->cm * sw->cy : 0.0f) +
-           (d.mass()[i] * d.posy()[i]))
-            / n->cm)
-        );
-    }
-
-    exit(0);
 }

@@ -9,41 +9,55 @@
  * Using this tree we can quickly compute attraction values
  */
 
+// TODO
+// thetasq_ currently cannot be set from config, default constructor is called from somewhere?
+
 struct quadtree {
     public:
+        quadtree() {}
+
+        quadtree(float theta) : thetasq_(theta*theta) {}
 
         void insert(const data& d);
         void compute_acc(data& d);
 
         void debug_print_tree();
 
+        const inline float thetasq() const { return this->thetasq_; }
+
+        ~quadtree() {
+            free(cm_); cm_ = nullptr;
+            free(cx_); cx_ = nullptr;
+            free(cy_); cy_ = nullptr;
+            free(min_x_); min_x_ = nullptr;
+            free(max_x_); max_x_ = nullptr;
+            free(min_y_); min_y_ = nullptr;
+            free(max_y_); max_y_ = nullptr;
+            free(ne_); ne_ = nullptr;
+            free(nw_); nw_ = nullptr;
+            free(se_); se_ = nullptr;
+            free(sw_); sw_ = nullptr;
+        }
+
     private:
-        // TODO
-        // this can be made an SoA instead of an AoS
-        // this would match the memory order of data
-        // allowing easy copy first first element ma
-        // py and py. And is generally more performant
-        struct Node {
-            float cm = 0.0f;
-            float cx = 0.0f;
-            float cy = 0.0f;
+        float* __restrict cm_ = nullptr;
+        float* __restrict cx_ = nullptr;
+        float* __restrict cy_ = nullptr;
+        float* __restrict min_x_ = nullptr;
+        float* __restrict max_x_ = nullptr;
+        float* __restrict min_y_ = nullptr;
+        float* __restrict max_y_ = nullptr;
+        uint32_t* __restrict ne_ = nullptr;
+        uint32_t* __restrict nw_ = nullptr;
+        uint32_t* __restrict se_ = nullptr;
+        uint32_t* __restrict sw_ = nullptr;
 
-            float min_x;
-            float max_x;
-
-            uint32_t ne = 0;
-            uint32_t nw = 0;
-            uint32_t se = 0;
-            uint32_t sw = 0;
-        };
-
-        Node* nodes_;
-        size_t size_;
+        size_t size_ = 0;
+        float thetasq_ = 1.0f;
 
         void grow(const size_t n);
         void zero();
+        void zero_children();
 
         void compute_acc_recurse(data& d, size_t i, size_t j, int tid);
-
-        void insert_assertions(const data& d);
 };

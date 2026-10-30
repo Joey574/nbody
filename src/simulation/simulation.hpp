@@ -14,20 +14,11 @@ struct simulation {
     // default constructor
     simulation() :
         data_(data()),
-        update(nullptr) {}
+        update(nullptr)
+        {}
 
-    // move constructor
-    simulation(simulation&& other) noexcept :
-        data_(std::move(other.data_)),
-        update(other.update) {}
-
-    // copy constructor
-    simulation(const simulation& other) noexcept :
-        data_(other.data_),
-        update(other.update) {}
-
-    // custom constructor
-    simulation(const cliargs& f) : data_(f.config.New()) {
+    // parameterized constructor
+    simulation(const cliargs& f) : data_(f.config.New()), tree_(quadtree(f.config.Theta())) {
         if (f.cpu) {
             if (f.bh) {
                 update = &simulation::update_cpu_bh;

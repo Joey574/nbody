@@ -4,6 +4,7 @@
 
 #define Y_GALAXIES "galaxies"
 #define Y_FIXED_TIME "fixed_time"
+#define Y_THETA "theta"
 
 void Config::Load(const std::string& path) {
     conf = YAML::LoadFile(path);
@@ -34,5 +35,10 @@ float Config::FixedTime() const {
     return this->conf[Y_FIXED_TIME].as<float>(0.1f);
 }
 
+float Config::Theta() const {
+    return this->conf[Y_THETA].as<float>(1.0f);
+}
+
 #undef Y_GALAXIES
 #undef Y_FIXED_TIME
+#undef Y_THETA

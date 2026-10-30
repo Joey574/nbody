@@ -14,4 +14,5 @@ struct Config {
         data New() const;
 
         float FixedTime() const;
+        float Theta() const;
 };

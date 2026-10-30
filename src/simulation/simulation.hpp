@@ -18,7 +18,7 @@ struct simulation {
         {}
 
     // parameterized constructor
-    simulation(const cliargs& f) : data_(f.config.New()), tree_(quadtree(f.config.Theta())) {
+    simulation(const cliargs& f) : data_(f.config.New()), tree_(f.config.Theta()) {
         if (f.cpu) {
             if (f.bh) {
                 update = &simulation::update_cpu_bh;
@@ -29,22 +29,6 @@ struct simulation {
             update = &simulation::update_gpu;
             throw std::runtime_error("not implemented");
         }
-    }
-
-    // move operator
-    simulation& operator = (simulation&& other) noexcept {
-        update = other.update;
-        data_ = std::move(other.data_);
-
-        other.update = nullptr;
-        return *this;
-    }
-
-    // copy operator
-    simulation& operator = (const simulation& other) noexcept {
-        update = other.update;
-        data_ = other.data_;
-        return *this;
     }
 
     std::chrono::nanoseconds (simulation::*update)(const float) noexcept;

@@ -1,5 +1,5 @@
 fixed_time: 0.00000001
-theta: 1.0
+theta: 1.2
 
 galaxies:
   - type: uniform

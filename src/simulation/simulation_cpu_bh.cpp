@@ -2,11 +2,11 @@
 
 std::chrono::nanoseconds simulation::update_cpu_bh(const float ft) noexcept {
     auto start = std::chrono::high_resolution_clock::now();
-    
+
     constexpr float thetasq = 0.1f;
 
     // data is now sorted on a zcurve
-    zcurve_.sort(data_);
+    //zcurve_.sort(data_);
 
     for (size_t i = 0; i < data_.bodies(); i++) {
 

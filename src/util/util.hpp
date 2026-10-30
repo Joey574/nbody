@@ -39,21 +39,21 @@ namespace util {
         static inline const __m512 _epsl = _mm512_set1_ps(1e-12f);
         static inline const __m512 _opf = _mm512_set1_ps(1.5f);
         static inline const __m512 _pf = _mm512_set1_ps(0.5f);
-        
+
         static inline reg load(const float* p) { return _mm512_load_ps(p); }
         static inline void store(float* p, reg r) { _mm512_store_ps(p, r); }
-        
+
         static inline reg loadu(const float* p) { return _mm512_loadu_ps(p); }
         static inline void storeu(float* p, reg r) { _mm512_storeu_ps(p, r); }
 
         static inline reg set1(float f) { return _mm512_set1_ps(f); }
         static inline reg zero() { return _mm512_setzero_ps(); }
-        
+
         static inline reg rsqrt(reg d2) {
             reg r = _mm512_rsqrt14_ps(d2);
             return r * (_opf - _pf * d2 * r * r);
         }
-        static inline float hsum(reg r) { 
+        static inline float hsum(reg r) {
             __m256 low256  = _mm512_castps512_ps256(r);
             __m256 high256 = _mm512_extractf32x8_ps(r, 1);
             __m256 res256  = _mm256_add_ps(low256, high256);
@@ -82,23 +82,23 @@ namespace util {
 
         static inline reg loadu(const float* p) { return _mm256_loadu_ps(p); }
         static inline void storeu(float* p, reg r) { _mm256_storeu_ps(p, r); }
-        
+
         static inline reg set1(float f) { return _mm256_set1_ps(f); }
         static inline reg zero() { return _mm256_setzero_ps(); }
-        
+
         static inline reg rsqrt(reg d2) {
             reg r = _mm256_rsqrt_ps(d2);
             return r * (_opf - _pf * d2 * r * r);
         }
-        static inline float hsum(reg r) { 
+        static inline float hsum(reg r) {
             __m128 vlow  = _mm256_castps256_ps128(r);
             __m128 vhigh = _mm256_extractf128_ps(r, 1);
             __m128 v128  = _mm_add_ps(vlow, vhigh);
 
             __m128 shuf  = _mm_movehl_ps(v128, v128);
             __m128 v64   = _mm_add_ps(v128, shuf);
-            
-            __m128 swiz  = _mm_shuffle_ps(v64, v64, _MM_SHUFFLE(1, 1, 1, 1)); 
+
+            __m128 swiz  = _mm_shuffle_ps(v64, v64, _MM_SHUFFLE(1, 1, 1, 1));
             __m128 v32   = _mm_add_ss(v64, swiz);
 
             return _mm_cvtss_f32(v32);
@@ -116,14 +116,14 @@ namespace util {
 
         static inline reg loadu(const float* p) { return load(p); }
         static inline void storeu(float* p, reg r) { store(p, r); }
-        
+
         static inline reg set1(float f) { return f; }
         static inline reg zero() { return 0.0f; }
-        
+
         static inline reg rsqrt(reg d2) {
             return frsqrt(d2);
         }
-        static inline float hsum(reg r) { 
+        static inline float hsum(reg r) {
            return r;
         }
     #endif

@@ -1,82 +1,38 @@
 #include "config.hpp"
-#include <random>
 
-#define POINTS "points"
-#define FIXEDTIME "fixedtime"
-#define TYPE "type"
-#define SEED "seed"
+#include "../galaxy/galaxy.hpp"
 
-// spiral config data
-#define RX "rx"
-#define RXSCALE "rxscale"
-#define RY "ry"
-#define ROTSTART "rotstart"
-#define ROTDELTA "rotdelta"
-#define INCSTART "incstart"
-#define INCDELTA "incdelta"
-#define POSMEAN "posmean"
-#define POSSTD "posstd"
-#define MASSMEAN "massmean"
-#define MASSSTD "massstd"
-#define ELLIPSES "ellipses"
-#define SEGMENTS "segments"
-
-// video config data
-#define ZSCALE "zscale"
+#define Y_GALAXIES "galaxies"
+#define Y_FIXED_TIME "fixed_time"
 
 void Config::Load(const std::string& path) {
     conf = YAML::LoadFile(path);
 }
 
-size_t Config::Seed() const noexcept {
-    std::default_random_engine urng(std::random_device{}());
-    std::uniform_int_distribution<size_t> gen(0, std::numeric_limits<size_t>::max());
-    return conf[SEED].as<size_t>(gen(urng));
-}
-size_t Config::Points() const noexcept {
-    return conf[POINTS].as<size_t>(0);
-}
-float Config::Fixedtime() const noexcept {
-    return conf[FIXEDTIME].as<float>(0.00001f);
-}
-std::string Config::Type() const noexcept {
-    return conf[TYPE].as<std::string>("cluster");
+data Config::New() const {
+    // TODO
+    // currently, the memory management here stands to be improved, we're copying a lot of data in galaxy iterations
+    // when points grows large and there are multiple galaxies, this will be incredibly slow
+    // a better option is to first scan the number of points needed, create a data object that can hold all of it
+    // and then have the galaxies write to the location in the buffer
+
+    data sim;
+    YAML::Node galaxies = this->conf[Y_GALAXIES];
+
+
+    for (const auto& gConf : galaxies) {
+        Galaxy g(gConf);
+        data d = g.New();
+
+        sim.append(d);
+    }
+
+    return sim;
 }
 
-SpiralConfig Config::Spiral() const noexcept {
-    return {
-        .rx        = conf[RX      ].as<float>(0.5f),
-        .rx_scale  = conf[RXSCALE ].as<float>(1.2f),
-        .ry        = conf[RY      ].as<float>(0.5f),
-        .rot_start = conf[ROTSTART].as<float>(0.0f),
-        .rot_delta = conf[ROTDELTA].as<float>(0.35f),
-        .inc_start = conf[INCSTART].as<float>(0.075f),
-        .inc_delta = conf[INCDELTA].as<float>(0.001f),
-        .pos_mean  = conf[POSMEAN ].as<float>(0.001f),
-        .pos_std   = conf[POSSTD  ].as<float>(0.075f),
-        .mass_mean = conf[MASSMEAN].as<float>(0.025f),
-        .mass_std  = conf[MASSSTD ].as<float>(0.005f),
-        .ellipses  = conf[ELLIPSES].as<size_t>(25),
-        .segments  = conf[SEGMENTS].as<size_t>(100)
-    };
+float Config::FixedTime() const {
+    return this->conf[Y_FIXED_TIME].as<float>(0.1f);
 }
 
-ClusterConfig Config::Cluster() const noexcept {
-    return {
-
-    };
-}
-
-UniformConfig Config::Uniform() const noexcept {
-    return {
-        .pos_mean = conf[POSMEAN].as<float>(0.0f),
-        .pos_std  = conf[POSSTD ].as<float>(1.0f),
-        .z_scale  = conf[ZSCALE ].as<float>(10.0f)
-    };
-}
-
-VoronoiConfig Config::Voronoi() const noexcept {
-    return {
-
-    };
-}
+#undef Y_GALAXIES
+#undef Y_FIXED_TIME

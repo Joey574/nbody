@@ -1,54 +1,105 @@
 #pragma once
-#include "../data/data.hpp"
+#include <concepts>
+#include <cstdint>
+#include <cstddef>
+#include <cstdlib>
 
-struct zcurve {
-    private:
-    std::vector<std::pair<uint64_t, size_t>> idxs;
+/*
+ * The main loop should go something like this
+ *
+ * Sort points in some way such that points near each other in 2d space are near each other in memory
+ * Compute CoM of all objects in the grid
+ * Compare CoM against some value (stddev?) to know if error is within threshold
+ * If some_eror > threshold, recurse
+ * Else: break
+ *
+ */
 
-    public:
-    inline void sort(data& data) noexcept {
-        const size_t n = data.bodies();
-        if (idxs.size() == 0) { idxs = std::vector<std::pair<uint64_t, size_t>>(n); }
-
-        auto [pminx, pmaxx] = std::minmax_element(data.posx(), data.posx()+n);
-        auto [pminy, pmaxy] = std::minmax_element(data.posy(), data.posy()+n);
-
-        auto minx = *pminx;
-        auto maxx = *pmaxx;
-        auto miny = *pminy;
-        auto maxy = *pmaxy;
-
-        float rx = (maxx > minx) ? (maxx - minx) : 1.0f;
-        float ry = (maxy > miny) ? (maxy - miny) : 1.0f;
-
-        #pragma omp parallel for simd schedule(static)
-        for (size_t i = 0; i < n; i++) {
-            // get normalized x, y values
-            uint32_t x = (uint32_t)std::min((double)(data.posx()[i] - minx) / rx * 0x100000000, (double)0xFFFFFFFFu);
-            uint32_t y = (uint32_t)std::min((double)(data.posy()[i] - miny) / ry * 0x100000000, (double)0xFFFFFFFFu);
-            uint64_t code = _pdep_u64((uint64_t)x, 0x5555555555555555ULL) | _pdep_u64((uint64_t)y, 0xAAAAAAAAAAAAAAAAULL);
-
-            idxs[i] = { code, i };
-        }
-
-        std::sort(idxs.begin(), idxs.end());
-
-        // cycle chasing swap to order data values according to the zcurve
-        for (size_t i = 0; i < n-1; i++) {
-            size_t cur = i;
-            size_t next = idxs[cur].second;
-
-            while (next != i) {
-                std::swap(data.posx()[cur], data.posx()[next]);
-                std::swap(data.posy()[cur], data.posy()[next]);
-                std::swap(data.velx()[cur], data.velx()[next]);
-                std::swap(data.vely()[cur], data.vely()[next]);
-                std::swap(data.mass()[cur], data.mass()[next]);
-                idxs[cur].second = cur;
-                cur = next;
-                next = idxs[cur].second;
-            }
-            idxs[cur].second = cur;
-        }
+template <class T>
+    requires requires (const T& a, const T& b) {
+        a.x <=> b.x;
+        a.y <=> b.y;
     }
+struct quadtree {
+    public:
+        quadtree() noexcept : data(nullptr)
+            {}
+
+        /// @brief Reserves space for at least n elements, if n is less than the current size, nothing changes
+        /// @parameter n Number of elements to reserve space for
+        void reserve(size_t n) noexcept {
+            if (n < capacity) {
+                return;
+            }
+
+            capacity = n;
+            data = realloc(data, capacity*sizeof(Node));
+        }
+
+        /// @brief Inserts value into quadtree based on equality
+        /// @parameter value Value to insert
+        void insert(T value) {
+            size_t head_idx = 0;
+            Node& n = data[head_idx];
+
+            while (n != nullptr) {
+                Node& next = nullptr;
+                size_t j = 0;
+
+                if (value.x < n.value.x) {
+                    // West Hemisphere
+                    if (value.y < n.value.y) {
+                        // South West
+                        j = n.sw;
+                    } else {
+                        // North West
+                        j = n.nw;
+                    }
+                } else {
+                    // East Hemisphere
+                    if (value.y < n.value.y) {
+                        // South East
+                        j = n.se;
+                    } else {
+                        // North East
+                        j = n.ne;
+                    }
+                }
+
+                if (j) {
+                    // node already exists, continue
+                    head_idx = j;
+                    n = data[head_idx];
+                    continue;
+                }
+
+                // j now points to a unique idx
+                if (j > capacity) {
+                    data = realloc(data, 2*capacity);
+                    capacity *= 2;
+                }
+
+                size++;
+                data[j] = {
+                    .value = value,
+                    .nw = 0,
+                    .ne = 0,
+                    .sw = 0,
+                    .ne = 0
+                };
+            }
+        }
+
+    private:
+        struct Node {
+            T value;
+            uint32_t nw;
+            uint32_t ne;
+            uint32_t sw;
+            uint32_t se;
+        };
+
+        Node* data;
+        size_t size;
+        size_t capacity;
 };

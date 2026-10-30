@@ -1,4 +1,4 @@
-/* 
+/*
 Author: Joey Soroka
 Updated: 2/26/26
 Purpose: Implements nbody simulation for the cpu
@@ -11,7 +11,7 @@ compiler for vectorization
 
 std::chrono::nanoseconds simulation::update_cpu(const float ft) noexcept {
     auto s = std::chrono::high_resolution_clock::now();
-    
+
     attract_points(ft);
     sum_acc();
     move_points(ft);
@@ -112,8 +112,8 @@ void simulation::attract_points(const float ft) noexcept {
                 ay_row[j] -= ivy * p1m;
             }
 
-            ax_row[i] = a1x_final;
-            ay_row[i] = a1y_final;
+            ax_row[i] += a1x_final;
+            ay_row[i] += a1y_final;
         }
     }
 }
@@ -126,13 +126,17 @@ void simulation::sum_acc() noexcept {
     float* __restrict ay_top = ay.row(0);
 
     // sum acceleration into top row
-    for (size_t r = 1; r < ax.rows(); r++) {
+    #pragma omp parallel for simd schedule(static)
+    for (size_t c = 0; c < ax.cols(); c++) {
+        float sx = ax_top[c], sy = ay_top[c];
 
-        #pragma omp parallel for simd schedule(static)
-        for (size_t c = 0; c < ax.cols(); c++) {
-            ax_top[c] += ax(r, c);
-            ay_top[c] += ay(r, c);
+        for (size_t r = 1; r < ax.rows(); r++) {
+            sx += ax(r, c);
+            sy += ay(r, c);
         }
+
+        ax_top[c] = sx;
+        ay_top[c] = sy;
     }
 }
 
@@ -147,9 +151,10 @@ void simulation::move_points(const float ft) noexcept {
     const float* ay = data_.accy().row(0);
 
     const auto _ft = util::set1(ft);
+    const size_t nv = n - (n % util::width);
 
     #pragma omp parallel for schedule(static)
-    for (size_t i = 0; i < ssize_t(n)-ssize_t(util::last); i += util::width) {
+    for (size_t i = 0; i < nv; i += util::width) {
         const auto _ax = util::load(&ax[i]);
         const auto _ay = util::load(&ay[i]);
         auto _vx = util::load(vx+i);
@@ -161,7 +166,7 @@ void simulation::move_points(const float ft) noexcept {
         _vy += _ay * _ft;
         _px += _vx * _ft;
         _py += _vy * _ft;
-        
+
         util::store(vx+i, _vx);
         util::store(vy+i, _vy);
         util::store(px+i, _px);

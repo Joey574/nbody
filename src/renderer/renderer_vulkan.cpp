@@ -1,4 +1,4 @@
-/* 
+/*
 Author: Joey Soroka
 Purpose: Contains vulkan initilization utilities for the renderer struct
 Comments: Most of this code is ripped from https://docs.vulkan.org/tutorial/latest/00_Introduction.html
@@ -17,7 +17,7 @@ void renderer::init(const data& data, const std::string& exePath) {
     vulkan_init_descriptors();
     vulkan_graphics_pipeline();
     vulkan_command_pool();
-    for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) { 
+    for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
         frames[i].init(data, ldevice, pdevice);
         uboBuffers[i].init(ldevice, pdevice);
         vulkan_write_descriptors(i);
@@ -29,7 +29,7 @@ void renderer::init(const data& data, const std::string& exePath) {
 }
 
 void renderer::init_window() {
-    if (!glfwInit()) { 
+    if (!glfwInit()) {
         throw std::runtime_error("failed to init glfw");
     }
 
@@ -43,7 +43,7 @@ void renderer::init_window() {
 
     glfwSetWindowUserPointer(window, this);
     glfwSetFramebufferSizeCallback(window, framebufferResizeCallback);
-    
+
     glfwSetScrollCallback(window, [](GLFWwindow* w, double x, double y){
         auto r = static_cast<renderer*>(glfwGetWindowUserPointer(w));
         r->cam.onScroll(y);
@@ -361,9 +361,9 @@ void renderer::vulkan_record_command_buffer(uint32_t imageIndex, size_t n) {
     };
 
     vk::RenderingInfo renderingInfo = {
-        .renderArea = { 
-            .offset = { 0, 0}, 
-            .extent = swapchain.Extent() 
+        .renderArea = {
+            .offset = { 0, 0},
+            .extent = swapchain.Extent()
         },
         .layerCount           = 1,
         .colorAttachmentCount = 1,
@@ -381,7 +381,7 @@ void renderer::vulkan_record_command_buffer(uint32_t imageIndex, size_t n) {
     );
     cmd.setViewport(0, vk::Viewport(0.0f, 0.0f, static_cast<float>(swapchain.Extent().width), static_cast<float>(swapchain.Extent().height), 0.0f, 1.0f));
     cmd.setScissor(0, vk::Rect2D(vk::Offset2D(0, 0), swapchain.Extent()));
-    
+
     struct PushConstants { glm::vec4 color; float softness; float width; float height; };
     PushConstants pc { {1.0f, 1.0f, 1.0f, 1.0f}, 0.02f, (float)swapchain.Extent().width, (float)swapchain.Extent().height };
     cmd.pushConstants<PushConstants>(*pipelineLayout, vk::ShaderStageFlagBits::eFragment | vk::ShaderStageFlagBits::eVertex, 0, pc);
@@ -408,7 +408,7 @@ void renderer::transition_image_layout(
     vk::AccessFlags2 srcAccessMask,
     vk::AccessFlags2 dstAccessMask,
     vk::PipelineStageFlags2 srcStageMask,
-    vk::PipelineStageFlags2 dstStageMask    
+    vk::PipelineStageFlags2 dstStageMask
 ) {
     auto& commandBuffer = commandBuffers[frameIndex];
     vk::ImageMemoryBarrier2 barrier = {

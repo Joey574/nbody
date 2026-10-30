@@ -19,7 +19,7 @@ struct matrix {
         data_(nullptr) {}
 
     // move constructor
-    matrix(matrix&& other) noexcept : 
+    matrix(matrix&& other) noexcept :
         rows_(other.rows_),
         cols_(other.cols_),
         stride_(other.stride_),
@@ -41,23 +41,24 @@ struct matrix {
         }
 
     // custom constructor
-    matrix(size_t r, size_t c) : 
-    rows_(r),
-    cols_(c),
-    stride_(util::aligned_size(c*sizeof(float))/sizeof(float)),
-    data_((float*)aligned_alloc(MEM_ALIGNMENT, r*util::aligned_size(c*sizeof(float)))) {}
+    matrix(size_t r, size_t c) :
+        rows_(r),
+        cols_(c),
+        stride_(util::aligned_size(c*sizeof(float))/sizeof(float)),
+        data_((float*)aligned_alloc(MEM_ALIGNMENT, r*util::aligned_size(c*sizeof(float))))
+        {}
 
     // move operator
     matrix& operator = (matrix&& other) noexcept {
         if (this == &other) return *this;
-        
+
         rows_ = other.rows_;
         cols_ = other.cols_;
         stride_ = other.stride_;
 
-        if (data_) { free(data_); }
+        free(data_);
         data_ = other.data_;
-        
+
         other.rows_ = 0;
         other.cols_ = 0;
         other.stride_ = 0;
@@ -69,7 +70,7 @@ struct matrix {
     matrix& operator = (const matrix& other) {
         if (this == &other) return *this;
 
-        if (data_) { free(data_); }
+        free(data_);
         rows_ = other.rows_;
         cols_ = other.cols_;
         stride_ = other.stride_;
@@ -85,7 +86,8 @@ struct matrix {
         rows_ = 0;
         cols_ = 0;
         stride_ = 0;
-        if (data_) { free(data_); data_ = nullptr; }
+        free(data_);
+        data_ = nullptr;
     }
 
     void zero() noexcept {
@@ -107,8 +109,8 @@ struct matrix {
     constexpr size_t cols() const noexcept { return cols_; }
 
     private:
-    float* __restrict data_;
-    size_t stride_;
-    size_t rows_;
-    size_t cols_;
+    float* __restrict data_ = nullptr;
+    size_t stride_ = 0;
+    size_t rows_ = 0;
+    size_t cols_ = 0;
 };

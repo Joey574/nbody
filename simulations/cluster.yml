@@ -1,0 +1,45 @@
+fixed_time: 0.000005
+
+galaxies:
+  - type: uniform
+    points: 4000
+    seed: 1234
+    inner_radius: 50
+    outer_radius: 125
+    center_mass: 1.4e12
+
+  - type: uniform
+    points: 4000
+    seed: 5678
+    inner_radius: 50
+    outer_radius: 80
+    center_mass: 1.2e12
+    x_pos: 400
+    y_pos: 200
+
+  - type: uniform
+    points: 4000
+    seed: 5678
+    inner_radius: 25
+    outer_radius: 200
+    center_mass: 1.3e12
+    x_pos: -400
+    y_pos: -250
+
+  - type: uniform
+    points: 4000
+    seed: 5678
+    inner_radius: 30
+    outer_radius: 300
+    center_mass: 0.8e12
+    x_pos: 120
+    y_pos: -400
+
+  - type: uniform
+    points: 4000
+    seed: 5678
+    inner_radius: 50
+    outer_radius: 125
+    center_mass: 1.7e12
+    x_pos: -600
+    y_pos: 200

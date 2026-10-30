@@ -11,7 +11,7 @@ int app::run(const cliargs& f) {
     if (!f.quiet) { printf("\033c"); }
     sim = simulation(f);
     ren = renderer();
-    
+
     ren.init(sim.get_data(), f.path);
     if (main_loop(f)) { return 1; }
     cleanup();
@@ -28,7 +28,7 @@ int app::main_loop(const cliargs& f) {
 
     auto frame_start = high_resolution_clock::now();
     auto last_print = high_resolution_clock::now();
-    auto fixedtime = f.config.Fixedtime();
+    auto fixedtime = f.config.FixedTime();
 
     while (!ren.should_close()) {
         count++;
@@ -57,7 +57,7 @@ int app::main_loop(const cliargs& f) {
                 "\n\nPerformance:"
                 "\n\tFPS:     %.2f     "
                 "\n",
-                count, 
+                count,
                 sim_sum / count, sim_time,
                 ren_sum / count, ren_time,
                 1000.00 / (tot_sum / count)

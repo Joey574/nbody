@@ -35,7 +35,7 @@ set(COMMON_FLAGS
 target_compile_options(nbody PRIVATE
     ${COMMON_FLAGS}
     $<$<CONFIG:Debug>:-O0 -g -DDEBUG>
-    $<$<CONFIG:Release>:-O3 -s>
+    $<$<CONFIG:Release>:-Ofast -s>
     $<$<CONFIG:RelWithDebInfo>:-O3 -g -fno-omit-frame-pointer>
 )
 
@@ -43,6 +43,12 @@ target_compile_options(nbody PRIVATE
 set_target_properties(
   nbody
   PROPERTIES
+  RUNTIME_OUTPUT_DIRECTORY
+  ${CMAKE_BINARY_DIR}/../bin
+)
+
+set_target_properties(
+  nbody PROPERTIES
   RUNTIME_OUTPUT_DIRECTORY
   ${CMAKE_BINARY_DIR}/../bin
 )

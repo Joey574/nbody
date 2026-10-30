@@ -2,3 +2,6 @@ bin
 build
 .cache
 __cmake_systeminformation
+.vscode
+.cache
+*.zip

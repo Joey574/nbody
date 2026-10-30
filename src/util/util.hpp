@@ -52,6 +52,7 @@ namespace util {
         static inline reg zero() { return _mm512_setzero_ps(); }
 
         static inline reg min(reg a, reg b) { return _mm512_min_ps(a, b); }
+        static inline reg max(reg a, reg b) { return _mm512_max_ps(a, b); }
 
         static inline reg rsqrt(reg d2) {
             reg r = _mm512_rsqrt14_ps(d2);
@@ -91,6 +92,7 @@ namespace util {
         static inline reg zero() { return _mm256_setzero_ps(); }
 
         static inline reg min(reg a, reg b) { return _mm256_min_ps(a, b); }
+        static inline reg max(reg a, reg b) { return _mm256_max_ps(a, b); }
 
         static inline reg rsqrt(reg d2) {
             reg r = _mm256_rsqrt_ps(d2);
@@ -126,9 +128,8 @@ namespace util {
         static inline reg set1(float f) { return f; }
         static inline reg zero() { return 0.0f; }
 
-        static inline reg min(reg a, reg b) {
-            return minf(a, b);
-        }
+        static inline reg min(reg a, reg b) { return std::min(a, b); }
+        static inline reg max(reg a, reg b) { return std::max(a, b); }
 
         static inline reg rsqrt(reg d2) {
             return frsqrt(d2);

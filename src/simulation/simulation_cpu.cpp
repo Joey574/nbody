@@ -36,8 +36,6 @@ void simulation::attract_points(const float ft) noexcept {
     matrix& ax = data_.accx();
     matrix& ay = data_.accy();
 
-    const float mdx = 0.1f;
-
     // TODO : test out blocked implementation to decrease pressure on ax and ay
 
     // gravitational constant is set to 1 for purposes of this simulation
@@ -57,8 +55,6 @@ void simulation::attract_points(const float ft) noexcept {
             const auto _p1y = util::set1(p1y);
             const auto _p1m = util::set1(p1m);
 
-            const auto _mdx = util::set1(mdx);
-
             auto _a1x_sum = util::zero();
             auto _a1y_sum = util::zero();
 
@@ -71,7 +67,7 @@ void simulation::attract_points(const float ft) noexcept {
                 // compute distance squared
                 const auto _dx = _p2x - _p1x;
                 const auto _dy = _p2y - _p1y;
-                const auto _dsq = util::min((_dx*_dx) + (_dy*_dy), _mdx);
+                const auto _dsq = util::_epsl + (_dx*_dx) + (_dy*_dy);
 
                 // fast inv sqrt with newton step
                 const auto _inv = util::rsqrt(_dsq);
@@ -99,7 +95,7 @@ void simulation::attract_points(const float ft) noexcept {
 
                 const float dx = p2x - p1x;
                 const float dy = p2y - p1y;
-                const float dsq = std::min((dx*dx) + (dy*dy), mdx);
+                const float dsq = util::epsl + (dx*dx) + (dy*dy);
 
                 // fast rsqrt with netwon step
                 float inv = util::frsqrt(dsq);

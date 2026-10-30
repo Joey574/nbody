@@ -49,6 +49,8 @@ namespace util {
         static inline reg set1(float f) { return _mm512_set1_ps(f); }
         static inline reg zero() { return _mm512_setzero_ps(); }
 
+        static inline reg min(reg a, reg b) { return _mm512_min_ps(a, b); }
+
         static inline reg rsqrt(reg d2) {
             reg r = _mm512_rsqrt14_ps(d2);
             return r * (_opf - _pf * d2 * r * r);
@@ -86,6 +88,8 @@ namespace util {
         static inline reg set1(float f) { return _mm256_set1_ps(f); }
         static inline reg zero() { return _mm256_setzero_ps(); }
 
+        static inline reg min(reg a, reg b) { return _mm256_min_ps(a, b); }
+
         static inline reg rsqrt(reg d2) {
             reg r = _mm256_rsqrt_ps(d2);
             return r * (_opf - _pf * d2 * r * r);
@@ -119,6 +123,10 @@ namespace util {
 
         static inline reg set1(float f) { return f; }
         static inline reg zero() { return 0.0f; }
+
+        static inline reg min(reg a, reg b) {
+            return minf(a, b);
+        }
 
         static inline reg rsqrt(reg d2) {
             return frsqrt(d2);

@@ -17,6 +17,7 @@ pkgs.mkShell {
     yaml-cpp
     vulkan-headers
     vulkan-loader
+    vulkan-validation-layers
     glfw3
     glm
   ];
@@ -24,5 +25,6 @@ pkgs.mkShell {
   shellHook = ''
     export NIX_ENFORCE_NO_NATIVE=0
     export LD_LIBRARY_PATH="${pkgs.lib.makeLibraryPath [ pkgs.vulkan-loader pkgs.wayland pkgs.libxkbcommon ]}:$LD_LIBRARY_PATH"
+    export VK_LAYER_PATH="${pkgs.vulkan-validation-layers}/share/vulkan/explicit_layer.d"
   '';
 }

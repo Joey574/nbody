@@ -45,5 +45,5 @@ struct quadtree {
 
         void compute_acc_recurse(data& d, size_t i, size_t j);
 
-        void insert_assertions();
+        void insert_assertions(const data& d);
 };

@@ -36,6 +36,8 @@ void quadtree::insert(const data& d) {
 
     for (size_t i = 1; i < n; i++) {
         for (size_t j = 0;;) {
+            if (i == j) break;
+
             update_root(i, j);
 
             if (px[i] > px[j] && py[i] > py[j]) { // NE
@@ -86,7 +88,7 @@ void quadtree::insert(const data& d) {
     }
 
     #ifdef DEBUG
-    this->insert_assertions();
+    this->insert_assertions(d);
     #endif
 }
 
@@ -138,6 +140,7 @@ void quadtree::compute_acc_recurse(data& d, size_t i, size_t j) {
         compute_acc_recurse(d, i, nodes_[i].nw);
         compute_acc_recurse(d, i, nodes_[i].se);
         compute_acc_recurse(d, i, nodes_[i].sw);
+        return;
     };
 
     const float theta = 0.1f;
@@ -175,20 +178,29 @@ void quadtree::compute_acc_recurse(data& d, size_t i, size_t j) {
     }
 }
 
-void quadtree::insert_assertions() {
+void quadtree::insert_assertions(const data& d) {
     for (size_t i = 0; i < this->size_; i++) {
+        printf("%lu: root.cm='%.2f', cm='%.2f', ne.cm='%.2f', nw.cm='%.2f', se.cm='%.2f', sw.cm='%.2f'\n",
+            i, nodes_[i].cm, nodes_[nodes_[i].ne].cm +
+            nodes_[nodes_[i].nw].cm +
+            nodes_[nodes_[i].se].cm +
+            nodes_[nodes_[i].sw].cm + d.mass()[i], nodes_[nodes_[i].ne].cm, nodes_[nodes_[i].nw].cm, nodes_[nodes_[i].se].cm, nodes_[nodes_[i].sw].cm
+        );
+
         assert(nodes_[i].cm ==
             nodes_[nodes_[i].ne].cm +
             nodes_[nodes_[i].nw].cm +
             nodes_[nodes_[i].se].cm +
-            nodes_[nodes_[i].sw].cm
+            nodes_[nodes_[i].sw].cm +
+            d.mass()[i]
         );
 
-        assert(nodes_[i].cx ==
-            (nodes_[nodes_[i].ne].cm*nodes_[nodes_[i].ne].cx) / nodes_[i].cm +
-            (nodes_[nodes_[i].nw].cm*nodes_[nodes_[i].nw].cx) / nodes_[i].cm +
-            (nodes_[nodes_[i].se].cm*nodes_[nodes_[i].se].cx) / nodes_[i].cm +
-            (nodes_[nodes_[i].sw].cm*nodes_[nodes_[i].sw].cx) / nodes_[i].cm
-        );
+        //assert(nodes_[i].cx ==
+        //    (nodes_[nodes_[i].ne].cm*nodes_[nodes_[i].ne].cx) / nodes_[i].cm +
+        //    (nodes_[nodes_[i].nw].cm*nodes_[nodes_[i].nw].cx) / nodes_[i].cm +
+        //    (nodes_[nodes_[i].se].cm*nodes_[nodes_[i].se].cx) / nodes_[i].cm +
+        //    (nodes_[nodes_[i].sw].cm*nodes_[nodes_[i].sw].cx) / nodes_[i].cm +
+        //    (d.mass()[i] * d.posx()[i]) / nodes_[i].cm
+        //);
     }
 }

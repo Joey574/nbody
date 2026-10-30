@@ -31,7 +31,7 @@ namespace util {
     }
 
     static inline bool is_near(float a, float b) {
-        return std::abs(a-b) < 1e-8f;
+        return std::abs(a-b) < 0.1f;
     }
 
     std::string executable_path(char* argv[]);

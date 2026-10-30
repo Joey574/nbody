@@ -13,7 +13,7 @@ void UBOBuffer::init(const LogicalDevice& ld, const PhysicalDevice& pd) {
 
 uint32_t UBOBuffer::findMemType(const PhysicalDevice& pd, uint32_t f, vk::MemoryPropertyFlags p) {
     auto memP = pd.Device().getMemoryProperties();
-    
+
     for (uint32_t i = 0; i < memP.memoryTypeCount; i++) {
         if ((f & (1 << i)) && (memP.memoryTypes[i].propertyFlags & p) == p) {
             return i;
@@ -31,7 +31,7 @@ void UBOBuffer::createBuffer(const LogicalDevice& ld, const PhysicalDevice& pd, 
     };
 
     buffer = vk::raii::Buffer(ld, bufferInfo);
-    
+
     auto memRequirements = buffer.getMemoryRequirements();
     vk::MemoryAllocateInfo allocInfo {
         .allocationSize = memRequirements.size,
@@ -40,4 +40,14 @@ void UBOBuffer::createBuffer(const LogicalDevice& ld, const PhysicalDevice& pd, 
 
     bufferMemory = vk::raii::DeviceMemory(ld, allocInfo);
     buffer.bindMemory(*bufferMemory, 0);
+}
+
+void UBOBuffer::cleanup() {
+    if (mapped) {
+        memory.unmapMemory();
+        mapped = nullptr;
+    }
+
+    buffer = nullptr;
+    memory = nullptr;
 }

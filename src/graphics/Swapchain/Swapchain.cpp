@@ -4,8 +4,8 @@ void Swapchain::init(const PhysicalDevice& pdevice, const LogicalDevice& ldevice
     const auto& pd = pdevice.Device();
     const auto& ld = ldevice.Device();
 
-    swapChain = nullptr;
-    
+    this->cleanup();
+
     auto sfCapabilities = pd.getSurfaceCapabilitiesKHR(surface);
     swapChainExtent = chooseSwapExtent(sfCapabilities, window);
     swapChainSurfaceFormat = chooseSwapSurfaceFormat(pd.getSurfaceFormatsKHR(surface));
@@ -31,18 +31,29 @@ void Swapchain::init(const PhysicalDevice& pdevice, const LogicalDevice& ldevice
     image_views(ld);
 }
 
-void Swapchain::recreate(const PhysicalDevice& pdevice, const LogicalDevice& ldevice, const vk::raii::SurfaceKHR& surface, GLFWwindow* window) {
+bool Swapchain::recreate(const PhysicalDevice& pdevice, const LogicalDevice& ldevice, const vk::raii::SurfaceKHR& surface, GLFWwindow* window) {
     const auto& ld = ldevice.Device();
 
     int w, h = 0;
     glfwGetFramebufferSize(window, &w, &h);
-    while (w == 0 || h == 0) {
+    while ((w == 0 || h == 0) && !glfwWindowShouldClose(window)) {
         glfwGetFramebufferSize(window, &w, &h);
         glfwWaitEvents();
     }
 
+    if (glfwWindowShouldClose(window)) {
+        return false;
+    }
+
     ld.waitIdle();
     init(pdevice, ldevice, surface, window);
+    return true;
+}
+
+void Swapchain::cleanup() {
+    swapChainImageViews.clear();
+    swapChainImages.clear();
+    swapChain = nullptr;
 }
 
 void Swapchain::image_views(const vk::raii::Device& ldevice) {

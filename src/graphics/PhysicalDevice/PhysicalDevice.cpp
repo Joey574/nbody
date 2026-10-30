@@ -39,3 +39,7 @@ void PhysicalDevice::init(const vk::raii::Instance& instance) {
         throw std::runtime_error("no suitable device");
     }
 }
+
+void PhysicalDevice::cleanup() {
+    device = nullptr;
+}

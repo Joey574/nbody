@@ -23,6 +23,31 @@ void FrameData::update(const data& d) {
     memcpy(r, d.mass(), bytes);
 }
 
+void FrameData::cleanup() {
+    if (x) {
+        xMem.unmapMemory();
+        x = nullptr;
+    }
+
+    if (y) {
+        yMem.unmapMemory();
+        y = nullptr;
+    }
+
+    if (r) {
+        rMem.unmapMemory();
+        r = nullptr;
+    }
+
+    xBuf = nullptr;
+    yBuf = nullptr;
+    rBuf = nullptr;
+
+    xMem = nullptr;
+    yMem = nullptr;
+    rMem = nullptr;
+}
+
 vk::DescriptorBufferInfo FrameData::xInfo() const {
     return { *xBuf, 0, count * sizeof(float)};
 }

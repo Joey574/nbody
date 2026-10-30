@@ -2,7 +2,7 @@
 
 void LogicalDevice::init(const PhysicalDevice& pdevice, const vk::raii::SurfaceKHR& surface) {
     const auto& pd = pdevice.Device();
-    
+
     auto queueFamilyProperties = pd.getQueueFamilyProperties();
     for (uint32_t qfpIndex = 0; qfpIndex < queueFamilyProperties.size(); qfpIndex++) {
         if ((queueFamilyProperties[qfpIndex].queueFlags & vk::QueueFlagBits::eGraphics) && pd.getSurfaceSupportKHR(qfpIndex, surface)) {
@@ -44,4 +44,9 @@ void LogicalDevice::init(const PhysicalDevice& pdevice, const vk::raii::SurfaceK
 
     device = vk::raii::Device(pd, deviceCreateInfo);
     queue = vk::raii::Queue(device, queueIdx, 0);
+}
+
+void LogicalDevice::cleanup() {
+    queue = nullptr;
+    device = nullptr;
 }

@@ -20,6 +20,7 @@ struct UBOBuffer {
     public:
     void init(const LogicalDevice& ld, const PhysicalDevice& pd);
     void update(const UBO& ubo) { memcpy(mapped, &ubo, sizeof(UBO)); }
+    void cleanup();
 
     vk::DescriptorBufferInfo Info() const { return { *buffer, 0, sizeof(UBO) }; }
 };

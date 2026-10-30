@@ -4,6 +4,7 @@
 struct PhysicalDevice {
     public:
     void init(const vk::raii::Instance& instance);
+    void cleanup();
 
     inline auto& Device() noexcept { return device; }
     inline const auto& Device() const noexcept { return device; }

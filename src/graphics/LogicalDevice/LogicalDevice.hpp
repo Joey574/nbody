@@ -5,6 +5,7 @@
 struct LogicalDevice {
     public:
     void init(const PhysicalDevice& pdevice, const vk::raii::SurfaceKHR& surface);
+    void cleanup();
 
     inline auto& Device() noexcept { return device; }
     inline auto& Queue() noexcept { return queue; }

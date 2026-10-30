@@ -18,6 +18,7 @@ struct FrameData {
     public:
     void init(const data& d, const LogicalDevice& ld, const PhysicalDevice& pd);
     void update(const data& d);
+    void cleanup();
 
     vk::DescriptorBufferInfo xInfo() const;
     vk::DescriptorBufferInfo yInfo() const;

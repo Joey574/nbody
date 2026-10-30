@@ -5,6 +5,7 @@ Comments: Most of this code is ripped from https://docs.vulkan.org/tutorial/late
 */
 
 #include "renderer.hpp"
+#include <chrono>
 #include <stdexcept>
 
 void renderer::init(const data& data, const std::string& exePath) {
@@ -32,7 +33,7 @@ void renderer::init_window() {
     if (!glfwInit()) {
         throw std::runtime_error("failed to init glfw");
     }
-
+    glfwInitialized = true;
     glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
 
     window = glfwCreateWindow(width_, height_, "nbody", nullptr, nullptr);
@@ -442,6 +443,10 @@ void renderer::transition_image_layout(
 std::chrono::nanoseconds renderer::render(const data& data, float dt) {
     auto s = std::chrono::high_resolution_clock::now();
     glfwPollEvents();
+    if (glfwWindowShouldClose(window)) {
+        return std::chrono::high_resolution_clock::now() - s;
+    }
+
     cam.update(window, dt);
 
     auto fenceResult = ldevice.Device().waitForFences(*inFlightFences[frameIndex], vk::True, UINT64_MAX);
@@ -503,6 +508,43 @@ std::chrono::nanoseconds renderer::render(const data& data, float dt) {
 void renderer::cleanup() {
     ldevice.Device().waitIdle();
 
-    if (window) { glfwDestroyWindow(window); }
-    glfwTerminate();
+    descriptorSets = nullptr;
+    descriptorPool = nullptr;
+
+    pipeline = nullptr;
+    pipelineLayout = nullptr;
+    descriptorSetLayout = nullptr;
+
+    commandBuffers.clear();
+    commandPool = nullptr;
+
+    presentCompleteSemaphores.clear();
+    renderFinishedSemaphores.clear();
+    inFlightFences.clear();
+
+    for (auto& f : frames) {
+        f.cleanup();
+    }
+
+    for (auto& ubo : uboBuffers) {
+        ubo.cleanup();
+    }
+
+    swapchain.cleanup();
+
+    ldevice.cleanup();
+    pdevice.cleanup();
+
+    surface = nullptr;
+    instance = nullptr;
+
+    if (window) {
+        glfwDestroyWindow(window);
+        window = nullptr;
+    }
+
+    if (glfwInitialized) {
+        glfwTerminate();
+        glfwInitialized = false;
+    }
 }

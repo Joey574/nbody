@@ -7,11 +7,12 @@ struct Swapchain {
     public:
 
     void init(const PhysicalDevice& pdevice, const LogicalDevice& ldevice, const vk::raii::SurfaceKHR& surface, GLFWwindow* window);
-    void recreate(const PhysicalDevice& pdevice, const LogicalDevice& ldevice, const vk::raii::SurfaceKHR& surface, GLFWwindow* window);
+    bool recreate(const PhysicalDevice& pdevice, const LogicalDevice& ldevice, const vk::raii::SurfaceKHR& surface, GLFWwindow* window);
+    void cleanup();
 
     inline operator vk::raii::SwapchainKHR&() { return swapChain; }
     inline operator const vk::raii::SwapchainKHR&() const { return swapChain; }
-    
+
     inline auto& SwapChain() { return swapChain; }
     inline auto& Images() { return swapChainImages; }
     inline auto& SurfaceFormat() { return swapChainSurfaceFormat; }

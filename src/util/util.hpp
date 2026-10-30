@@ -38,6 +38,75 @@ namespace util {
 
     static inline constexpr float epsl = 1e-12f;
 
+    static inline void apply_inner_force(
+        float dx,
+        float dy,
+        float dsq,
+        float p2m,
+        float* __restrict a1x,
+        float* __restrict a1y
+    ) {
+        float inv = util::frsqrt(dsq);
+        inv = inv * (1.5f - 0.5f * dsq * inv * inv);
+
+        const float inv3 = inv*inv*inv;
+
+        const float ivx = dx * inv3;
+        const float ivy = dy * inv3;
+
+        a1x[0] += ivx * p2m;
+        a1y[0] += ivy * p2m;
+    }
+
+    static inline void apply_force_to_one(
+        float p1x,
+        float p1y,
+        float p2x,
+        float p2y,
+        float p2m,
+        float* __restrict a1x,
+        float* __restrict a1y
+    ) {
+        const float dx = p2x - p1x;
+        const float dy = p2y - p1y;
+        const float dsq = epsl + (dx*dx) + (dy*dy);
+
+        apply_inner_force(
+            dx, dy, dsq,
+            p2m, a1x, a1y
+        );
+    }
+
+    static inline void apply_force_to_two(
+        float p1x,
+        float p1y,
+        float p1m,
+        float p2x,
+        float p2y,
+        float p2m,
+        float* __restrict a1x,
+        float* __restrict a1y,
+        float* __restrict a2x,
+        float* __restrict a2y
+    ) {
+        const float dx = p2x - p1x;
+        const float dy = p2y - p1y;
+        const float dsq = epsl + (dx*dx) + (dy*dy);
+
+        float inv = util::frsqrt(dsq);
+        inv = inv * (1.5f - 0.5f * dsq * inv * inv);
+
+        const float inv3 = inv*inv*inv;
+
+        const float ivx = dx * inv3;
+        const float ivy = dy * inv3;
+
+        a1x[0] += ivx * p2m;
+        a1y[0] += ivy * p2m;
+        a2x[0] -= ivx * p1m;
+        a2y[0] -= ivy * p1m;
+    }
+
     #ifdef __AVX512F__
         using reg = __m512;
         static inline constexpr size_t width = 16;

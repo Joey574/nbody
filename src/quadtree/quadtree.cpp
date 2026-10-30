@@ -150,6 +150,7 @@ void quadtree::compute_acc_recurse(data& d, size_t i, size_t j, int tid) {
     const float theta = 1.0f;
     const float thetasq = theta*theta;
     const size_t n = d.bodies();
+
     const float* __restrict ma = d.mass();
     const float* __restrict px = d.posx();
     const float* __restrict py = d.posy();
@@ -163,28 +164,31 @@ void quadtree::compute_acc_recurse(data& d, size_t i, size_t j, int tid) {
     const float p1y = py[i];
     const float p1m = ma[i];
 
-    const float p2x = nodes_[j].cx;
-    const float p2y = nodes_[j].cy;
-    const float p2m = nodes_[j].cm;
+    const float g2x = nodes_[j].cx;
+    const float g2y = nodes_[j].cy;
+    const float g2m = nodes_[j].cm;
 
-    const float dx = p2x - p1x;
-    const float dy = p2y - p2y;
+    const float dx = g2x - p1x;
+    const float dy = g2y - p1y;
     const float dsq = util::epsl + (dx*dx) + (dy*dy);
 
     if (sizesq / dsq < thetasq) {
-        float inv = util::frsqrt(dsq);
-        inv = inv * (1.5f - 0.5f * dsq * inv * inv);
+        // this group is far enough away to be approximated
+        // as a single group
 
-        const float inv3 = inv*inv*inv;
-        const float p2m = nodes_[j].cm;
-
-        const float ivx = dx * inv3;
-        const float ivy = dy * inv3;
-
-        ax_row[i] += ivx * p2m;
-        ay_row[i] += ivy * p2m;
-
+        util::apply_inner_force(
+            dx, dy, dsq,
+            g2m, &ax_row[i], &ay_row[i]
+        );
     } else {
+        // this body is too close / large to compute together
+        // compute its root body and recurse into children
+        util::apply_force_to_one(
+            p1x, p1y,
+            px[j], py[j], ma[j],
+            &ax_row[i], &ay_row[i]
+        );
+
         if (nodes_[j].nw) compute_acc_recurse(d, i, nodes_[j].nw, tid);
         if (nodes_[j].ne) compute_acc_recurse(d, i, nodes_[j].ne, tid);
         if (nodes_[j].sw) compute_acc_recurse(d, i, nodes_[j].sw, tid);

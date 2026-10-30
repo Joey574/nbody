@@ -8,6 +8,7 @@ compiler for vectorization
 */
 
 #include "simulation.hpp"
+#include <algorithm>
 
 std::chrono::nanoseconds simulation::update_cpu(const float ft) noexcept {
     auto s = std::chrono::high_resolution_clock::now();
@@ -35,6 +36,8 @@ void simulation::attract_points(const float ft) noexcept {
     matrix& ax = data_.accx();
     matrix& ay = data_.accy();
 
+    const float mdx = 0.1f;
+
     // TODO : test out blocked implementation to decrease pressure on ax and ay
 
     // gravitational constant is set to 1 for purposes of this simulation
@@ -54,6 +57,8 @@ void simulation::attract_points(const float ft) noexcept {
             const auto _p1y = util::set1(p1y);
             const auto _p1m = util::set1(p1m);
 
+            const auto _mdx = util::set1(mdx);
+
             auto _a1x_sum = util::zero();
             auto _a1y_sum = util::zero();
 
@@ -64,7 +69,7 @@ void simulation::attract_points(const float ft) noexcept {
                 const auto _p2m = util::loadu(&ma[j]);
 
                 // compute distance squared
-                const auto _dx = _p2x - _p1x;
+                const auto _dx = util::min(_p2x - _p1x, _mdx);
                 const auto _dy = _p2y - _p1y;
                 const auto _dsq = util::_epsl + (_dx*_dx) + (_dy*_dy);
 
@@ -92,7 +97,7 @@ void simulation::attract_points(const float ft) noexcept {
                 const float p2y = py[j];
                 const float p2m = ma[j];
 
-                const float dx = p2x - p1x;
+                const float dx = std::min(p2x - p1x, mdx);
                 const float dy = p2y - p1y;
                 const float dsq = 1e-12f + (dx*dx) + (dy*dy);
 

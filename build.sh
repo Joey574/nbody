@@ -1,5 +1,6 @@
-#!/bin/bash
 start_time=$(date +%s.%N)
+
+set -e
 
 # check for build flags
 MODE="Release"

@@ -1,4 +1,4 @@
 bin
 build
-.vscode
 .cache
+__cmake_systeminformation

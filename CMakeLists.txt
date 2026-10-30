@@ -40,4 +40,9 @@ target_compile_options(nbody PRIVATE
 )
 
 # Set output to bin folder
-set_target_properties(nbody PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/../bin)
+set_target_properties(
+  nbody
+  PROPERTIES
+  RUNTIME_OUTPUT_DIRECTORY
+  ${CMAKE_BINARY_DIR}/../bin
+)

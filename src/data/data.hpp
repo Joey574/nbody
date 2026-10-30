@@ -82,7 +82,7 @@ struct data {
             memcpy(mass_, other.mass_, bodies_*sizeof(float));
     }
 
-    // custom constructor
+    // parameterized constructor
     data(size_t n, bool init_acc) :
         bodies_(n),
         posx_((float*)aligned_alloc(MEM_ALIGNMENT, util::aligned_size(n*sizeof(float)))),
@@ -137,14 +137,20 @@ struct data {
     // deconstructor
     ~data() {
         bodies_ = 0;
-        if (posx_) { free(posx_); posx_ =  nullptr; }
-        if (posy_) { free(posy_); posy_ =  nullptr; }
-        if (velx_) { free(velx_); velx_ =  nullptr; }
-        if (vely_) { free(vely_); vely_ =  nullptr; }
-        if (mass_) { free(mass_); mass_ =  nullptr; }
+        free(posx_);
+        free(posy_);
+        free(velx_);
+        free(vely_);
+        free(mass_);
+
+        posx_ =  nullptr;
+        posy_ =  nullptr;
+        velx_ =  nullptr;
+        vely_ =  nullptr;
+        mass_ =  nullptr;
     }
 
-    constexpr inline size_t bodies() const noexcept { return bodies_; }
+    const inline size_t bodies() const noexcept { return bodies_; }
     const inline float* __restrict posx() const noexcept { return posx_; }
     const inline float* __restrict posy() const noexcept { return posy_; }
     const inline float* __restrict velx() const noexcept { return velx_; }

@@ -89,7 +89,7 @@ namespace util {
     ) {
         const float dx = p2x - p1x;
         const float dy = p2y - p1y;
-        const float dsq = epsl + (dx*dx) + (dy*dy);
+        const float dsq = (dx*dx) + (dy*dy);
 
         float inv = util::frsqrt(dsq);
         inv = inv * (1.5f - 0.5f * dsq * inv * inv);

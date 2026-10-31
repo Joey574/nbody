@@ -91,8 +91,6 @@ void quadtree::compute_acc_recurse(data& d, size_t i, size_t j, int tid) {
         return;
     };
 
-    const size_t n = d.bodies();
-
     const float* __restrict ma = d.mass();
     const float* __restrict px = d.posx();
     const float* __restrict py = d.posy();
@@ -112,11 +110,11 @@ void quadtree::compute_acc_recurse(data& d, size_t i, size_t j, int tid) {
 
     const float dx = g2x - p1x;
     const float dy = g2y - p1y;
-    const float dsq = util::epsl + (dx*dx) + (dy*dy);
+    const float dsq = (dx*dx) + (dy*dy);
 
     if (sizesq / dsq < this->thetasq_) {
         // this group is far enough away to be approximated
-        // as a single group
+        // as a single point
 
         util::apply_inner_force(
             dx, dy, dsq,

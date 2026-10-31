@@ -20,6 +20,11 @@ pkgs.mkShell {
     vulkan-validation-layers
     glfw3
     glm
+    (python3.withPackages (
+      ps: with ps; [
+        matplotlib
+      ]
+    ))
   ];
 
   shellHook = ''

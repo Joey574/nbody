@@ -121,7 +121,8 @@ struct quadtree {
         void insert(const data& d);
         void compute_acc(data& d);
 
-        void debug_print_tree();
+        void debug_print_tree() const;
+        void debug_print_node(size_t i) const;
 
         const inline float thetasq() const { return this->thetasq_; }
 

@@ -8,7 +8,7 @@ Comments: Most of this code is ripped from https://docs.vulkan.org/tutorial/late
 #include <chrono>
 #include <stdexcept>
 
-void renderer::init(const data& data, const std::string& exePath) {
+void renderer::init(const data& data) {
     init_window();
     vulkan_instance();
     vulkan_surface();

@@ -14,7 +14,7 @@ int app::run(const cliargs& f) {
     sim = simulation(f);
     ren = renderer();
 
-    ren.init(sim.get_data(), f.path);
+    ren.init(sim.get_data());
     if (main_loop(f)) { return 1; }
     cleanup();
 

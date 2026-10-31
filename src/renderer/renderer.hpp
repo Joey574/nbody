@@ -20,7 +20,7 @@ struct renderer {
     std::chrono::nanoseconds render(const data& data, float dt);
     void cleanup();
 
-    void init(const data& data, const std::string& exePath);
+    void init(const data& data);
     bool should_close() { return glfwWindowShouldClose(window); }
 
     private:

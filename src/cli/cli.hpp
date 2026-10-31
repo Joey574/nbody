@@ -5,12 +5,11 @@
 
 struct cliargs {
     public:
-    cliargs() : refresh(100), cpu(false), bh(false), quiet(false), path("") {}
+    cliargs() : refresh(100), cpu(false), bh(false), quiet(false) {}
 
     void parse(int argc, char* argv[]);
 
     Config config;
-    std::string path;
     size_t refresh = 100;
     bool cpu = false;
     bool bh = false;

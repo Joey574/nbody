@@ -34,8 +34,6 @@ namespace util {
         return std::abs(a-b) < 0.1f;
     }
 
-    std::string executable_path(char* argv[]);
-
     static inline constexpr float epsl = 1e-12f;
 
     static inline void apply_inner_force(

@@ -87,28 +87,12 @@ void simulation::compute_acc() noexcept {
 
             // remainder handling
             for(; j < n; j++) {
-                const float p2x = px[j];
-                const float p2y = py[j];
-                const float p2m = ma[j];
-
-                const float dx = p2x - p1x;
-                const float dy = p2y - p1y;
-                const float dsq = util::epsl + (dx*dx) + (dy*dy);
-
-                // fast rsqrt with netwon step
-                float inv = util::frsqrt(dsq);
-                inv = inv * (1.5f - 0.5f * dsq * inv * inv);
-
-                // compute intermediate values
-                float inv_dis3 = inv * inv * inv;
-                float ivx = dx * inv_dis3;
-                float ivy = dy * inv_dis3;
-
-                // update acceleration values
-                a1x_final += ivx * p2m;
-                a1y_final += ivy * p2m;
-                ax_row[j] -= ivx * p1m;
-                ay_row[j] -= ivy * p1m;
+                util::apply_force_to_two(
+                    p1x, p1y, p1m,
+                    px[j], py[j], ma[j],
+                    &a1x_final, &a1y_final,
+                    &ax_row[j], &ay_row[j]
+                );
             }
 
             ax_row[i] += a1x_final;

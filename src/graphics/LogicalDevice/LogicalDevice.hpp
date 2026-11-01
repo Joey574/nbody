@@ -4,25 +4,25 @@
 
 struct LogicalDevice {
     public:
-    void init(const PhysicalDevice& pdevice, const vk::raii::SurfaceKHR& surface);
-    void cleanup();
+        void init(const PhysicalDevice& pdevice, const vk::raii::SurfaceKHR& surface);
+        void cleanup();
 
-    inline auto& Device() noexcept { return device; }
-    inline auto& Queue() noexcept { return queue; }
+        inline auto& Device() noexcept { return device; }
+        inline auto& Queue() noexcept { return queue; }
 
-    inline const auto& Device() const noexcept { return device; }
-    inline const auto& Queue() const noexcept { return queue; }
-    inline uint32_t QueueIdx() const noexcept { return queueIdx; }
+        inline const auto& Device() const noexcept { return device; }
+        inline const auto& Queue() const noexcept { return queue; }
+        inline uint32_t QueueIdx() const noexcept { return queueIdx; }
 
-    inline operator vk::raii::Device&() { return device; }
-    inline operator const vk::raii::Device&() const { return device; }
+        inline operator vk::raii::Device&() { return device; }
+        inline operator const vk::raii::Device&() const { return device; }
 
     private:
-    vk::raii::Device device    = nullptr;
-    vk::raii::Queue  queue     = nullptr;
-    uint32_t         queueIdx  = 0;
+        vk::raii::Device device    = nullptr;
+        vk::raii::Queue  queue     = nullptr;
+        uint32_t         queueIdx  = 0;
 
-    static constexpr const char* deviceExtensions[1] = {
-        vk::KHRSwapchainExtensionName
-    };
+        static constexpr const char* deviceExtensions[1] = {
+            vk::KHRSwapchainExtensionName
+        };
 };

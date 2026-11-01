@@ -12,39 +12,8 @@
 
 /// @brief Hold the raw underlying simulation data and provides a simple interface to access it
 struct data {
-    private:
-    size_t bodies_ = 0;
-    float* __restrict posx_ = nullptr;
-    float* __restrict posy_ = nullptr;
-    float* __restrict velx_ = nullptr;
-    float* __restrict vely_ = nullptr;
-    float* __restrict mass_ = nullptr;
-    matrix accx_;
-    matrix accy_;
-
-    static float* grow(float* old, size_t old_n, const float* add, size_t add_n) {
-        const size_t new_n = old_n + add_n;
-        float* tmp = (float*)aligned_alloc(MEM_ALIGNMENT, util::aligned_size(new_n * sizeof(float)));
-
-        if (old_n) std::memcpy(tmp, old, old_n * sizeof(float));
-        if (add_n) std::memcpy(tmp + old_n, add, add_n * sizeof(float));
-
-        free(old);
-        return tmp;
-    }
-
     public:
-
-    // default constructor
-    data() :
-        bodies_(0),
-        posx_(nullptr),
-        posy_(nullptr),
-        velx_(nullptr),
-        vely_(nullptr),
-        mass_(nullptr),
-        accx_(matrix()),
-        accy_(matrix()) {}
+    data() = default;
 
     // move constructor
     data(data&& other) noexcept :
@@ -134,8 +103,7 @@ struct data {
         return *this;
     }
 
-    // deconstructor
-    ~data() {
+    void clear() noexcept {
         bodies_ = 0;
         free(posx_);
         free(posy_);
@@ -148,6 +116,13 @@ struct data {
         velx_ =  nullptr;
         vely_ =  nullptr;
         mass_ =  nullptr;
+        accx_ = matrix{};
+        accy_ = matrix{};
+    }
+
+    // deconstructor
+    ~data() {
+        clear();
     }
 
     const inline size_t bodies() const noexcept { return bodies_; }
@@ -197,7 +172,7 @@ struct data {
     }
 
     // appends an existing data object to itself
-    inline void append(data& other) {
+    inline void append(data& other, bool init_acc) {
         const size_t old_n = this->bodies_;
         const size_t add_n = other.bodies_;
 
@@ -208,7 +183,28 @@ struct data {
         this->mass_ = grow(mass_, old_n, other.mass_, add_n);
 
         this->bodies_ = old_n + add_n;
-        this->accx_ = matrix(omp_get_max_threads(), this->bodies_);
-        this->accy_ = matrix(omp_get_max_threads(), this->bodies_);
+        this->accx_ = init_acc ? matrix(omp_get_max_threads(), this->bodies_) : matrix();
+        this->accy_ = init_acc ? matrix(omp_get_max_threads(), this->bodies_) : matrix();
     }
+
+    private:
+        size_t bodies_ = 0;
+        float* __restrict posx_ = nullptr;
+        float* __restrict posy_ = nullptr;
+        float* __restrict velx_ = nullptr;
+        float* __restrict vely_ = nullptr;
+        float* __restrict mass_ = nullptr;
+        matrix accx_;
+        matrix accy_;
+
+        static float* grow(float* old, size_t old_n, const float* add, size_t add_n) {
+            const size_t new_n = old_n + add_n;
+            float* tmp = (float*)aligned_alloc(MEM_ALIGNMENT, util::aligned_size(new_n * sizeof(float)));
+
+            if (old_n) std::memcpy(tmp, old, old_n * sizeof(float));
+            if (add_n) std::memcpy(tmp + old_n, add, add_n * sizeof(float));
+
+            free(old);
+            return tmp;
+        }
 };

@@ -1,8 +1,18 @@
 #include "simulation.hpp"
+#include <vulkan/vulkan_raii.hpp>
 
-#include <chrono>
+void simulation::initGPU(const LogicalDevice& ld, const PhysicalDevice& pd) {
+    if (!isGPU()) return;
 
-std::chrono::nanoseconds simulation::update_gpu(const float dt) noexcept {
-    auto s = std::chrono::high_resolution_clock::now();
-    return std::chrono::high_resolution_clock::now() - s;
+    gpu_.init(data_, ld, pd);
+    data_.clear();
+}
+
+void simulation::recordGPU(const vk::raii::CommandBuffer& cmd, float dt) {
+    if (!isGPU()) return;
+    gpu_.record(cmd, dt);
+}
+
+void simulation::cleanup() {
+    gpu_.cleanup();
 }

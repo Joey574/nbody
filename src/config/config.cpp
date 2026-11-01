@@ -1,6 +1,7 @@
 #include "config.hpp"
 
 #include "../galaxy/galaxy.hpp"
+#include <stdexcept>
 
 #define Y_GALAXIES "galaxies"
 #define Y_FIXED_TIME "fixed_time"
@@ -10,7 +11,7 @@ void Config::Load(const std::string& path) {
     conf = YAML::LoadFile(path);
 }
 
-data Config::New() const {
+data Config::New(bool init_acc) const {
     // TODO
     // currently, the memory management here stands to be improved, we're copying a lot of data in galaxy iterations
     // when points grows large and there are multiple galaxies, this will be incredibly slow
@@ -19,13 +20,15 @@ data Config::New() const {
 
     data sim;
     YAML::Node galaxies = this->conf[Y_GALAXIES];
-
+    if (!galaxies || !galaxies.IsSequence() || galaxies.size() == 0) {
+        throw std::invalid_argument("config must contain at least one nonempty galaxy sequence");
+    }
 
     for (const auto& gConf : galaxies) {
         Galaxy g(gConf);
-        data d = g.New();
+        data d = g.New(init_acc);
 
-        sim.append(d);
+        sim.append(d, init_acc);
     }
 
     return sim;

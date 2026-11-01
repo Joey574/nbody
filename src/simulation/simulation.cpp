@@ -1,5 +1,5 @@
 #include "simulation.hpp"
-
+#include <chrono>
 
 void simulation::sum_acc() noexcept {
     // aliasing
@@ -64,5 +64,16 @@ void simulation::move_points(const float ft) noexcept {
 
         px[i] += vx[i] * ft;
         py[i] += vy[i] * ft;
+    }
+}
+
+std::chrono::nanoseconds simulation::update(float ft) {
+    switch (backend_) {
+        case backend::CPU:
+            return update_cpu(ft);
+        case backend::CPU_BH:
+            return update_cpu_bh(ft);
+        default:
+            return std::chrono::nanoseconds::zero();
     }
 }

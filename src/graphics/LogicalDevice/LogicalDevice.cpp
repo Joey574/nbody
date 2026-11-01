@@ -1,18 +1,26 @@
 #include "LogicalDevice.hpp"
+#include "vulkan/vulkan.hpp"
 
 void LogicalDevice::init(const PhysicalDevice& pdevice, const vk::raii::SurfaceKHR& surface) {
     const auto& pd = pdevice.Device();
 
     auto queueFamilyProperties = pd.getQueueFamilyProperties();
     for (uint32_t qfpIndex = 0; qfpIndex < queueFamilyProperties.size(); qfpIndex++) {
-        if ((queueFamilyProperties[qfpIndex].queueFlags & vk::QueueFlagBits::eGraphics) && pd.getSurfaceSupportKHR(qfpIndex, surface)) {
+        if (queueFamilyProperties[qfpIndex].queueCount == 0) continue;
+
+        const auto flags = queueFamilyProperties[qfpIndex].queueFlags;
+        const bool graphics = bool(flags & vk::QueueFlagBits::eGraphics);
+        const bool compute = bool(flags & vk::QueueFlagBits::eCompute);
+        const bool present = pd.getSurfaceSupportKHR(qfpIndex, surface);
+
+        if (graphics && compute && present) {
             queueIdx = qfpIndex;
             break;
         }
     }
 
     if (queueIdx == ~0) {
-        throw std::runtime_error("could not find a queue for graphics and present");
+        throw std::runtime_error("could not find a queue for graphics, present, and compute");
     }
 
     vk::StructureChain<

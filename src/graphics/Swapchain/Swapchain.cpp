@@ -1,3 +1,7 @@
+#include <stdexcept>
+#include <limits>
+#include <stdexcept>
+
 #include "Swapchain.hpp"
 
 void Swapchain::init(const PhysicalDevice& pdevice, const LogicalDevice& ldevice, const vk::raii::SurfaceKHR& surface, GLFWwindow* window) {
@@ -94,6 +98,8 @@ vk::PresentModeKHR Swapchain::chooseSwapPresentMode(const std::vector<vk::Presen
 }
 
 vk::SurfaceFormatKHR Swapchain::chooseSwapSurfaceFormat(const std::vector<vk::SurfaceFormatKHR>& formats) {
+    if (formats.empty()) throw std::runtime_error("surface exposes no supported formats");
+
     for (const auto& f : formats) {
         if (f.format == vk::Format::eB8G8R8A8Srgb && f.colorSpace == vk::ColorSpaceKHR::eSrgbNonlinear) {
             return f;

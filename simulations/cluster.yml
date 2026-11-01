@@ -1,4 +1,4 @@
-fixed_time: 0.000005
+fixed_time: 0.0000005
 
 galaxies:
   - type: uniform

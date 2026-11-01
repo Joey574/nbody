@@ -20,7 +20,7 @@ struct Galaxy {
         }
 
         /// @brief Creates a new galaxy based on the previously loaded config, this is a factory function and each call is independent of the last, (internal rng state updates between calls)
-        data New() const;
+        data New(bool init_acc) const;
 
         void Load(const YAML::Node conf);
 
@@ -31,10 +31,23 @@ struct Galaxy {
         std::string GalaxyString() const noexcept;
 
     private:
+        data NewUniform(bool init_acc) const;
+        data NewSpiral(bool init_acc) const;
+
         enum class Options {
             UN_INNER_RADIUS,
             UN_OUTER_RADIUS,
-            UN_DISTRIBUTION
+            UN_DISTRIBUTION,
+
+            SP_X_RADIUS,
+            SP_Y_RADIUS,
+            SP_ROT_START,
+            SP_INC_START,
+            SP_ELLIPSES,
+            SP_SEGMENTS,
+            SP_X_RADIUS_SCALE,
+            SP_ROT_DELTA,
+            SP_INC_DELTA
         };
 
         Type type;

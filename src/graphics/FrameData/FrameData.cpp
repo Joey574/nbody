@@ -1,92 +1,113 @@
 #include "FrameData.hpp"
+#include <stdexcept>
 
 void FrameData::init(const data& d, const LogicalDevice& ld, const PhysicalDevice& pd) {
-    this->count = d.bodies();
-    vk::DeviceSize size = this->count * sizeof(float);
+    cleanup();
+    count = d.bodies();
+    if (!count) throw std::invalid_argument("cannot initialize 0 particle buffer");
 
-    constexpr const vk::BufferUsageFlags usage = vk::BufferUsageFlagBits::eStorageBuffer;
-    constexpr const vk::MemoryPropertyFlags properties = vk::MemoryPropertyFlagBits::eHostVisible | vk::MemoryPropertyFlagBits::eHostCoherent;
+    const vk::DeviceSize stateBytes = count * sizeof(ParticleState);
+    const vk::DeviceSize massBytes = count * sizeof(float);
 
-    createBuffer(ld, pd, size, usage, properties, xBuf, xMem);
-    createBuffer(ld, pd, size, usage, properties, yBuf, yMem);
-    createBuffer(ld, pd, size, usage, properties, rBuf, rMem);
+    const auto limits = pd.Device().getProperties().limits;
+    if (stateBytes > limits.maxStorageBufferRange ||
+        massBytes > limits.maxStorageBufferRange) {
+        throw std::length_error("CPU particle buffers exceed maxStorageBufferRange");
+    }
 
-    x = static_cast<float*>(xMem.mapMemory(0, size));
-    y = static_cast<float*>(yMem.mapMemory(0, size));
-    r = static_cast<float*>(rMem.mapMemory(0, size));
+    constexpr vk::BufferUsageFlags usage = vk::BufferUsageFlagBits::eStorageBuffer;
+    constexpr vk::MemoryPropertyFlags properties =
+        vk::MemoryPropertyFlagBits::eHostVisible |
+        vk::MemoryPropertyFlagBits::eHostCoherent;
+
+    createBuffer(ld, pd, stateBytes, usage, properties, stateBuffer, stateMemory);
+    createBuffer(ld, pd, massBytes, usage, properties, massBuffer, massMemory);
+
+    mappedState = static_cast<ParticleState*>(stateMemory.mapMemory(0, stateBytes));
+    mappedMasses = static_cast<float*>(massMemory.mapMemory(0, massBytes));
+    update(d);
 }
 
 void FrameData::update(const data& d) {
-    const size_t bytes = d.bodies() * sizeof(float);
-    memcpy(x, d.posx(), bytes);
-    memcpy(y, d.posy(), bytes);
-    memcpy(r, d.mass(), bytes);
+    if (d.bodies() != count) {
+        throw std::invalid_argument("particle count changed after renderer buffer initialization");
+    }
+
+    for (size_t i = 0; i < count; ++i) {
+        mappedState[i] = {
+            d.posx()[i],
+            d.posy()[i],
+            d.velx()[i],
+            d.vely()[i]
+        };
+        mappedMasses[i] = d.mass()[i];
+    }
 }
 
 void FrameData::cleanup() {
-    if (x) {
-        xMem.unmapMemory();
-        x = nullptr;
+    if (mappedState) {
+        stateMemory.unmapMemory();
+        mappedState = nullptr;
     }
 
-    if (y) {
-        yMem.unmapMemory();
-        y = nullptr;
+    if (mappedMasses) {
+        massMemory.unmapMemory();
+        mappedMasses = nullptr;
     }
 
-    if (r) {
-        rMem.unmapMemory();
-        r = nullptr;
-    }
-
-    xBuf = nullptr;
-    yBuf = nullptr;
-    rBuf = nullptr;
-
-    xMem = nullptr;
-    yMem = nullptr;
-    rMem = nullptr;
+    stateBuffer = nullptr;
+    massBuffer = nullptr;
+    stateMemory = nullptr;
+    massMemory = nullptr;
+    count = 0;
 }
 
-vk::DescriptorBufferInfo FrameData::xInfo() const {
-    return { *xBuf, 0, count * sizeof(float)};
+vk::DescriptorBufferInfo FrameData::stateInfo() const {
+    return {*stateBuffer, 0, count * sizeof(ParticleState)};
 }
 
-vk::DescriptorBufferInfo FrameData::yInfo() const {
-    return { *yBuf, 0, count * sizeof(float)};
+vk::DescriptorBufferInfo FrameData::massInfo() const {
+    return {*massBuffer, 0, count * sizeof(float)};
 }
 
-vk::DescriptorBufferInfo FrameData::rInfo() const {
-    return { *rBuf, 0, count * sizeof(float)};
-}
-
-uint32_t FrameData::findMemType(const PhysicalDevice& pd, uint32_t f, vk::MemoryPropertyFlags p) {
-    auto memP = pd.Device().getMemoryProperties();
-
-    for (uint32_t i = 0; i < memP.memoryTypeCount; i++) {
-        if ((f & (1 << i)) && (memP.memoryTypes[i].propertyFlags & p) == p) {
+uint32_t FrameData::findMemType(
+    const PhysicalDevice& pd,
+    uint32_t memoryTypeBits,
+    vk::MemoryPropertyFlags properties
+) {
+    const auto memoryProperties = pd.Device().getMemoryProperties();
+    for (uint32_t i = 0; i < memoryProperties.memoryTypeCount; ++i) {
+        const bool supported = (memoryTypeBits & (1u << i)) != 0;
+        const bool hasProperties =
+            (memoryProperties.memoryTypes[i].propertyFlags & properties) == properties;
+        if (supported && hasProperties) {
             return i;
         }
     }
-
-    throw std::runtime_error("failed to find a suitable memory type");
+    throw std::runtime_error("failed to find a suitable Vulkan memory type");
 }
 
-void FrameData::createBuffer(const LogicalDevice& ld, const PhysicalDevice& pd, vk::DeviceSize size, vk::BufferUsageFlags usage, vk::MemoryPropertyFlags properties, vk::raii::Buffer& buffer, vk::raii::DeviceMemory& bufferMemory) {
-    vk::BufferCreateInfo bufferInfo {
+void FrameData::createBuffer(
+    const LogicalDevice& ld,
+    const PhysicalDevice& pd,
+    vk::DeviceSize size,
+    vk::BufferUsageFlags usage,
+    vk::MemoryPropertyFlags properties,
+    vk::raii::Buffer& buffer,
+    vk::raii::DeviceMemory& bufferMemory
+) {
+    const vk::BufferCreateInfo bufferInfo{
         .size = size,
         .usage = usage,
-        .sharingMode = vk::SharingMode::eExclusive,
+        .sharingMode = vk::SharingMode::eExclusive
     };
+    buffer = vk::raii::Buffer(ld.Device(), bufferInfo);
 
-    buffer = vk::raii::Buffer(ld, bufferInfo);
-
-    auto memRequirements = buffer.getMemoryRequirements();
-    vk::MemoryAllocateInfo allocInfo {
-        .allocationSize = memRequirements.size,
-        .memoryTypeIndex = findMemType(pd, memRequirements.memoryTypeBits, properties)
+    const auto requirements = buffer.getMemoryRequirements();
+    const vk::MemoryAllocateInfo allocation{
+        .allocationSize = requirements.size,
+        .memoryTypeIndex = findMemType(pd, requirements.memoryTypeBits, properties)
     };
-
-    bufferMemory = vk::raii::DeviceMemory(ld, allocInfo);
+    bufferMemory = vk::raii::DeviceMemory(ld.Device(), allocation);
     buffer.bindMemory(*bufferMemory, 0);
 }

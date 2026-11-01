@@ -8,23 +8,29 @@ Comments: Most of this code is ripped from https://docs.vulkan.org/tutorial/late
 #include <chrono>
 #include <stdexcept>
 
-void renderer::init(const data& data) {
+void renderer::initVulkan() {
     init_window();
     vulkan_instance();
     vulkan_surface();
     pdevice.init(instance);
     ldevice.init(pdevice, surface);
+    deviceInitialized = true;
+
     swapchain.init(pdevice, ldevice, surface, window);
     vulkan_init_descriptors();
     vulkan_graphics_pipeline();
     vulkan_command_pool();
+}
+
+void renderer::initRendering(const simulation& sim) {
     for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
-        frames[i].init(data, ldevice, pdevice);
+        if (!sim.isGPU()) {
+            frames[i].init(sim.get_data(), ldevice, pdevice);
+        }
+
         uboBuffers[i].init(ldevice, pdevice);
-        vulkan_write_descriptors(i);
     }
-    // TODO : reimplment below line eventually
-    //command.init(ldevice, MAX_FRAMES_IN_FLIGHT);
+
     vulkan_command_buffer();
     vulkan_sync_objects();
 }
@@ -33,12 +39,14 @@ void renderer::init_window() {
     if (!glfwInit()) {
         throw std::runtime_error("failed to init glfw");
     }
-    glfwInitialized = true;
+
+    this->glfwInitialized = true;
     glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
 
     window = glfwCreateWindow(width_, height_, "nbody", nullptr, nullptr);
     if (!window) {
         glfwTerminate();
+        this->glfwInitialized = false;
         throw std::runtime_error("failed to create glfw window");
     }
 
@@ -259,7 +267,7 @@ void renderer::vulkan_sync_objects() {
 
 void renderer::vulkan_init_descriptors() {
     std::array<vk::DescriptorPoolSize, 2> poolSize {{
-        {.type = vk::DescriptorType::eStorageBuffer, .descriptorCount = 3 * MAX_FRAMES_IN_FLIGHT},
+        {.type = vk::DescriptorType::eStorageBuffer, .descriptorCount = 2 * MAX_FRAMES_IN_FLIGHT},
         { .type = vk::DescriptorType::eUniformBuffer, .descriptorCount = 1 * MAX_FRAMES_IN_FLIGHT},
     }};
 
@@ -270,11 +278,10 @@ void renderer::vulkan_init_descriptors() {
         .pPoolSizes    = poolSize.data(),
     });
 
-    std::array<vk::DescriptorSetLayoutBinding, 4> bindings {{
+    std::array<vk::DescriptorSetLayoutBinding, 3> bindings {{
         { 0, vk::DescriptorType::eStorageBuffer, 1, vk::ShaderStageFlagBits::eVertex, nullptr },
         { 1, vk::DescriptorType::eStorageBuffer, 1, vk::ShaderStageFlagBits::eVertex, nullptr },
-        { 2, vk::DescriptorType::eStorageBuffer, 1, vk::ShaderStageFlagBits::eVertex, nullptr },
-        { 3, vk::DescriptorType::eUniformBuffer, 1, vk::ShaderStageFlagBits::eVertex, nullptr },
+        { 2, vk::DescriptorType::eUniformBuffer, 1, vk::ShaderStageFlagBits::eVertex, nullptr },
     }};
 
     descriptorSetLayout = vk::raii::DescriptorSetLayout(ldevice, vk::DescriptorSetLayoutCreateInfo{
@@ -292,22 +299,19 @@ void renderer::vulkan_init_descriptors() {
     descriptorSets = ldevice.Device().allocateDescriptorSets(allocInfo);
 }
 
-void renderer::vulkan_write_descriptors(size_t i) {
-    auto& s = frames[i];
+void renderer::vulkan_write_descriptors(size_t i, vk::Buffer state, vk::Buffer masses) {
+    const vk::DescriptorBufferInfo stateInfo{state, 0, VK_WHOLE_SIZE};
+    const vk::DescriptorBufferInfo massInfo{masses, 0, VK_WHOLE_SIZE};
+    const vk::DescriptorBufferInfo uboInfo = uboBuffers[i].Info();
 
-    auto xInfo = s.xInfo();
-    auto yInfo = s.yInfo();
-    auto rInfo = s.rInfo();
-    auto uInfo = uboBuffers[i].Info();
-
-    std::array<vk::WriteDescriptorSet, 4> writes = {{
+    const std::array<vk::WriteDescriptorSet, 3> writes{{
         {
             .dstSet = *descriptorSets[i],
             .dstBinding = 0,
             .dstArrayElement = 0,
             .descriptorCount = 1,
             .descriptorType = vk::DescriptorType::eStorageBuffer,
-            .pBufferInfo = &xInfo,
+            .pBufferInfo = &stateInfo
         },
         {
             .dstSet = *descriptorSets[i],
@@ -315,32 +319,59 @@ void renderer::vulkan_write_descriptors(size_t i) {
             .dstArrayElement = 0,
             .descriptorCount = 1,
             .descriptorType = vk::DescriptorType::eStorageBuffer,
-            .pBufferInfo = &yInfo,
+            .pBufferInfo = &massInfo
         },
         {
             .dstSet = *descriptorSets[i],
             .dstBinding = 2,
             .dstArrayElement = 0,
             .descriptorCount = 1,
-            .descriptorType = vk::DescriptorType::eStorageBuffer,
-            .pBufferInfo = &rInfo,
-        },
-        {
-            .dstSet = *descriptorSets[i],
-            .dstBinding = 3,
-            .dstArrayElement = 0,
-            .descriptorCount = 1,
             .descriptorType = vk::DescriptorType::eUniformBuffer,
-            .pBufferInfo = &uInfo,
+            .pBufferInfo = &uboInfo
         }
     }};
 
     ldevice.Device().updateDescriptorSets(writes, {});
 }
 
-void renderer::vulkan_record_command_buffer(uint32_t imageIndex, size_t n) {
+void renderer::vulkan_record_command_buffer(uint32_t imageIndex, simulation& sim, float ft) {
     auto& cmd = commandBuffers[frameIndex];
     cmd.begin({});
+
+    vk::Buffer particleState{};
+    vk::Buffer particleMasses{};
+
+    if (sim.isGPU()) {
+        sim.recordGPU(cmd, ft);
+        particleState = sim.gpuState();
+        particleMasses = sim.gpuMasses();
+
+        const vk::BufferMemoryBarrier2 computeToVertex{
+            .srcStageMask = vk::PipelineStageFlagBits2::eComputeShader,
+            .srcAccessMask = vk::AccessFlagBits2::eShaderStorageWrite,
+            .dstStageMask = vk::PipelineStageFlagBits2::eVertexShader,
+            .dstAccessMask = vk::AccessFlagBits2::eShaderStorageRead,
+            .srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
+            .dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
+            .buffer = particleState,
+            .offset = 0,
+            .size = VK_WHOLE_SIZE
+        };
+        const vk::DependencyInfo computeDependency{
+            .bufferMemoryBarrierCount = 1,
+            .pBufferMemoryBarriers = &computeToVertex
+        };
+        cmd.pipelineBarrier2(computeDependency);
+    } else {
+        const auto stateInfo = frames[frameIndex].stateInfo();
+        const auto massInfo = frames[frameIndex].massInfo();
+        particleState = stateInfo.buffer;
+        particleMasses = massInfo.buffer;
+    }
+
+    // The frame fence was waited before recording, so this frame's set is no
+    // longer in use and can safely be rebound to the selected state buffer.
+    vulkan_write_descriptors(frameIndex, particleState, particleMasses);
 
     transition_image_layout(
         imageIndex,
@@ -386,7 +417,7 @@ void renderer::vulkan_record_command_buffer(uint32_t imageIndex, size_t n) {
     struct PushConstants { glm::vec4 color; float softness; float width; float height; };
     PushConstants pc { {1.0f, 1.0f, 1.0f, 1.0f}, 0.02f, (float)swapchain.Extent().width, (float)swapchain.Extent().height };
     cmd.pushConstants<PushConstants>(*pipelineLayout, vk::ShaderStageFlagBits::eFragment | vk::ShaderStageFlagBits::eVertex, 0, pc);
-    cmd.draw(3, n, 0, 0);
+    cmd.draw(3, static_cast<uint32_t>(sim.points()), 0, 0);
     cmd.endRendering();
 
     transition_image_layout(
@@ -440,8 +471,27 @@ void renderer::transition_image_layout(
     commandBuffer.pipelineBarrier2(dependencyInfo);
 }
 
-std::chrono::nanoseconds renderer::render(const data& data, float dt) {
-    auto s = std::chrono::high_resolution_clock::now();
+void renderer::recreate_swapchain() {
+    const auto previousFormat = swapchain.SurfaceFormat().format;
+    if (!swapchain.recreate(pdevice, ldevice, surface, window)) {
+        return;
+    }
+
+    if (swapchain.SurfaceFormat().format != previousFormat) {
+        pipeline = nullptr;
+        pipelineLayout = nullptr;
+        vulkan_graphics_pipeline();
+    }
+
+    renderFinishedSemaphores.clear();
+    for (size_t i = 0; i < swapchain.Images().size(); ++i) {
+        renderFinishedSemaphores.emplace_back(ldevice, vk::SemaphoreCreateInfo{});
+    }
+}
+
+
+std::chrono::nanoseconds renderer::render(simulation& sim, float dt, float ft) {
+    const auto s = std::chrono::high_resolution_clock::now();
     glfwPollEvents();
     if (glfwWindowShouldClose(window)) {
         return std::chrono::high_resolution_clock::now() - s;
@@ -449,32 +499,34 @@ std::chrono::nanoseconds renderer::render(const data& data, float dt) {
 
     cam.update(window, dt);
 
-    auto fenceResult = ldevice.Device().waitForFences(*inFlightFences[frameIndex], vk::True, UINT64_MAX);
+    const auto fenceResult = ldevice.Device().waitForFences(*inFlightFences[frameIndex], vk::True, UINT64_MAX);
     if (fenceResult != vk::Result::eSuccess) {
         throw std::runtime_error("failed to wait for fence");
     }
 
     auto [result, imageIndex] = swapchain.SwapChain().acquireNextImage(UINT64_MAX, *presentCompleteSemaphores[frameIndex], nullptr);
     if (result == vk::Result::eErrorOutOfDateKHR) {
-        swapchain.recreate(pdevice, ldevice, surface, window);
+        recreate_swapchain();
         return std::chrono::high_resolution_clock::now() - s;
     } else if (result != vk::Result::eSuccess && result != vk::Result::eSuboptimalKHR) {
         throw std::runtime_error("failed to acquire swap chain image");
     }
 
-    ldevice.Device().resetFences(*inFlightFences[frameIndex]);
+    if (!sim.isGPU()) {
+        frames[frameIndex].update(sim.get_data());
+    }
 
-    frames[frameIndex].update(data);
-    UBO ubo {
+    const UBO ubo {
         .view = cam.viewMatrix(),
         .proj = cam.projMatrix(swapchain.Extent().width, swapchain.Extent().height)
     };
     uboBuffers[frameIndex].update(ubo);
 
+    ldevice.Device().resetFences(*inFlightFences[frameIndex]);
     commandBuffers[frameIndex].reset();
-    vulkan_record_command_buffer(imageIndex, data.bodies());
+    vulkan_record_command_buffer(imageIndex, sim, ft);
 
-    vk::PipelineStageFlags waitDestinationStageMask(vk::PipelineStageFlagBits::eColorAttachmentOutput);
+    const vk::PipelineStageFlags waitDestinationStageMask(vk::PipelineStageFlagBits::eColorAttachmentOutput);
     const vk::SubmitInfo submitInfo {
         .waitSemaphoreCount = 1,
         .pWaitSemaphores = &*presentCompleteSemaphores[frameIndex],
@@ -484,7 +536,6 @@ std::chrono::nanoseconds renderer::render(const data& data, float dt) {
         .signalSemaphoreCount = 1,
         .pSignalSemaphores = &*renderFinishedSemaphores[imageIndex]
     };
-
     ldevice.Queue().submit(submitInfo, *inFlightFences[frameIndex]);
 
     const vk::PresentInfoKHR presentInfoKHR {
@@ -498,15 +549,33 @@ std::chrono::nanoseconds renderer::render(const data& data, float dt) {
     result = ldevice.Queue().presentKHR(presentInfoKHR);
     if (result == vk::Result::eSuboptimalKHR || result == vk::Result::eErrorOutOfDateKHR || framebufferResized) {
         framebufferResized = false;
-        swapchain.recreate(pdevice, ldevice, surface, window);
+        recreate_swapchain();
     }
 
     frameIndex = (frameIndex + 1) % MAX_FRAMES_IN_FLIGHT;
     return std::chrono::high_resolution_clock::now() - s;
 }
 
+void renderer::waitIdle() {
+    if (deviceInitialized) {
+        ldevice.Device().waitIdle();
+    }
+}
+
+void renderer::releaseSimulationReferences() {
+    commandBuffers.clear();
+    descriptorSets.clear();
+    descriptorPool = nullptr;
+}
+
 void renderer::cleanup() {
-    ldevice.Device().waitIdle();
+    try {
+        waitIdle();
+    } catch (...) {}
+    deviceInitialized = false;
+
+    commandBuffers.clear();
+    commandPool = nullptr;
 
     descriptorSets = nullptr;
     descriptorPool = nullptr;
@@ -514,9 +583,6 @@ void renderer::cleanup() {
     pipeline = nullptr;
     pipelineLayout = nullptr;
     descriptorSetLayout = nullptr;
-
-    commandBuffers.clear();
-    commandPool = nullptr;
 
     presentCompleteSemaphores.clear();
     renderFinishedSemaphores.clear();

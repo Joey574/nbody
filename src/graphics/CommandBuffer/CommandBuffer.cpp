@@ -1,6 +1,6 @@
 #include "CommandBuffer.hpp"
 
-void CommandBuffer::init(const LogicalDevice& ldevice, uint32_t frames) { 
+void CommandBuffer::init(const LogicalDevice& ldevice, uint32_t frames) {
     vk::CommandPoolCreateInfo poolInfo {
         .flags = vk::CommandPoolCreateFlagBits::eResetCommandBuffer,
         .queueFamilyIndex = ldevice.QueueIdx()

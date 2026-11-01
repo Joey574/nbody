@@ -1,12 +1,18 @@
+struct ParticleState {
+    float x;
+    float y;
+    float vx;
+    float vy;
+};
+
 struct UBO {
     float4x4 view;
     float4x4 proj;
 };
 
-[[vk::binding(0, 0)]] StructuredBuffer<float> xb;
-[[vk::binding(1, 0)]] StructuredBuffer<float> yb;
-[[vk::binding(2, 0)]] StructuredBuffer<float> rb;
-[[vk::binding(3, 0)]] ConstantBuffer<UBO> ubo;
+[[vk::binding(0, 0)]] StructuredBuffer<ParticleState> particles;
+[[vk::binding(1, 0)]] StructuredBuffer<float> masses;
+[[vk::binding(2, 0)]] ConstantBuffer<UBO> ubo;
 
 struct VSOut {
     float4 position : SV_Position;
@@ -30,32 +36,35 @@ struct PushConstants {
 [[vk::push_constant]] PushConstants pc;
 
 [shader("vertex")]
-VSOut vertMain(uint vID: SV_VertexID, uint iID: SV_InstanceID) {
-    float2 offset = QUAD_OFFSETS[vID];
+VSOut vertMain(uint vID : SV_VertexID, uint iID : SV_InstanceID) {
+    const float2 offset = QUAD_OFFSETS[vID];
+    const ParticleState particle = particles[iID];
 
-    float zoom = ubo.view[0][0];
-    float cx = xb[iID];
-    float cy = yb[iID];
-    float r = clamp(log(rb[iID]+1), 1, 10);
+    const float zoom = ubo.view[0][0];
+    const float radius = clamp(log(masses[iID] + 1.0), 1.0, 10.0);
+    const float4x4 mvp = mul(ubo.proj, ubo.view);
 
-    float4x4 mvp = mul(ubo.proj, ubo.view);
+    float4 clipCenter = mul(
+        mvp,
+        float4(particle.x, particle.y, 0.0, 1.0)
+    );
+    clipCenter.x += offset.x * radius * zoom * 2.0 / pc.width;
+    clipCenter.y += offset.y * radius * zoom * 2.0 / pc.height;
 
-    float4 clipCenter = mul(mvp, float4(cx, cy, 0.0, 1.0));
-    clipCenter.x += offset.x * r * zoom * 2.0 / pc.width;
-    clipCenter.y += offset.y * r * zoom * 2.0 / pc.height;
-
-    VSOut vsOut;
-    vsOut.position = clipCenter;
-    vsOut.offset = offset;
-    vsOut.radius = r;
-    return vsOut;
+    VSOut result;
+    result.position = clipCenter;
+    result.offset = offset;
+    result.radius = radius;
+    return result;
 }
 
 [shader("fragment")]
 float4 fragMain(VSOut fsIn) : SV_TARGET {
-    float dist = length(fsIn.offset);
-    if (dist > 1.0) { discard; }
+    const float dist = length(fsIn.offset);
+    if (dist > 1.0) {
+        discard;
+    }
 
-    float alpha = 1.0 - smoothstep(1.0 - pc.softness, 1.0, dist);
+    const float alpha = 1.0 - smoothstep(1.0 - pc.softness, 1.0, dist);
     return float4(pc.color.rgb, pc.color.a * alpha);
 }

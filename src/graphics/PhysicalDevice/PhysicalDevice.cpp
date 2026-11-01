@@ -11,13 +11,7 @@ void PhysicalDevice::init(const vk::raii::Instance& instance) {
 
     for (const auto& d : devices) {
         auto deviceProperties = d.getProperties();
-        auto deviceFeatures = d.getFeatures();
         uint32_t score = 0;
-
-        // can't do geometry, skip
-        if (!deviceFeatures.geometryShader) {
-            continue;
-        }
 
         // favor dedicated gpus
         if (deviceProperties.deviceType == vk::PhysicalDeviceType::eDiscreteGpu) {
@@ -33,11 +27,11 @@ void PhysicalDevice::init(const vk::raii::Instance& instance) {
         candidates.insert(std::make_pair(score, d));
     }
 
-    if (candidates.rbegin()->first > 0) {
-        device = candidates.rbegin()->second;
-    } else {
+    if (candidates.empty() || candidates.rbegin()->first <= 0) {
         throw std::runtime_error("no suitable device");
     }
+
+    device = candidates.rbegin()->second;
 }
 
 void PhysicalDevice::cleanup() {

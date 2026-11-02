@@ -3,6 +3,7 @@
 #include <cstddef>
 #include <cstdlib>
 #include <cstring>
+#include <utility>
 
 #include "../data/data.hpp"
 
@@ -66,32 +67,36 @@ struct quadtree {
 
         // move operator
         quadtree& operator = (quadtree&& other) noexcept {
-            this->cm_ = other.cm_;
-            this->cx_ = other.cx_;
-            this->cy_ = other.cy_;
-            this->min_x_ = other.min_x_;
-            this->max_x_ = other.max_x_;
-            this->min_y_ = other.min_y_;
-            this->max_y_ = other.max_y_;
-            this->ne_ = other.ne_;
-            this->nw_ = other.nw_;
-            this->se_ = other.se_;
-            this->sw_ = other.sw_;
-            this->size_ = other.size_;
-            this->thetasq_ = other.thetasq_;
-            other.cm_ = nullptr;
-            other.cx_ = nullptr;
-            other.cy_ = nullptr;
-            other.min_x_ = nullptr;
-            other.max_x_ = nullptr;
-            other.min_y_ = nullptr;
-            other.max_y_ = nullptr;
-            other.ne_ = nullptr;
-            other.nw_ = nullptr;
-            other.se_ = nullptr;
-            other.sw_ = nullptr;
-            other.size_ = 0;
-            other.thetasq_ = 0;
+            if (this == &other) {
+                return *this;
+            }
+
+            free(cm_);
+            free(cx_);
+            free(cy_);
+            free(min_x_);
+            free(max_x_);
+            free(min_y_);
+            free(max_y_);
+            free(ne_);
+            free(nw_);
+            free(se_);
+            free(sw_);
+
+            cm_ = std::exchange(other.cm_, nullptr);
+            cx_ = std::exchange(other.cx_, nullptr);
+            cy_ = std::exchange(other.cy_, nullptr);
+            min_x_ = std::exchange(other.min_x_, nullptr);
+            max_x_ = std::exchange(other.max_x_, nullptr);
+            min_y_ = std::exchange(other.min_y_, nullptr);
+            max_y_ = std::exchange(other.max_y_, nullptr);
+            ne_ = std::exchange(other.ne_, nullptr);
+            nw_ = std::exchange(other.nw_, nullptr);
+            se_ = std::exchange(other.se_, nullptr);
+            sw_ = std::exchange(other.sw_, nullptr);
+
+            size_ = std::exchange(other.size_, 0);
+            thetasq_ = std::exchange(other.thetasq_, 0.0f);
             return *this;
         }
 
@@ -119,7 +124,7 @@ struct quadtree {
         quadtree(float theta) : thetasq_(theta*theta) {}
 
         void insert(const data& d);
-        void compute_acc(data& d);
+        void compute_acc(data& d) const;
 
         void debug_print_tree() const;
         void debug_print_node(size_t i) const;
@@ -160,5 +165,5 @@ struct quadtree {
         void zero();
         void zero_children();
 
-        void compute_acc_recurse(data& d, size_t i, size_t j, int tid);
+        void compute_acc_recurse(size_t i, size_t j, const float* __restrict ma, const float* __restrict px, const float* __restrict py, float* __restrict ax, float* __restrict ay) const;
 };

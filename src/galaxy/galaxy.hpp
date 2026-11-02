@@ -14,8 +14,8 @@ struct Galaxy {
             None, Spiral, Cluster, Uniform, Voronoi
         };
 
-        Galaxy() noexcept  : type(Type::None), points(0) {}
-        Galaxy(const YAML::Node conf) : type(Type::None), points(0) {
+        Galaxy() noexcept {}
+        Galaxy(const YAML::Node conf) {
             this->Load(conf);
         }
 
@@ -50,17 +50,17 @@ struct Galaxy {
             SP_INC_DELTA
         };
 
-        Type type;
-        size_t points;
-        uint64_t seed;
+        Type type = Type::None;
+        size_t points = 0;
+        uint64_t seed = 0;
 
-        float x_pos;
-        float y_pos;
+        float x_pos = 0.0f;
+        float y_pos = 0.0f;
 
-        float x_vel;
-        float y_vel;
+        float x_vel = 0.0f;
+        float y_vel = 0.0f;
 
-        float center_mass;
+        float center_mass = 0.0f;
 
         std::unordered_map<Options, std::any> conf;
         mutable std::default_random_engine gen;

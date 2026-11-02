@@ -67,7 +67,7 @@ namespace util {
     ) {
         const float dx = p2x - p1x;
         const float dy = p2y - p1y;
-        const float dsq = epsl + (dx*dx) + (dy*dy);
+        const float dsq = (dx*dx) + (dy*dy);
 
         apply_inner_force(
             dx, dy, dsq,

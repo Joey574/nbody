@@ -2,7 +2,6 @@
 #include <algorithm>
 #include <cstring>
 #include <assert.h>
-#include <yaml-cpp/node/detail/node.h>
 
 void quadtree::insert(const data& d) {
     const size_t n = d.bodies();
@@ -61,7 +60,7 @@ void quadtree::insert(const data& d) {
     }
 }
 
-void quadtree::compute_acc(data& d) {
+void quadtree::compute_acc(data& d) const {
     assert(d.bodies() == this->size_);
 
     d.accx().zero();
@@ -71,34 +70,49 @@ void quadtree::compute_acc(data& d) {
     {
         int tid = omp_get_thread_num();
 
-        #pragma omp for schedule(dynamic)
+        const float* __restrict ma = d.mass();
+        const float* __restrict px = d.posx();
+        const float* __restrict py = d.posy();
+        float* __restrict ax = d.accx().row(tid);
+        float* __restrict ay = d.accy().row(tid);
+
+        #pragma omp for schedule(guided)
         for (size_t i = 0; i < size_; i++) {
-            compute_acc_recurse(d, i, 0, tid);
+            compute_acc_recurse(i, 0, ma, px, py, ax, ay);
         }
     }
 }
 
 // TODO
 // this needs to be turned into a linear loop
-void quadtree::compute_acc_recurse(data& d, size_t i, size_t j, int tid) {
+void quadtree::compute_acc_recurse(
+    size_t i,
+    size_t j,
+    const float* __restrict ma,
+    const float* __restrict px,
+    const float* __restrict py,
+    float* __restrict ax,
+    float* __restrict ay
+) const {
     if (i == j) {
         // there still exists other nodes below this
         // that we may need to check, recurse into children
-        if (ne_[i]) compute_acc_recurse(d, i, ne_[i], tid);
-        if (nw_[i]) compute_acc_recurse(d, i, nw_[i], tid);
-        if (se_[i]) compute_acc_recurse(d, i, se_[i], tid);
-        if (sw_[i]) compute_acc_recurse(d, i, sw_[i], tid);
+        if (ne_[i]) compute_acc_recurse(i, ne_[i], ma, px, py, ax, ay);
+        if (nw_[i]) compute_acc_recurse(i, nw_[i], ma, px, py, ax, ay);
+        if (se_[i]) compute_acc_recurse(i, se_[i], ma, px, py, ax, ay);
+        if (sw_[i]) compute_acc_recurse(i, sw_[i], ma, px, py, ax, ay);
         return;
     };
 
-    const float* __restrict ma = d.mass();
-    const float* __restrict px = d.posx();
-    const float* __restrict py = d.posy();
-    float* __restrict ax_row = d.accx().row(tid);
-    float* __restrict ay_row = d.accy().row(tid);
+    const bool contains_self =
+        (px[i] >= min_x_[j] && px[i] <= max_x_[j]) &&
+        (py[i] >= min_y_[j] && py[i] <= max_y_[j]);
 
-    const float size = ((max_x_[j] - min_x_[j]) + (max_y_[j] - min_y_[j])) * 0.5f;
-    const float sizesq = size*size;
+    const float width  = max_x_[j] - min_x_[j];
+    const float height = max_y_[j] - min_y_[j];
+
+    const float size = std::max(width, height);
+    const float sizesq = size * size;
 
     const float p1x = px[i];
     const float p1y = py[i];
@@ -112,13 +126,13 @@ void quadtree::compute_acc_recurse(data& d, size_t i, size_t j, int tid) {
     const float dy = g2y - p1y;
     const float dsq = (dx*dx) + (dy*dy);
 
-    if (sizesq / dsq < this->thetasq_) {
+    if (!contains_self && sizesq / dsq < this->thetasq_) {
         // this group is far enough away to be approximated
         // as a single point
 
         util::apply_inner_force(
             dx, dy, dsq,
-            g2m, &ax_row[i], &ay_row[i]
+            g2m, &ax[i], &ay[i]
         );
     } else {
         // this body is too close / large to compute together
@@ -126,12 +140,12 @@ void quadtree::compute_acc_recurse(data& d, size_t i, size_t j, int tid) {
         util::apply_force_to_one(
             p1x, p1y,
             px[j], py[j], ma[j],
-            &ax_row[i], &ay_row[i]
+            &ax[i], &ay[i]
         );
 
-        if (nw_[j]) compute_acc_recurse(d, i, nw_[j], tid);
-        if (ne_[j]) compute_acc_recurse(d, i, ne_[j], tid);
-        if (sw_[j]) compute_acc_recurse(d, i, sw_[j], tid);
-        if (se_[j]) compute_acc_recurse(d, i, se_[j], tid);
+        if (nw_[j]) compute_acc_recurse(i, nw_[j], ma, px, py, ax, ay);
+        if (ne_[j]) compute_acc_recurse(i, ne_[j], ma, px, py, ax, ay);
+        if (sw_[j]) compute_acc_recurse(i, sw_[j], ma, px, py, ax, ay);
+        if (se_[j]) compute_acc_recurse(i, se_[j], ma, px, py, ax, ay);
     }
 }

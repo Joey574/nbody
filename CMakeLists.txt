@@ -4,51 +4,17 @@ project(nbody LANGUAGES CXX)
 set(CMAKE_CXX_STANDARD 23)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
+set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/../bin)
 
-add_executable(nbody)
-file(GLOB_RECURSE CXX_SOURCE_FILES CONFIGURE_DEPENDS src/*.cpp)
-target_sources(nbody PRIVATE ${CXX_SOURCE_FILES})
-
-find_package(OpenMP REQUIRED)
-find_package(Vulkan REQUIRED)
-find_package(glfw3 REQUIRED)
-find_package(yaml-cpp REQUIRED)
-
-target_link_libraries(nbody PRIVATE
-    OpenMP::OpenMP_CXX
-    yaml-cpp::yaml-cpp
-    Vulkan::Vulkan
-    glfw
-    dl
-    pthread
+include(FetchContent)
+FetchContent_Declare(
+  googletest
+  GIT_REPOSITORY https://github.com/google/googletest.git
+  GIT_TAG v1.15.2
+  GIT_SHALLOW TRUE
 )
+FetchContent_MakeAvailable(googletest)
+enable_testing()
 
-# Flags common to all build modes
-set(COMMON_FLAGS
-    -march=native
-    -mtune=native
-    -fassociative-math
-    -ffast-math
-)
-
-# Switch compiler flags based on build mode
-target_compile_options(nbody PRIVATE
-    ${COMMON_FLAGS}
-    $<$<CONFIG:Debug>:-O0 -g -DDEBUG>
-    $<$<CONFIG:Release>:-Ofast -s>
-    $<$<CONFIG:RelWithDebInfo>:-O3 -g -fno-omit-frame-pointer>
-)
-
-# Set output to bin folder
-set_target_properties(
-  nbody
-  PROPERTIES
-  RUNTIME_OUTPUT_DIRECTORY
-  ${CMAKE_BINARY_DIR}/../bin
-)
-
-set_target_properties(
-  nbody PROPERTIES
-  RUNTIME_OUTPUT_DIRECTORY
-  ${CMAKE_BINARY_DIR}/../bin
-)
+add_subdirectory(src)
+add_subdirectory(tests)

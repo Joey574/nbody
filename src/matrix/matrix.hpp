@@ -105,8 +105,12 @@ struct matrix {
             return &data_[r*stride_];
         }
 
+        const inline float* data() const { return data_; }
+        inline float* data() { return data_; }
+
         constexpr size_t rows() const noexcept { return rows_; }
         constexpr size_t cols() const noexcept { return cols_; }
+        constexpr size_t size() const noexcept { return rows_ * cols_; }
 
     private:
         float* __restrict data_ = nullptr;

@@ -10,9 +10,6 @@ elif [[ "$1" == "-p" ]]; then
     MODE="RelWithDebInfo"
 fi
 
-# compile shaders
-./shaders.sh
-
 mkdir -p build
 mkdir -p bin
 

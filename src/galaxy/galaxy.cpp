@@ -2,11 +2,8 @@
 #include "data/data.hpp"
 #include "util/util.hpp"
 
-#include <algorithm>
-#include <cmath>
 #include <stdexcept>
 #include <random>
-#include <assert.h>
 #include <yaml-cpp/node/node.h>
 
 #define Y_TYPE "type"
@@ -120,39 +117,5 @@ std::string Galaxy::GalaxyString() const noexcept {
             return "Voronoi";
         default:
             return "Unknown";
-    }
-}
-
-void Galaxy::SetInitialVelocity(data& d) const noexcept {
-    assert(this->points == d.bodies());
-
-    // alias
-    const float* __restrict px = d.posx();
-    const float* __restrict py = d.posy();
-    float* __restrict vx = d.velx();
-    float* __restrict vy = d.vely();
-
-    if (this->center_mass > util::epsl) {
-        vx[0] = x_vel;
-        vy[0] = y_vel;
-    }
-
-    #pragma omp parallel for simd schedule(static)
-    for (size_t i = 0; i < this->points; i++) {
-        if (this->center_mass > util::epsl && i == 0) continue; // skip center mass
-
-        const float x = px[i] - this->x_pos;
-        const float y = py[i] - this->y_pos;
-
-        const float angle = atan2f(y, x);
-        const float dist = sqrtf(x*x + y*y);
-
-        const float sin = sinf(angle);
-        const float cos = cosf(angle);
-
-        const float v = this->center_mass > util::epsl ? (sqrtf(this->center_mass / dist)) : 1.0f;
-
-        vx[i] = sin*v + this->x_vel;
-        vy[i] = -cos*v + this->y_vel;
     }
 }

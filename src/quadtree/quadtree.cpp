@@ -15,7 +15,14 @@ void quadtree::insert(const data& d) {
     const float* __restrict py = d.posy();
     const float* __restrict ma = d.mass();
 
-    // insert node data
+    auto [minX, maxX] = std::minmax_element(&px[0], &px[n]);
+    auto [minY, maxY] = std::minmax_element(&py[0], &py[n]);
+
+    for (size_t i = 0; i < n; i++) {
+
+    }
+
+    // clear node data
     std::memcpy(cm_, ma, n*sizeof(float));
     std::memcpy(cx_, px, n*sizeof(float));
     std::memcpy(cy_, py, n*sizeof(float));

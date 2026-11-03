@@ -1,4 +1,5 @@
 #include "quadtree.hpp"
+#include <tuple>
 
 void quadtree::debug_print_tree() const {
     for (size_t i = 0; i < size_; i++) {

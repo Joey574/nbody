@@ -7,10 +7,6 @@
 
 #include "../data/data.hpp"
 
-/*
- * Using this tree we can quickly compute attraction values
- */
-
 struct quadtree {
     public:
         // default constructor

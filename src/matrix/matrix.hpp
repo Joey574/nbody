@@ -1,3 +1,4 @@
+#include <utility>
 #pragma onces
 #include <cstddef>
 #include <malloc.h>
@@ -52,17 +53,11 @@ struct matrix {
         matrix& operator = (matrix&& other) noexcept {
             if (this == &other) return *this;
 
-            rows_ = other.rows_;
-            cols_ = other.cols_;
-            stride_ = other.stride_;
-
             free(data_);
-            data_ = other.data_;
-
-            other.rows_ = 0;
-            other.cols_ = 0;
-            other.stride_ = 0;
-            other.data_ = nullptr;
+            rows_ = std::exchange(other.rows_, 0);
+            cols_ = std::exchange(other.cols_, 0);
+            stride_ = std::exchange(other.stride_, 0);
+            data_ = std::exchange(other.data_, nullptr);
             return *this;
         }
 

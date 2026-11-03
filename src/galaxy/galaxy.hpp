@@ -1,12 +1,12 @@
 #pragma once
+#include "../data/data.hpp"
+
 #include <cstddef>
 #include <cstdint>
 #include <unordered_map>
 #include <any>
 #include <random>
 #include <yaml-cpp/yaml.h>
-
-#include "../data/data.hpp"
 
 struct Galaxy {
     public:
@@ -34,6 +34,8 @@ struct Galaxy {
         data NewUniform(bool init_acc) const;
         data NewSpiral(bool init_acc) const;
 
+        void SetInitialVelocity(data& d) const noexcept;
+
         enum class Options {
             UN_INNER_RADIUS,
             UN_OUTER_RADIUS,
@@ -44,6 +46,7 @@ struct Galaxy {
             SP_ROT_START,
             SP_INC_START,
             SP_ELLIPSES,
+            SP_ELLIPSES_WIDTH,
             SP_SEGMENTS,
             SP_X_RADIUS_SCALE,
             SP_ROT_DELTA,

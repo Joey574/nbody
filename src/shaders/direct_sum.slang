@@ -1,4 +1,5 @@
 static const uint BLOCK_SIZE = 128;
+static const float epsl = 1e-12f;
 
 struct ParticleState {
     float x;
@@ -73,7 +74,7 @@ void computeMain(
                 }
 
                 const float2 delta = sharedPositions[k] - pos;
-                const float dsq = dot(delta, delta);
+                const float dsq = epsl + dot(delta, delta);
 
                 const float inv = rsqrt(dsq);
                 const float inv3 = inv*inv*inv;
@@ -81,10 +82,10 @@ void computeMain(
                 acc += delta * sharedMasses[k] * inv3;
             }
         }
-    }
 
-    // sync acc compute
-    GroupMemoryBarrierWithGroupSync();
+        // sync acc compute
+        GroupMemoryBarrierWithGroupSync();
+    }
 
     if (!active) {
         return;

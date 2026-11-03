@@ -2,6 +2,65 @@
 #include <algorithm>
 #include <cstring>
 #include <assert.h>
+#include <vector>
+
+void insert(const data& d) {
+    // alias
+    const size_t n = d.bodies();
+    const float* __restrict px = d.posx();
+    const float* __restrict py = d.posy();
+    const float* __restrict ma = d.mass();
+
+    auto [minX, maxX] = std::minmax_element(&px[0], &px[n]);
+    auto [minY, maxY] = std::minmax_element(&py[0], &py[n]);
+
+    float centerX = ((*minX) + (*maxX)) / 2.0f;
+    float centerY = ((*minY) + (*maxY)) / 2.0f;
+
+    struct Node {
+        float cx, cy, cm;
+        float w, h;
+        uint32_t ne, nw, se, sw;
+    };
+
+    std::vector<Node> nodes(n);
+    nodes[0].cx = centerX;
+    nodes[0].cy = centerY;
+    nodes[0].w = (*maxX) - (*minX);
+    nodes[0].h = (*maxY) - (*minY);
+
+    const auto& update_root = [&](size_t root, size_t leaf){
+        nodes[root].cm += ma[leaf];
+    };
+
+    for (size_t leaf = 0; leaf < n; leaf++) {
+        for (size_t root = 0;;) {
+            update_root(root, leaf);
+            uint32_t* quad =
+                (px[leaf] > nodes[root].cx && py[leaf] > nodes[root].cy) ? &nodes[root].ne :
+                (px[leaf] < nodes[root].cx && py[leaf] > nodes[root].cy) ? &nodes[root].nw :
+                (px[leaf] > nodes[root].cx && py[leaf] < nodes[root].cy) ? &nodes[root].se :
+                &nodes[root].sw;
+            uint32_t v = *quad;
+
+            if (!v) {
+                // node is empty, insert self
+                quad[0] = leaf;
+                nodes[leaf].w = nodes[root].w / 2.0f;
+                nodes[leaf].h = nodes[root].h / 2.0f;
+
+                // TODO
+                // need to compute cx and cy based on direction
+                // really, we should make use of a direction enum
+                // to easily get cx and cy
+                break;
+            } else {
+                // subdivide, this node is taken
+                root = v;
+            }
+        }
+    }
+}
 
 void quadtree::insert(const data& d) {
     const size_t n = d.bodies();
@@ -15,12 +74,6 @@ void quadtree::insert(const data& d) {
     const float* __restrict py = d.posy();
     const float* __restrict ma = d.mass();
 
-    auto [minX, maxX] = std::minmax_element(&px[0], &px[n]);
-    auto [minY, maxY] = std::minmax_element(&py[0], &py[n]);
-
-    for (size_t i = 0; i < n; i++) {
-
-    }
 
     // clear node data
     std::memcpy(cm_, ma, n*sizeof(float));

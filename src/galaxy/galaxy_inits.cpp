@@ -1,13 +1,18 @@
 #include "galaxy.hpp"
+#include "util/util.hpp"
+
 #include <random>
 #define TAU 6.28318530718
 
 data Galaxy::NewUniform(bool init_acc) const {
-    // for now we're just gonna hard code a uniform generation
     data d(this->points, init_acc);
 
     const float inner_rad = std::any_cast<float>(conf.at(Options::UN_INNER_RADIUS));
     const float outer_rad = std::any_cast<float>(conf.at(Options::UN_OUTER_RADIUS));
+
+    float* __restrict px = d.posx();
+    float* __restrict py = d.posy();
+    float* __restrict ma = d.mass();
 
     // TODO
     if (this->conf.contains(Options::UN_DISTRIBUTION)) {}
@@ -17,12 +22,10 @@ data Galaxy::NewUniform(bool init_acc) const {
     std::normal_distribution<float> pos(0.0f, 0.5f);
 
     size_t i = 0;
-    if (this->center_mass > 0.0f) {
-        d.posx()[0] = this->x_pos;
-        d.posy()[0] = this->y_pos;
-        d.velx()[0] = this->x_vel;
-        d.vely()[0] = this->y_vel;
-        d.mass()[0] = this->center_mass;
+    if (this->center_mass > util::epsl) {
+        px[0] = this->x_pos;
+        py[0] = this->y_pos;
+        ma[0] = this->center_mass;
         i++;
     }
 
@@ -32,8 +35,8 @@ data Galaxy::NewUniform(bool init_acc) const {
     for (; i < this->points; i++) {
         const float a = angle(gen) * TAU;
 
-        const float r = abs(pos(gen)) * (1.0f - t2) + t2;
-        const float scale = outer_rad * sqrtf(r);
+        const float unit_dist = sqrtf(abs(pos(gen)) * (1.0f - t2) + t2);
+        const float scale = outer_rad * unit_dist;
 
         const float sin_a = sinf(a);
         const float cos_a = cosf(a);
@@ -42,20 +45,17 @@ data Galaxy::NewUniform(bool init_acc) const {
             (sqrtf(this->center_mass / scale)) :
             1.0f;
 
-        d.posx()[i] = (cos_a * scale) + this->x_pos;
-        d.posy()[i] = (sin_a * scale) + this->y_pos;
-        d.velx()[i] = (sin_a * vel)   + this->x_vel;
-        d.vely()[i] = (-cos_a * vel)  + this->y_vel;
-        d.mass()[i] = 1.0f;
+        px[i] = (cos_a * scale) + this->x_pos;
+        py[i] = (sin_a * scale) + this->y_pos;
+        ma[i] = 1.0f;
     }
 
+    this->SetInitialVelocity(d);
     return d;
 }
 
 data Galaxy::NewSpiral(bool init_acc) const {
     data d(this->points, init_acc);
-
-    std::normal_distribution<float> pos(0.0f, 1.0f);
 
     float rx = conf.contains(Options::SP_X_RADIUS) ? std::any_cast<float>(conf.at(Options::SP_X_RADIUS)) : 0.0f;
     float ry = conf.contains(Options::SP_Y_RADIUS) ? std::any_cast<float>(conf.at(Options::SP_Y_RADIUS)) : 0.0f;
@@ -66,17 +66,24 @@ data Galaxy::NewSpiral(bool init_acc) const {
     float rot_delta = conf.contains(Options::SP_ROT_DELTA) ? std::any_cast<float>(conf.at(Options::SP_ROT_DELTA)) : 0.0f;
     float inc_delta = conf.contains(Options::SP_INC_DELTA) ? std::any_cast<float>(conf.at(Options::SP_INC_DELTA)) : 0.0f;
 
+    float ellipses_width = conf.contains(Options::SP_ELLIPSES_WIDTH) ? std::any_cast<float>(conf.at(Options::SP_ELLIPSES_WIDTH)) : 0;
+
     size_t ellipses = conf.contains(Options::SP_ELLIPSES) ? std::any_cast<size_t>(conf.at(Options::SP_ELLIPSES)) : 0;
-    size_t segments = conf.contains(Options::SP_ELLIPSES) ? std::any_cast<size_t>(conf.at(Options::SP_ELLIPSES)) : 0;
+    size_t segments = conf.contains(Options::SP_SEGMENTS) ? std::any_cast<size_t>(conf.at(Options::SP_SEGMENTS)) : 0;
     size_t per_point = std::max<size_t>(this->points / (segments*ellipses) + 1, 1);
 
-    d.posx()[0] = this->x_pos;
-    d.posy()[0] = this->y_pos;
-    d.velx()[0] = this->x_vel;
-    d.vely()[0] = this->y_vel;
-    d.mass()[0] = this->center_mass;
+    std::normal_distribution<float> pos(0.0f, ellipses_width);
 
-    size_t b_idx = 1;
+    size_t b_idx = 0;
+    if (center_mass > util::epsl) {
+        d.posx()[0] = this->x_pos;
+        d.posy()[0] = this->y_pos;
+        d.velx()[0] = this->x_vel;
+        d.vely()[0] = this->y_vel;
+        d.mass()[0] = this->center_mass;
+        b_idx++;
+    }
+
     for (size_t e = 0; e < ellipses; e++) {
         for (size_t s = 0; s < segments; s++) {
             float theta = TAU * s / (float)segments;
@@ -91,12 +98,6 @@ data Galaxy::NewSpiral(bool init_acc) const {
                 d.posx()[b_idx] = rotx + pos(gen);
                 d.posy()[b_idx] = roty + pos(gen);
                 d.mass()[b_idx] = b_idx == 1;
-
-                float dx = sinf(theta + rot);
-                float dy = cosf(theta + rot);
-
-                d.velx()[b_idx] = -dx;
-                d.vely()[b_idx] = dy;
             }
         }
 
@@ -107,5 +108,6 @@ data Galaxy::NewSpiral(bool init_acc) const {
         inc += inc_delta;
     }
 
+    this->SetInitialVelocity(d);
     return d;
 }

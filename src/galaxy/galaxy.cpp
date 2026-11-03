@@ -1,10 +1,13 @@
 #include "galaxy.hpp"
+#include "data/data.hpp"
+#include "util/util.hpp"
+
 #include <algorithm>
-#include <any>
+#include <cmath>
 #include <stdexcept>
 #include <random>
+#include <assert.h>
 #include <yaml-cpp/node/node.h>
-
 
 #define Y_TYPE "type"
 #define Y_POINTS "points"
@@ -19,6 +22,19 @@
 #define Y_UN_INNER_RADIUS "inner_radius"
 #define Y_UN_OUTER_RADIUS "outer_radius"
 #define Y_UN_DISTRIBUTION "distribution"
+
+// spiral clustre configuration
+#define Y_SP_X_RADIUS "x_radius"
+#define Y_SP_Y_RADIUS "y_radius"
+#define Y_SP_ROT_START "rot_start"
+#define Y_SP_INC_START "inc_start"
+#define Y_SP_ELLIPSES "ellipses"
+#define Y_SP_ELLIPSES_WIDTH "ellipses_width"
+#define Y_SP_SEGMENTS "segments"
+#define Y_SP_X_RADIUS_SCALE "x_radius_scale"
+#define Y_SP_ROT_DELTA "rot_delta"
+#define Y_SP_INC_DELTA "inc_delta"
+
 
 data Galaxy::New(bool init_acc) const {
     switch (this->type) {
@@ -37,6 +53,17 @@ void Galaxy::Load(const YAML::Node yaml) {
 
     if (typeName == "spiral") {
         type = Type::Spiral;
+        conf[Options::SP_X_RADIUS] = yaml[Y_SP_X_RADIUS].as<float>(0.0f);
+        conf[Options::SP_Y_RADIUS] = yaml[Y_SP_Y_RADIUS].as<float>(0.0f);
+        conf[Options::SP_ROT_START] = yaml[Y_SP_ROT_START].as<float>(0.0f);
+        conf[Options::SP_INC_START] = yaml[Y_SP_INC_START].as<float>(0.0f);
+        conf[Options::SP_X_RADIUS_SCALE] = yaml[Y_SP_X_RADIUS_SCALE].as<float>(0.0f);
+        conf[Options::SP_ROT_DELTA] = yaml[Y_SP_ROT_DELTA].as<float>(0.0f);
+        conf[Options::SP_INC_DELTA] = yaml[Y_SP_INC_DELTA].as<float>(0.0f);
+        conf[Options::SP_ELLIPSES_WIDTH] = yaml[Y_SP_ELLIPSES_WIDTH].as<float>(10.0f);
+
+        conf[Options::SP_ELLIPSES] = yaml[Y_SP_ELLIPSES].as<size_t>();
+        conf[Options::SP_SEGMENTS] = yaml[Y_SP_SEGMENTS].as<size_t>();
     } else if (typeName == "cluster") {
         type = Type::Cluster;
     } else if (typeName == "uniform") {
@@ -93,5 +120,39 @@ std::string Galaxy::GalaxyString() const noexcept {
             return "Voronoi";
         default:
             return "Unknown";
+    }
+}
+
+void Galaxy::SetInitialVelocity(data& d) const noexcept {
+    assert(this->points == d.bodies());
+
+    // alias
+    const float* __restrict px = d.posx();
+    const float* __restrict py = d.posy();
+    float* __restrict vx = d.velx();
+    float* __restrict vy = d.vely();
+
+    if (this->center_mass > util::epsl) {
+        vx[0] = x_vel;
+        vy[0] = y_vel;
+    }
+
+    #pragma omp parallel for simd schedule(static)
+    for (size_t i = 0; i < this->points; i++) {
+        if (this->center_mass > util::epsl && i == 0) continue; // skip center mass
+
+        const float x = px[i] - this->x_pos;
+        const float y = py[i] - this->y_pos;
+
+        const float angle = atan2f(y, x);
+        const float dist = sqrtf(x*x + y*y);
+
+        const float sin = sinf(angle);
+        const float cos = cosf(angle);
+
+        const float v = this->center_mass > util::epsl ? (sqrtf(this->center_mass / dist)) : 1.0f;
+
+        vx[i] = sin*v + this->x_vel;
+        vy[i] = -cos*v + this->y_vel;
     }
 }

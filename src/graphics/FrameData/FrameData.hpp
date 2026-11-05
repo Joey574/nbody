@@ -1,10 +1,8 @@
 #pragma once
-#include "../../definitions/graphics.hpp"
-
-#include "../../data/data.hpp"
-#include "../PhysicalDevice/PhysicalDevice.hpp"
-#include "../LogicalDevice/LogicalDevice.hpp"
-#include "../GPUSimulation/ParticleState.hpp"
+#include "data/data.hpp"
+#include "graphics/PhysicalDevice/PhysicalDevice.hpp"
+#include "graphics/LogicalDevice/LogicalDevice.hpp"
+#include "graphics/GPUSimulation/ParticleState.hpp"
 
 struct FrameData {
     public:

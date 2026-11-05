@@ -4,7 +4,8 @@ Purpose: Contains vulkan initilization utilities for the renderer struct
 Comments: Most of this code is ripped from https://docs.vulkan.org/tutorial/latest/00_Introduction.html
 */
 
-#include "renderer.hpp"
+#include "renderer/renderer.hpp"
+
 #include <chrono>
 #include <stdexcept>
 

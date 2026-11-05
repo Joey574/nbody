@@ -1,8 +1,8 @@
 #pragma once
-#include <string>
-#include <yaml-cpp/yaml.h>
-
 #include "../data/data.hpp"
+
+#include <yaml-cpp/yaml.h>
+#include <string>
 
 struct Config {
     public:

@@ -4,7 +4,8 @@ Purpose: Implement various helper functions used in the renderer struct
 Comments:
 */
 
-#include "renderer.hpp"
+#include "renderer/renderer.hpp"
+
 #include <vector>
 #include <iostream>
 

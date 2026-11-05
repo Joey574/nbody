@@ -1,6 +1,5 @@
 #include "app.hpp"
 
-#include <functional>
 #include <chrono>
 
 /// @brief Handles application starting and managing the main loop

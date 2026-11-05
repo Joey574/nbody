@@ -1,5 +1,5 @@
+#include "quadtree/quadtree.hpp"
 #include "definitions/macros.hpp"
-#include "quadtree.hpp"
 #include "util/util.hpp"
 
 #include <assert.h>

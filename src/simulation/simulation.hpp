@@ -1,16 +1,11 @@
 #pragma once
-#include <malloc.h>
-#include <immintrin.h>
-#include <stdexcept>
+#include "data/data.hpp"
+#include "cli/cli.hpp"
+#include "quadtree/quadtree.hpp"
+
+#include "graphics/GPUSimulation/GPUSimulation.hpp"
+
 #include <chrono>
-#include <vulkan/vulkan_raii.hpp>
-
-#include "../data/data.hpp"
-#include "../cli/cli.hpp"
-#include "../quadtree/quadtree.hpp"
-
-#include "../graphics/GPUSimulation/GPUSimulation.hpp"
-#include "vulkan/vulkan.hpp"
 
 struct simulation {
     public:

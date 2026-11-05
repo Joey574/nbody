@@ -1,8 +1,8 @@
+#include "Swapchain.hpp"
+
 #include <stdexcept>
 #include <limits>
 #include <stdexcept>
-
-#include "Swapchain.hpp"
 
 void Swapchain::init(const PhysicalDevice& pdevice, const LogicalDevice& ldevice, const vk::raii::SurfaceKHR& surface, GLFWwindow* window) {
     const auto& pd = pdevice.Device();

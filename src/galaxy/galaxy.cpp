@@ -1,6 +1,6 @@
-#include "galaxy.hpp"
-#include "data/data.hpp"
+#include "galaxy/galaxy.hpp"
 #include "galaxy/galaxy_yaml.hpp"
+#include "data/data.hpp"
 #include "util/util.hpp"
 
 #include <stdexcept>
@@ -43,7 +43,7 @@ namespace {
     }
 }; // namespace
 
-void Galaxy::Load(const YAML::Node& n) {
+void Galaxy::Load(const YAML::Node& n, float ft) {
     std::string type = galaxy_yaml::Require<std::string>(n, "type", "galaxy");
     std::transform(type.begin(), type.end(), type.begin(), ::tolower);
     const char* ctx = type.c_str();
@@ -53,10 +53,12 @@ void Galaxy::Load(const YAML::Node& n) {
 
     seed = galaxy_yaml::Optional<uint64_t>(n, "seed", RandomSeed(), ctx);
 
+    const float ft_inv = 1.0f / ft;
+
     x_pos = galaxy_yaml::Optional<float>(n, "x_pos", x_pos, ctx);
     y_pos = galaxy_yaml::Optional<float>(n, "y_pos", y_pos, ctx);
-    x_vel = galaxy_yaml::Optional<float>(n, "x_vel", x_vel, ctx);
-    y_vel = galaxy_yaml::Optional<float>(n, "y_vel", y_vel, ctx);
+    x_vel = galaxy_yaml::Optional<float>(n, "x_vel", x_vel, ctx) * ft_inv;
+    y_vel = galaxy_yaml::Optional<float>(n, "y_vel", y_vel, ctx) * ft_inv;
 
     center_mass = galaxy_yaml::Optional<float>(n, "center_mass", center_mass, ctx);
     spin = galaxy_yaml::Optional<float>(n, "spin", spin, ctx);

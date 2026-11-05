@@ -1,11 +1,10 @@
-#include "quadtree.hpp"
+#include "quadtree/quadtree.hpp"
 
 #include <algorithm>
 #include <cassert>
 #include <cmath>
 #include <cstdio>
 #include <limits>
-#include <stdexcept>
 #include <omp.h>
 
 namespace {

@@ -1,5 +1,4 @@
 #include "LogicalDevice.hpp"
-#include "vulkan/vulkan.hpp"
 
 void LogicalDevice::init(const PhysicalDevice& pdevice, const vk::raii::SurfaceKHR& surface) {
     const auto& pd = pdevice.Device();

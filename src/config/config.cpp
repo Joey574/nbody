@@ -1,6 +1,6 @@
 #include "config.hpp"
-
 #include "../galaxy/galaxy.hpp"
+
 #include <stdexcept>
 
 #define Y_GALAXIES "galaxies"
@@ -26,7 +26,7 @@ data Config::New(bool init_acc) const {
 
     for (const auto gConf : galaxies) {
         Galaxy g;
-        g.Load(gConf);
+        g.Load(gConf, this->FixedTime());
 
         data d = g.New(init_acc);
         sim.append(d, init_acc);

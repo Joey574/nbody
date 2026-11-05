@@ -1,18 +1,19 @@
 #pragma once
+
+#include "definitions/graphics.hpp" // IWYU pragma: keep
+
+#include "graphics/LogicalDevice/LogicalDevice.hpp"
+#include "graphics/PhysicalDevice/PhysicalDevice.hpp"
+#include "graphics/Swapchain/Swapchain.hpp"
+#include "graphics/CommandBuffer/CommandBuffer.hpp"
+#include "graphics/FrameData/FrameData.hpp"
+#include "graphics/UBOBuffer/UBOBuffer.hpp"
+
+#include "camera/camera.hpp"
+#include "simulation/simulation.hpp"
+
 #include <chrono>
 #include <cstdint>
-
-#include "../definitions/graphics.hpp"
-
-#include "../graphics/LogicalDevice/LogicalDevice.hpp"
-#include "../graphics/PhysicalDevice/PhysicalDevice.hpp"
-#include "../graphics/Swapchain/Swapchain.hpp"
-#include "../graphics/CommandBuffer/CommandBuffer.hpp"
-#include "../graphics/FrameData/FrameData.hpp"
-#include "../graphics/UBOBuffer/UBOBuffer.hpp"
-
-#include "../camera/camera.hpp"
-#include "../simulation/simulation.hpp"
 
 struct renderer {
     public:

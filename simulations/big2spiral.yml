@@ -1,0 +1,23 @@
+fixed_time: 0.0000001
+theta: 1.2
+
+galaxies:
+  - type: spiral
+    points: 30000
+    seed: 1234
+    radius: 1200
+    center_mass: 1e18
+    x_pos: -1000
+    y_pos: -1000
+    x_vel: 1
+    y_vel: 0.5
+
+  - type: spiral
+    points: 30000
+    seed: 5678
+    radius: 1200
+    center_mass: 1e18
+    x_pos: 1000
+    y_pos: 1000
+    x_vel: -1
+    y_vel: -0.5

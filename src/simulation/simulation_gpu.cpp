@@ -1,5 +1,4 @@
 #include "simulation.hpp"
-#include <vulkan/vulkan_raii.hpp>
 
 void simulation::initGPU(const LogicalDevice& ld, const PhysicalDevice& pd) {
     if (!isGPU()) return;

@@ -1,6 +1,5 @@
 #pragma once
-#include "../../definitions/graphics.hpp" // IWYU pragma: keep
-#include "../LogicalDevice/LogicalDevice.hpp"
+#include "graphics/LogicalDevice/LogicalDevice.hpp"
 
 struct CommandBuffer {
     public:

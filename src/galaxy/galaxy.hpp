@@ -1,5 +1,5 @@
 #pragma once
-#include "../data/data.hpp"
+#include "data/data.hpp"
 #include "util/util.hpp"
 
 #include <cstddef>
@@ -52,7 +52,7 @@ class Galaxy {
     public:
         using Shape = std::variant<shapes::Uniform, shapes::Spiral, shapes::Voronoi>;
 
-        void Load(const YAML::Node& n);
+        void Load(const YAML::Node& n, float ft);
 
         data New(bool init_acc) const;
 

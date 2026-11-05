@@ -1,5 +1,5 @@
-#include "galaxy.hpp"
-#include "galaxy_yaml.hpp"
+#include "galaxy/galaxy.hpp"
+#include "galaxy/galaxy_yaml.hpp"
 
 #include <algorithm>
 #include <cmath>

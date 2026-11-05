@@ -1,5 +1,5 @@
 #pragma once
-#include "../definitions/macros.hpp"
+#include "definitions/macros.hpp"
 
 #include <cstddef>
 #include <cstdlib>

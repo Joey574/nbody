@@ -1,7 +1,8 @@
 #pragma once
-#include "../../definitions/graphics.hpp" // IWYU pragma: keep
-#include "../PhysicalDevice/PhysicalDevice.hpp"
-#include "../LogicalDevice/LogicalDevice.hpp"
+#include "definitions/graphics.hpp" // IWYU pragma: keep
+
+#include "graphics/PhysicalDevice/PhysicalDevice.hpp"
+#include "graphics/LogicalDevice/LogicalDevice.hpp"
 
 struct UBO {
     glm::mat4 view;

@@ -6,8 +6,10 @@ Supports both AVX512 and AVX2 explicitly, all others will fall back on omp and
 compiler for vectorization
 */
 
-#include "simulation.hpp"
+#include "simulation/simulation.hpp"
 #include "util/util.hpp"
+
+#include <immintrin.h>
 
 std::chrono::nanoseconds simulation::update_cpu(const float ft) noexcept {
     auto start = std::chrono::high_resolution_clock::now();

@@ -1,5 +1,5 @@
 #pragma once
-#include "../../definitions/graphics.hpp" // IWYU pragma: keep
+#include "definitions/graphics.hpp" // IWYU pragma: keep
 
 struct PhysicalDevice {
     public:

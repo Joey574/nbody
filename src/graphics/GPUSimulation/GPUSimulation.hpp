@@ -1,12 +1,10 @@
 #pragma once
+#include "data/data.hpp"
+
+#include "graphics/LogicalDevice/LogicalDevice.hpp"
+#include "graphics/PhysicalDevice/PhysicalDevice.hpp"
 
 #include <cstdint>
-
-#include "../../definitions/graphics.hpp"
-#include "../../data/data.hpp"
-
-#include "../LogicalDevice/LogicalDevice.hpp"
-#include "../PhysicalDevice/PhysicalDevice.hpp"
 
 struct GPUSimulation {
     public:

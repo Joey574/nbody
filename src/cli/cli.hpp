@@ -1,6 +1,7 @@
 #pragma once
-#include <cstddef>
 #include "../config/config.hpp"
+
+#include <cstddef>
 
 struct cliargs {
     public:

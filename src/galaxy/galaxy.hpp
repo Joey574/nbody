@@ -12,8 +12,6 @@
 #include <yaml-cpp/yaml.h>
 
 namespace shapes {
-    using rng = std::mt19937;
-
     struct Uniform {
         static constexpr const char* name = "uniform";
 

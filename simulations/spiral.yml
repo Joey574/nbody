@@ -1,15 +1,12 @@
-fixed_time: 0.00001
+fixed_time: 0.0001
 
 galaxies:
   - type: spiral
-    points: 30000
-    seed: 1243
-    center_mass: 1e10
-    ellipses: 100
-    ellipses_width: 25
-    segments: 10
-    x_radius_scale: 3
-    y_radius_scale: 8
-    rot_delta: 0.2
-    inc_start: 0.5
-    inc_delta: 0.05
+    points: 150000
+    seed: 1337
+    center_mass: 1e6
+    radius: 5000
+    arms: 2
+    twist: 4.0
+    arm_width: 0.25
+    bulge_fraction: 0.10

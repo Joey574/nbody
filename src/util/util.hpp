@@ -1,11 +1,19 @@
 #pragma once
+#include "../definitions/macros.hpp"
+
 #include <cstddef>
+#include <cstdlib>
 #include <immintrin.h>
 #include <string>
 
 namespace util {
     inline size_t aligned_size(size_t size) {
         return (size + 31) & ~31;
+    }
+
+    // automatically handles aligning bytes to MEM_ALIGNMENT
+    inline void* mem_aligned_alloc(size_t bytes) {
+        return aligned_alloc(MEM_ALIGNMENT, aligned_size(bytes));
     }
 
     inline float frsqrt(float x) {
@@ -71,7 +79,7 @@ namespace util {
     ) {
         const float dx = p2x - p1x;
         const float dy = p2y - p1y;
-        const float dsq = (dx*dx) + (dy*dy);
+        const float dsq = epsl + (dx*dx) + (dy*dy);
 
         apply_inner_force(
             dx, dy, dsq,
@@ -93,7 +101,7 @@ namespace util {
     ) {
         const float dx = p2x - p1x;
         const float dy = p2y - p1y;
-        const float dsq = (dx*dx) + (dy*dy);
+        const float dsq = epsl + (dx*dx) + (dy*dy);
 
         float inv = util::frsqrt(dsq);
         inv = inv * (1.5f - 0.5f * dsq * inv * inv);

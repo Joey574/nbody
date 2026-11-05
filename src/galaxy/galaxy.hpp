@@ -1,59 +1,74 @@
 #pragma once
 #include "../data/data.hpp"
+#include "util/util.hpp"
 
 #include <cstddef>
 #include <cstdint>
-#include <unordered_map>
-#include <any>
 #include <random>
+#include <span>
+#include <variant>
+#include <string>
+#include <yaml-cpp/node/node.h>
 #include <yaml-cpp/yaml.h>
 
-struct Galaxy {
+namespace shapes {
+    struct Uniform {
+        static constexpr const char* name = "uniform";
+
+        float inner_radius = 0.0f;
+        float outer_radius = 100.0f;
+
+        static Uniform Load(const YAML::Node& n);
+        void Generate(std::span<float> x, std::span<float> y, std::mt19937& rng) const;
+    };
+
+    struct Spiral {
+        static constexpr const char* name = "spiral";
+
+        float radius = 100.0f;
+        uint32_t arms = 2;
+        float twist = 4.0f;
+        float arm_width = 0.25f;
+        float bulge_fraction = 0.1f;
+
+        static Spiral Load(const YAML::Node& n);
+        void Generate(std::span<float> x, std::span<float> y, std::mt19937& rng) const;
+    };
+
+    struct Voronoi {
+        static constexpr const char* name = "voronoi";
+
+        float radius = 100.0f;
+        uint32_t cells = 24;
+        float edge_width = 0.08f;
+        float background = 0.1f;
+
+        static Voronoi Load(const YAML::Node& n);
+        void Generate(std::span<float> x, std::span<float> y, std::mt19937& rng) const;
+    };
+} // namespace shapes
+
+class Galaxy {
     public:
-        enum class Type {
-            None, Spiral, Cluster, Uniform, Voronoi
-        };
+        using Shape = std::variant<shapes::Uniform, shapes::Spiral, shapes::Voronoi>;
 
-        Galaxy() noexcept {}
-        Galaxy(const YAML::Node conf) {
-            this->Load(conf);
-        }
+        void Load(const YAML::Node& n);
 
-        /// @brief Creates a new galaxy based on the previously loaded config, this is a factory function and each call is independent of the last, (internal rng state updates between calls)
         data New(bool init_acc) const;
-
-        void Load(const YAML::Node conf);
 
         uint64_t Seed() const noexcept;
         size_t Points() const noexcept;
-
-        Type GalaxyType() const noexcept;
         std::string GalaxyString() const noexcept;
+        const Shape& GetShape() const noexcept;
 
     private:
+        bool HasCenter() const noexcept { return center_mass > util::epsl; }
+
         data NewUniform(bool init_acc) const;
         data NewSpiral(bool init_acc) const;
 
-        void SetInitialVelocity(data& d) const noexcept;
+        void SetInitialVelocity(data& d, size_t first) const;
 
-        enum class Options {
-            UN_INNER_RADIUS,
-            UN_OUTER_RADIUS,
-            UN_DISTRIBUTION,
-
-            SP_X_RADIUS,
-            SP_Y_RADIUS,
-            SP_ROT_START,
-            SP_INC_START,
-            SP_ELLIPSES,
-            SP_ELLIPSES_WIDTH,
-            SP_SEGMENTS,
-            SP_X_RADIUS_SCALE,
-            SP_ROT_DELTA,
-            SP_INC_DELTA
-        };
-
-        Type type = Type::None;
         size_t points = 0;
         uint64_t seed = 0;
 
@@ -64,7 +79,8 @@ struct Galaxy {
         float y_vel = 0.0f;
 
         float center_mass = 0.0f;
+        float softening = 0.0f;
+        float spin = 1.0f;
 
-        std::unordered_map<Options, std::any> conf;
-        mutable std::default_random_engine gen;
+        Shape shape;
 };

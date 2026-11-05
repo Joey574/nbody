@@ -24,10 +24,11 @@ data Config::New(bool init_acc) const {
         throw std::invalid_argument("config must contain at least one nonempty galaxy sequence");
     }
 
-    for (const auto& gConf : galaxies) {
-        Galaxy g(gConf);
-        data d = g.New(init_acc);
+    for (const auto gConf : galaxies) {
+        Galaxy g;
+        g.Load(gConf);
 
+        data d = g.New(init_acc);
         sim.append(d, init_acc);
     }
 

@@ -1,14 +1,13 @@
 /*
 Author: Joey Soroka
-Updated: 2/26/26
-Purpose: Implements nbody simulation for the cpu
+Purpose: Implements nbody direct sum algorithm for the cpu
 Comments: Switches update_cpu implementation based on compile time definitions.
 Supports both AVX512 and AVX2 explicitly, all others will fall back on omp and
 compiler for vectorization
 */
 
 #include "simulation.hpp"
-#include <algorithm>
+#include "util/util.hpp"
 
 std::chrono::nanoseconds simulation::update_cpu(const float ft) noexcept {
     auto start = std::chrono::high_resolution_clock::now();
@@ -33,10 +32,6 @@ void simulation::compute_acc() noexcept {
     matrix& __restrict ax = data_.accx();
     matrix& __restrict ay = data_.accy();
 
-    // TODO
-    // test out blocked implementation to decrease pressure on ax and ay
-
-    // gravitational constant is set to 1 for purposes of this simulation
     #pragma omp parallel
     {
         int tid = omp_get_thread_num();
@@ -53,8 +48,8 @@ void simulation::compute_acc() noexcept {
             const auto _p1y = util::set1(p1y);
             const auto _p1m = util::set1(p1m);
 
-            auto _a1x_sum = util::zero();
-            auto _a1y_sum = util::zero();
+            float _a1x_sum = util::zero();
+            float _a1y_sum = util::zero();
 
             size_t j = i+1;
             for (; j+util::last < n; j += util::width) {

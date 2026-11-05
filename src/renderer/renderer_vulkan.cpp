@@ -194,7 +194,7 @@ void renderer::vulkan_graphics_pipeline() {
     vk::PushConstantRange pushRange {
         .stageFlags = vk::ShaderStageFlagBits::eFragment | vk::ShaderStageFlagBits::eVertex,
         .offset     = 0,
-        .size       = 28  // float4 color + float edgeSoftness + float width + float height = 28 bytes
+        .size       = 28  // float4 color + float minRadiusPx + float width + float height = 28 bytes
     };
 
     vk::PipelineLayoutCreateInfo pipelineLayoutInfo {
@@ -414,8 +414,14 @@ void renderer::vulkan_record_command_buffer(uint32_t imageIndex, simulation& sim
     cmd.setViewport(0, vk::Viewport(0.0f, 0.0f, static_cast<float>(swapchain.Extent().width), static_cast<float>(swapchain.Extent().height), 0.0f, 1.0f));
     cmd.setScissor(0, vk::Rect2D(vk::Offset2D(0, 0), swapchain.Extent()));
 
-    struct PushConstants { glm::vec4 color; float softness; float width; float height; };
-    PushConstants pc { {1.0f, 1.0f, 1.0f, 1.0f}, 0.02f, (float)swapchain.Extent().width, (float)swapchain.Extent().height };
+    struct PushConstants { glm::vec4 color; float minRadiusPx; float width; float height; };
+    PushConstants pc {
+        {1.0f, 1.0f, 1.0f, 1.0f},
+        1.25f,
+        static_cast<float>(swapchain.Extent().width),
+        static_cast<float>(swapchain.Extent().height)
+    };
+
     cmd.pushConstants<PushConstants>(*pipelineLayout, vk::ShaderStageFlagBits::eFragment | vk::ShaderStageFlagBits::eVertex, 0, pc);
     cmd.draw(3, static_cast<uint32_t>(sim.points()), 0, 0);
     cmd.endRendering();

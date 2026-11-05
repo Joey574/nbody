@@ -10,7 +10,6 @@
 /// @brief lightweight abstraction for a matrix of floats, each row is aligned to MEM_ALIGNMENT for simd usage
 struct matrix {
     public:
-
         matrix() = default;
 
         // move constructor

@@ -3,6 +3,6 @@ A rewrite of an older project of mine, hopefully a whole lot better this time ar
 
 ## Build
 ```
-cmake -S . -B build -G Ninja
+cmake -B build -G Ninja
 cmake --build build -j
 ```

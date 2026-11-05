@@ -15,9 +15,10 @@ struct UBO {
 [[vk::binding(2, 0)]] ConstantBuffer<UBO> ubo;
 
 struct VSOut {
-    float4 position : SV_Position;
-    float2 offset   : TEXCOORD0;
-    float radius    : TEXCOORD1;
+    float4 position  : SV_Position;
+    float2 offset    : TEXCOORD0;
+    float radiusPx   : TEXCOORD1;
+    float alphaScale : TEXCOORD2;
 };
 
 static const float2 QUAD_OFFSETS[3] = {
@@ -26,9 +27,11 @@ static const float2 QUAD_OFFSETS[3] = {
     float2(-1, 3),
 };
 
+static const float MIN_SUBPIXEL_ALPHA = 1.0 / 2048.0;
+
 struct PushConstants {
     float4 color;
-    float softness;
+    float minRadiusPx;
     float width;
     float height;
 };
@@ -40,31 +43,40 @@ VSOut vertMain(uint vID : SV_VertexID, uint iID : SV_InstanceID) {
     const float2 offset = QUAD_OFFSETS[vID];
     const ParticleState particle = particles[iID];
 
-    const float zoom = ubo.view[0][0];
-    const float radius = clamp(log(masses[iID] + 1.0), 1.0, 10.0);
-    const float4x4 mvp = mul(ubo.proj, ubo.view);
+    const float zoom = abs(ubo.view[0][0]);
+    const float worldRadius = clamp(log(masses[iID] + 1.0), 1.0, 10.0);
 
+    const float screenRadiusPx = worldRadius * zoom;
+    const float drawRadiusPx = max(screenRadiusPx, pc.minRadiusPx);
+
+    const float subpixelRatio = saturate(screenRadiusPx / drawRadiusPx);
+    const float alphaScale = max(subpixelRatio, MIN_SUBPIXEL_ALPHA);
+
+    const float4x4 mvp = mul(ubo.proj, ubo.view);
     float4 clipCenter = mul(
         mvp,
         float4(particle.x, particle.y, 0.0, 1.0)
     );
-    clipCenter.x += offset.x * radius * zoom * 2.0 / pc.width;
-    clipCenter.y += offset.y * radius * zoom * 2.0 / pc.height;
+
+    clipCenter.x += offset.x * drawRadiusPx * 2.0 / pc.width;
+    clipCenter.y += offset.y * drawRadiusPx * 2.0 / pc.height;
 
     VSOut result;
     result.position = clipCenter;
     result.offset = offset;
-    result.radius = radius;
+    result.radiusPx = drawRadiusPx;
+    result.alphaScale = alphaScale;
     return result;
 }
 
 [shader("fragment")]
 float4 fragMain(VSOut fsIn) : SV_TARGET {
-    const float dist = length(fsIn.offset);
-    if (dist > 1.0) {
+    const float signedDistancePx = (1.0 - length(fsIn.offset)) * fsIn.radiusPx;
+    const float edgeWidthPx = max(fwidth(signedDistancePx), 0.5);
+    if (signedDistancePx < -edgeWidthPx) {
         discard;
     }
 
-    const float alpha = 1.0 - smoothstep(1.0 - pc.softness, 1.0, dist);
-    return float4(pc.color.rgb, pc.color.a * alpha);
+    const float edgeCoverage = smoothstep(-edgeWidthPx, edgeWidthPx, signedDistancePx);
+    return float4(pc.color.rgb, pc.color.a * fsIn.alphaScale * edgeCoverage);
 }

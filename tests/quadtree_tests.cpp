@@ -41,7 +41,7 @@ namespace {
 
 TEST(QuadtreeConstruction, ThetaIsStoredAsSquaredValue) {
     quadtree tree(0.5f);
-    EXPECT_FLOAT_EQ(tree.thetasq(), 0.25f);
+    EXPECT_FLOAT_EQ(tree.theta(), 0.5f);
 }
 
 TEST(QuadtreeForces, ZeroThetaMatchesDirectPairwiseForces) {
@@ -104,13 +104,13 @@ TEST(QuadtreeLifecycle, CopyAndMoveRetainTheBuiltTree) {
     original.insert(particles);
 
     quadtree copied(original);
-    EXPECT_FLOAT_EQ(copied.thetasq(), original.thetasq());
+    EXPECT_FLOAT_EQ(copied.theta(), original.theta());
     copied.compute_acc(particles);
     const auto expectedX = SumAccelerationRows(particles.accx());
     const auto expectedY = SumAccelerationRows(particles.accy());
 
     quadtree moved(std::move(copied));
-    EXPECT_FLOAT_EQ(moved.thetasq(), original.thetasq());
+    EXPECT_FLOAT_EQ(moved.theta(), original.theta());
     moved.compute_acc(particles);
 
     const auto actualX = SumAccelerationRows(particles.accx());

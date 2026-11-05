@@ -1,211 +1,289 @@
 #include "quadtree.hpp"
+
 #include <algorithm>
-#include <cstring>
-#include <assert.h>
-#include <vector>
+#include <cassert>
+#include <cmath>
+#include <cstdio>
+#include <limits>
+#include <stdexcept>
+#include <omp.h>
+
+namespace {
+    // Maximum number of subdivision levels below the virtual root.
+    //
+    // Bodies that would exceed this depth are stored in a linked
+    // overflow list belonging to the terminal cell.
+    constexpr size_t MAX_TREE_DEPTH = 128;
+    constexpr size_t MAX_STACK_SIZE = 4 * MAX_TREE_DEPTH + 8;
+}
 
 void insert(const data& d) {
-    // alias
-    const size_t n = d.bodies();
-    const float* __restrict px = d.posx();
-    const float* __restrict py = d.posy();
-    const float* __restrict ma = d.mass();
 
-    auto [minX, maxX] = std::minmax_element(&px[0], &px[n]);
-    auto [minY, maxY] = std::minmax_element(&py[0], &py[n]);
-
-    float centerX = ((*minX) + (*maxX)) / 2.0f;
-    float centerY = ((*minY) + (*maxY)) / 2.0f;
-
-    struct Node {
-        float cx, cy, cm;
-        float w, h;
-        uint32_t ne, nw, se, sw;
-    };
-
-    std::vector<Node> nodes(n);
-    nodes[0].cx = centerX;
-    nodes[0].cy = centerY;
-    nodes[0].w = (*maxX) - (*minX);
-    nodes[0].h = (*maxY) - (*minY);
-
-    const auto& update_root = [&](size_t root, size_t leaf){
-        nodes[root].cm += ma[leaf];
-    };
-
-    for (size_t leaf = 0; leaf < n; leaf++) {
-        for (size_t root = 0;;) {
-            update_root(root, leaf);
-            uint32_t* quad =
-                (px[leaf] > nodes[root].cx && py[leaf] > nodes[root].cy) ? &nodes[root].ne :
-                (px[leaf] < nodes[root].cx && py[leaf] > nodes[root].cy) ? &nodes[root].nw :
-                (px[leaf] > nodes[root].cx && py[leaf] < nodes[root].cy) ? &nodes[root].se :
-                &nodes[root].sw;
-            uint32_t v = *quad;
-
-            if (!v) {
-                // node is empty, insert self
-                quad[0] = leaf;
-                nodes[leaf].w = nodes[root].w / 2.0f;
-                nodes[leaf].h = nodes[root].h / 2.0f;
-
-                // TODO
-                // need to compute cx and cy based on direction
-                // really, we should make use of a direction enum
-                // to easily get cx and cy
-                break;
-            } else {
-                // subdivide, this node is taken
-                root = v;
-            }
-        }
-    }
 }
 
 void quadtree::insert(const data& d) {
     const size_t n = d.bodies();
     if (!n) return;
 
-    this->grow(n);
-    this->zero_children();
-
     // alias
     const float* __restrict px = d.posx();
     const float* __restrict py = d.posy();
     const float* __restrict ma = d.mass();
 
+    auto [minXptr, maxXptr] = std::minmax_element(&px[0], &px[n]);
+    auto [minYptr, maxYptr] = std::minmax_element(&py[0], &py[n]);
+    float minX = *minXptr;
+    float maxX = *maxXptr;
+    float minY = *minYptr;
+    float maxY = *maxYptr;
 
-    // clear node data
-    std::memcpy(cm_, ma, n*sizeof(float));
-    std::memcpy(cx_, px, n*sizeof(float));
-    std::memcpy(cy_, py, n*sizeof(float));
-    std::memcpy(min_x_, px, n*sizeof(float));
-    std::memcpy(max_x_, px, n*sizeof(float));
-    std::memcpy(min_y_, py, n*sizeof(float));
-    std::memcpy(max_y_, py, n*sizeof(float));
+    const float rangeX = (maxX) - (minX);
+    const float rangeY = (maxY) - (minY);
 
-    const auto update_root = [&](size_t i, size_t j) {
-        // update parent cm, cx, cy
-        const float old_mass = cm_[j];
-        cm_[j] += ma[i];
+    this->grow(n);
 
-        cx_[j] = ((cx_[j] * old_mass) + (ma[i] * px[i])) / (cm_[j]);
-        cy_[j] = ((cy_[j] * old_mass) + (ma[i] * py[i])) / (cm_[j]);
+    size_ = n;
+    this->zero();
 
-        min_x_[j] = std::min(min_x_[j], px[i]);
-        max_x_[j] = std::max(max_x_[j], px[i]);
+    gx_[0] = minX + rangeX * 0.5f;
+    gy_[0] = minY + rangeY * 0.5f;
+    float side = std::max(rangeX, rangeY);
 
-        min_y_[j] = std::min(min_y_[j], py[i]);
-        max_y_[j] = std::max(max_y_[j], py[i]);
-    };
+    w_[0] = side;
 
-    for (size_t i = 1; i < n; i++) {
-        for (size_t j = 0;;) {
-            update_root(i, j);
+    for (size_t body = 0; body < n; body++) {
+        const float x = px[body];
+        const float y = py[body];
+        const float mass = ma[body];
 
-            uint32_t* v =
-                (px[i] > px[j] && py[i] > py[j]) ? &ne_[j] :
-                (px[i] < px[j] && py[i] > py[j]) ? &nw_[j] :
-                (px[i] > px[j] && py[i] < py[j]) ? &se_[j] :
-                &sw_[j];
-            uint32_t k = *v;
+        const uint32_t bodyNode = body+1;
 
-            if (!k) {
-                v[0] = i;
+        uint32_t node = 0;
+        size_t depth = 0;
+
+        for (;;) {
+            const float oldMass = cm_[node];
+            const float newMass = oldMass + mass;
+
+            if (newMass != 0.0f) [[likely]] {
+                if (oldMass == 0.0f) [[unlikely]] {
+                    cx_[node] = x;
+                    cy_[node] = y;
+                } else {
+                    const float fraction = mass / newMass;
+
+                    cx_[node] += (x - cx_[node]) * fraction;
+                    cy_[node] += (y - cy_[node]) * fraction;
+                }
+            }
+
+            cm_[node] = newMass;
+
+            if (depth >= MAX_TREE_DEPTH) {
+                next_[bodyNode] = next_[node];
+                next_[node] = bodyNode;
+
+                gx_[bodyNode] = gx_[node];
+                gy_[bodyNode] = gy_[node];
+                w_[bodyNode] = w_[node];
+
+                cm_[bodyNode] = mass;
+                cx_[bodyNode] = x;
+                cy_[bodyNode] = y;
+
                 break;
             }
 
-            j = k;
+            const bool isRight = x > gx_[node];
+            const bool isUp = y > gy_[node];
+
+            uint32_t* quad;
+
+            if (isRight) {
+                quad = isUp ? &ne_[node] : &se_[node];
+            } else {
+                quad = isUp ? &nw_[node] : &sw_[node];
+            }
+
+            const uint32_t child = *quad;
+
+            if (!child) {
+                // -------------------------------------------------------------
+                // Empty quadrant: create a new physical body node.
+                // -------------------------------------------------------------
+
+                *quad = bodyNode;
+
+                const float xOffset = w_[node] * 0.25f;
+                const float yOffset = w_[node] * 0.25f;
+
+                gx_[bodyNode] = gx_[node] + (isRight ? xOffset : -xOffset);
+                gy_[bodyNode] = gy_[node] + (isUp ? yOffset : -yOffset);
+
+                w_[bodyNode] = w_[node] * 0.5f;
+
+                // A newly created node initially contains only its own body.
+                cm_[bodyNode] = mass;
+                cx_[bodyNode] = x;
+                cy_[bodyNode] = y;
+
+                break;
+            }
+
+            // -------------------------------------------------------------
+            // Occupied quadrant: descend into the existing node.
+            // -------------------------------------------------------------
+
+            node = child;
+            depth++;
         }
     }
 }
 
 void quadtree::compute_acc(data& d) const {
-    assert(d.bodies() == this->size_);
+    assert(d.bodies() == size_);
 
     d.accx().zero();
     d.accy().zero();
 
+    if (!size_) {
+        return;
+    }
+
     #pragma omp parallel
     {
-        int tid = omp_get_thread_num();
+        const int tid = omp_get_thread_num();
 
         const float* __restrict ma = d.mass();
         const float* __restrict px = d.posx();
         const float* __restrict py = d.posy();
+
         float* __restrict ax = d.accx().row(tid);
         float* __restrict ay = d.accy().row(tid);
 
         #pragma omp for schedule(guided)
         for (size_t i = 0; i < size_; i++) {
-            compute_acc_recurse(i, 0, ma, px, py, ax, ay);
+            compute_acc_iterative(i, ma, px, py, ax, ay);
         }
     }
 }
 
-// TODO
-// this needs to be turned into a linear loop
-void quadtree::compute_acc_recurse(
-    size_t i,
-    size_t j,
+void quadtree::compute_acc_iterative(
+    size_t leaf,
     const float* __restrict ma,
     const float* __restrict px,
     const float* __restrict py,
     float* __restrict ax,
     float* __restrict ay
 ) const {
-    if (i == j) {
-        // there still exists other nodes below this
-        // that we may need to check, recurse into children
-        if (ne_[i]) compute_acc_recurse(i, ne_[i], ma, px, py, ax, ay);
-        if (nw_[i]) compute_acc_recurse(i, nw_[i], ma, px, py, ax, ay);
-        if (se_[i]) compute_acc_recurse(i, se_[i], ma, px, py, ax, ay);
-        if (sw_[i]) compute_acc_recurse(i, sw_[i], ma, px, py, ax, ay);
-        return;
-    };
+    uint32_t stack[MAX_STACK_SIZE];
+    size_t top = 0;
 
-    const bool contains_self =
-        (px[i] >= min_x_[j] && px[i] <= max_x_[j]) &&
-        (py[i] >= min_y_[j] && py[i] <= max_y_[j]);
+    stack[top++] = 0;
 
-    const float width  = max_x_[j] - min_x_[j];
-    const float height = max_y_[j] - min_y_[j];
+    const float p1x = px[leaf];
+    const float p1y = py[leaf];
 
-    const float size = std::max(width, height);
-    const float sizesq = size * size;
+    const uint32_t targetNode = leaf+1;
 
-    const float p1x = px[i];
-    const float p1y = py[i];
-    const float p1m = ma[i];
+    while (top > 0) {
+        const uint32_t root = stack[--top];
+        const float dx = cx_[root] - p1x;
+        const float dy = cy_[root] - p1y;
 
-    const float g2x = cx_[j];
-    const float g2y = cy_[j];
-    const float g2m = cm_[j];
+        const float dsq = dx * dx + dy * dy;
 
-    const float dx = g2x - p1x;
-    const float dy = g2y - p1y;
-    const float dsq = (dx*dx) + (dy*dy);
+        bool containsSelf = (root == 0);
 
-    if (!contains_self && sizesq / dsq < this->thetasq_) {
-        // this group is far enough away to be approximated
-        // as a single point
+        if (root != 0) {
+            const float halfW = w_[root] * 0.5f;
 
-        util::apply_inner_force(
-            dx, dy, dsq,
-            g2m, &ax[i], &ay[i]
-        );
-    } else {
-        // this body is too close / large to compute together
-        // compute its root body and recurse into children
-        util::apply_force_to_one(
-            p1x, p1y,
-            px[j], py[j], ma[j],
-            &ax[i], &ay[i]
-        );
+            const float epsX =
+                4.0f * std::numeric_limits<float>::epsilon() *
+                std::max({
+                    1.0f,
+                    std::fabs(p1x),
+                    std::fabs(gx_[root])
+                });
 
-        if (nw_[j]) compute_acc_recurse(i, nw_[j], ma, px, py, ax, ay);
-        if (ne_[j]) compute_acc_recurse(i, ne_[j], ma, px, py, ax, ay);
-        if (sw_[j]) compute_acc_recurse(i, sw_[j], ma, px, py, ax, ay);
-        if (se_[j]) compute_acc_recurse(i, se_[j], ma, px, py, ax, ay);
+            const float epsY =
+                4.0f * std::numeric_limits<float>::epsilon() *
+                std::max({
+                    1.0f,
+                    std::fabs(p1y),
+                    std::fabs(gy_[root])
+                });
+
+            containsSelf =
+                p1x >= gx_[root] - halfW - epsX &&
+                p1x <= gx_[root] + halfW + epsX &&
+                p1y >= gy_[root] - halfW - epsY &&
+                p1y <= gy_[root] + halfW + epsY;
+        }
+
+        const float cellSize = w_[root];
+        const float cellSizeSq = cellSize * cellSize;
+
+        const bool approximate =
+            root != 0 &&
+            !containsSelf &&
+            dsq > 0.0f &&
+            cellSizeSq < theta_ * theta_ * dsq;
+
+        if (approximate) {
+            if (cm_[root] != 0.0f) {
+                util::apply_inner_force(
+                    dx,
+                    dy,
+                    dsq,
+                    cm_[root],
+                    &ax[leaf],
+                    &ay[leaf]
+                );
+            }
+
+            continue;
+        }
+
+        if (root != 0) {
+            const size_t body = static_cast<size_t>(root - 1);
+
+            if (root != targetNode) {
+                util::apply_force_to_one(
+                    p1x,
+                    p1y,
+                    px[body],
+                    py[body],
+                    ma[body],
+                    &ax[leaf],
+                    &ay[leaf]
+                );
+            }
+
+            for (uint32_t other = next_[root];
+                 other != 0;
+                 other = next_[other]) {
+
+                const size_t otherBody = static_cast<size_t>(other - 1);
+
+                if (other != targetNode) {
+                    util::apply_force_to_one(
+                        p1x,
+                        p1y,
+                        px[otherBody],
+                        py[otherBody],
+                        ma[otherBody],
+                        &ax[leaf],
+                        &ay[leaf]
+                    );
+                }
+            }
+        }
+
+        assert(top + 4 <= MAX_STACK_SIZE);
+        if (sw_[root]) stack[top++] = sw_[root];
+        if (se_[root]) stack[top++] = se_[root];
+        if (nw_[root]) stack[top++] = nw_[root];
+        if (ne_[root]) stack[top++] = ne_[root];
     }
 }

@@ -5,5 +5,5 @@ galaxies:
     points: 30000
     seed: 1234
     inner_radius: 25
-    outer_radius: 600
+    outer_radius: 900
     center_mass: 1e18

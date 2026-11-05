@@ -30,8 +30,12 @@ namespace util {
         return base;
     }
 
-    static inline bool is_near(float a, float b) {
-        return std::abs(a-b) < 0.1f;
+    static inline bool is_near(float a, float b, float epsl = 1e-12f) {
+        return std::abs(a-b) < epsl;
+    }
+
+    static inline double morton_code(float x, float y) {
+        return 0.0f;
     }
 
     static inline constexpr float epsl = 1e-12f;

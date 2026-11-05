@@ -12,8 +12,7 @@ void camera::update(GLFWwindow* window, float dt) {
 }
 
 void camera::onScroll(float yOffset) {
-    targetZoom *= (1.0f + yOffset * zoomSpeed);
-    targetZoom = glm::clamp(targetZoom, 1e-9f, 100.0f);
+    targetZoom = glm::clamp(targetZoom * std::exp(yOffset * zoomSpeed), 1e-9f, 100.0f);
 }
 
 glm::mat4 camera::viewMatrix() const {

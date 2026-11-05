@@ -14,4 +14,7 @@ struct cliargs {
         bool cpu = false;
         bool bh = false;
         bool quiet = false;
+
+    private:
+        void printUsage() const;
 };

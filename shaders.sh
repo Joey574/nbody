@@ -22,6 +22,6 @@ slangc \
     -profile spirv_1_4 \
     -emit-spirv-directly \
     -fvk-use-entrypoint-name \
-    -entry bhMain \
+    -entry broadMain \
     -o ./src/shaders/barnes_hut.spv \
     ./src/shaders/barnes_hut.slang

@@ -16,3 +16,12 @@ slangc \
     -entry computeMain \
     -o ./src/shaders/direct_sum.spv \
     ./src/shaders/direct_sum.slang
+
+slangc \
+    -target spirv \
+    -profile spirv_1_4 \
+    -emit-spirv-directly \
+    -fvk-use-entrypoint-name \
+    -entry broadMain \
+    -o ./src/shaders/barnes_hut.spv \
+    ./src/shaders/barnes_hut.slang

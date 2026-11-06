@@ -4,6 +4,7 @@
 #include <cstddef>
 #include <cstdlib>
 #include <immintrin.h>
+#include <climits>
 #include <string>
 
 namespace util {
@@ -42,8 +43,42 @@ namespace util {
         return std::abs(a-b) < epsl;
     }
 
-    static inline double morton_code(float x, float y) {
-        return 0.0f;
+    // https://stackoverflow.com/questions/26856268/morton-index-from-2d-point-with-floats
+    static_assert(
+        (sizeof(int) == sizeof(float)) &&
+        (sizeof(int)*CHAR_BIT == 32) &&
+        (sizeof(long long)*CHAR_BIT == 64),
+        "We need 32-bit ints and floats, and 64-bit long longs!"
+    );
+    static inline long long morton_code(float x, float y) {
+        auto ix = reinterpret_cast<const unsigned&>(x);
+        auto iy = reinterpret_cast<const unsigned&>(y);
+
+        const auto ixs = static_cast<int>(ix) >> 31;
+        const auto iys = static_cast<int>(iy) >> 31;
+
+        ix = (((ix & 0x7FFFFFFFL) ^ ixs) - ixs) + 0x7FFFFFFFL;
+        iy = (((iy & 0x7FFFFFFFL) ^ iys) - iys) + 0x7FFFFFFFL;
+
+        long long xx = ix;
+        long long yy = iy;
+
+        xx = (xx | (xx << 16)) & 0x0000FFFF0000FFFFLL;
+        yy = (yy | (yy << 16)) & 0x0000FFFF0000FFFFLL;
+
+        xx = (xx | (xx << 8 )) & 0x00FF00FF00FF00FFLL;
+        yy = (yy | (yy << 8 )) & 0x00FF00FF00FF00FFLL;
+
+        xx = (xx | (xx << 4 )) & 0x0F0F0F0F0F0F0F0FLL;
+        yy = (yy | (yy << 4 )) & 0x0F0F0F0F0F0F0F0FLL;
+
+        xx = (xx | (xx << 2 )) & 0x3333333333333333LL;
+        yy = (yy | (yy << 2 )) & 0x3333333333333333LL;
+
+        xx = (xx | (xx << 1 )) & 0x5555555555555555LL;
+        yy = (yy | (yy << 1 )) & 0x5555555555555555LL;
+
+        return xx | (yy << 1);
     }
 
     static inline constexpr float epsl = 1e-12f;

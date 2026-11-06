@@ -1,3 +1,5 @@
+static const float MIN_SUBPIXEL_ALPHA = 1.0 / 384.0;
+
 struct ParticleState {
     float x;
     float y;
@@ -26,8 +28,6 @@ static const float2 QUAD_OFFSETS[3] = {
     float2(3, -1),
     float2(-1, 3),
 };
-
-static const float MIN_SUBPIXEL_ALPHA = 1.0 / 2048.0;
 
 struct PushConstants {
     float4 color;

@@ -1,4 +1,6 @@
 static const float MIN_SUBPIXEL_ALPHA = 1.0 / 384.0;
+static const float AA_WIDTH_PX = 1.0;
+static const float SUBPIXEL_GAIN = 0.85;
 
 struct ParticleState {
     float x;
@@ -18,7 +20,7 @@ struct UBO {
 
 struct VSOut {
     float4 position  : SV_Position;
-    float2 offset    : TEXCOORD0;
+    float2 offsetPx  : TEXCOORD0;
     float radiusPx   : TEXCOORD1;
     float alphaScale : TEXCOORD2;
 };
@@ -47,10 +49,12 @@ VSOut vertMain(uint vID : SV_VertexID, uint iID : SV_InstanceID) {
     const float worldRadius = clamp(log(masses[iID] + 1.0), 1.0, 10.0);
 
     const float screenRadiusPx = worldRadius * zoom;
-    const float drawRadiusPx = max(screenRadiusPx, pc.minRadiusPx);
+    const float shapeRadiusPx = max(screenRadiusPx, pc.minRadiusPx);
 
-    const float subpixelRatio = saturate(screenRadiusPx / drawRadiusPx);
-    const float alphaScale = max(subpixelRatio, MIN_SUBPIXEL_ALPHA);
+    const float footprintPx = shapeRadiusPx + AA_WIDTH_PX;
+
+    const float subpixelRatio = saturate(screenRadiusPx / shapeRadiusPx);
+    const float alphaScale = max(subpixelRatio * lerp(SUBPIXEL_GAIN, 1.0, subpixelRatio), MIN_SUBPIXEL_ALPHA);
 
     const float4x4 mvp = mul(ubo.proj, ubo.view);
     float4 clipCenter = mul(
@@ -58,25 +62,24 @@ VSOut vertMain(uint vID : SV_VertexID, uint iID : SV_InstanceID) {
         float4(particle.x, particle.y, 0.0, 1.0)
     );
 
-    clipCenter.x += offset.x * drawRadiusPx * 2.0 / pc.width;
-    clipCenter.y += offset.y * drawRadiusPx * 2.0 / pc.height;
+    clipCenter.x += offset.x * footprintPx * 2.0 / pc.width;
+    clipCenter.y += offset.y * footprintPx * 2.0 / pc.height;
 
     VSOut result;
     result.position = clipCenter;
-    result.offset = offset;
-    result.radiusPx = drawRadiusPx;
+    result.offsetPx = offset * footprintPx;
+    result.radiusPx = shapeRadiusPx;
     result.alphaScale = alphaScale;
     return result;
 }
 
 [shader("fragment")]
 float4 fragMain(VSOut fsIn) : SV_TARGET {
-    const float signedDistancePx = (1.0 - length(fsIn.offset)) * fsIn.radiusPx;
-    const float edgeWidthPx = max(fwidth(signedDistancePx), 0.5);
-    if (signedDistancePx < -edgeWidthPx) {
+    const float signedDistancePx = fsIn.radiusPx - length(fsIn.offsetPx);
+    if (signedDistancePx < -AA_WIDTH_PX) {
         discard;
     }
 
-    const float edgeCoverage = smoothstep(-edgeWidthPx, edgeWidthPx, signedDistancePx);
+    const float edgeCoverage = smoothstep(-AA_WIDTH_PX, AA_WIDTH_PX, signedDistancePx);
     return float4(pc.color.rgb, pc.color.a * fsIn.alphaScale * edgeCoverage);
 }

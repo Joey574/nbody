@@ -4,6 +4,7 @@
  *  Subject: Parallel quadtree construction on collections of objects
  *  Year: 2017
  *  Comment: First article to read, it is explicitly building the kind of tree we are also aiming for
+ *      make sure to look at references 10, 2, 11, paper describes them as 'point quad-trees'
 
  * https://ajdillhoff.github.io/notes/parallel_sorting_algorithms/
  *  Priority: LOW

@@ -125,11 +125,8 @@ void shapes::Spiral::Generate(std::span<float> x, std::span<float> y, std::mt199
             continue;
         }
 
-        float r;
-        do {
-            const float q = fmaxf((1.0f - Rand01(rng)) * (1.0f - Rand01(rng)), util::epsl);
-            r = -h * logf(q);
-        } while (r < r_min || r > radius);
+        const float q = fmaxf((1.0f - Rand01(rng)) * (1.0f - Rand01(rng)), util::epsl);
+        const float r = -h * logf(q);
 
         float theta;
         if (Rand01(rng) < ARM_FRACTION) {

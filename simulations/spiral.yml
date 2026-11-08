@@ -1,8 +1,8 @@
-fixed_time: 0.0001
+fixed_time: 0.01
 
 galaxies:
   - type: spiral
-    points: 150000
+    points: 60000
     seed: 1337
     center_mass: 1e6
     radius: 5000

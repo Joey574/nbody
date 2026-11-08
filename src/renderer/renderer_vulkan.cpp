@@ -418,7 +418,7 @@ void renderer::vulkan_record_command_buffer(uint32_t imageIndex, simulation& sim
     struct PushConstants { glm::vec4 color; float minRadiusPx; float width; float height; };
     PushConstants pc {
         {1.0f, 1.0f, 1.0f, 1.0f},
-        1.25f,
+        MIN_RADIUS_PX,
         static_cast<float>(swapchain.Extent().width),
         static_cast<float>(swapchain.Extent().height)
     };

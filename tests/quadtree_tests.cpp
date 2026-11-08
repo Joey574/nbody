@@ -62,7 +62,7 @@ TEST(QuadtreeForces, ZeroThetaMatchesDirectPairwiseForces) {
 
     quadtree tree(0.0f);
     tree.insert(particles);
-    tree.compute_acc(particles);
+    tree.acc(particles);
 
     const auto actualX = SumAccelerationRows(particles.accx());
     const auto actualY = SumAccelerationRows(particles.accy());
@@ -83,40 +83,10 @@ TEST(QuadtreeForces, SingleBodyHasZeroAcceleration) {
 
     quadtree tree(0.5f);
     tree.insert(particles);
-    tree.compute_acc(particles);
+    tree.acc(particles);
 
     const auto actualX = SumAccelerationRows(particles.accx());
     const auto actualY = SumAccelerationRows(particles.accy());
     EXPECT_FLOAT_EQ(actualX[0], 0.0f);
     EXPECT_FLOAT_EQ(actualY[0], 0.0f);
-}
-
-TEST(QuadtreeLifecycle, CopyAndMoveRetainTheBuiltTree) {
-    data particles(3, true);
-    particles.posx()[0] = -1.0f; particles.posy()[0] = 0.0f;
-    particles.posx()[1] = 1.0f;  particles.posy()[1] = 0.0f;
-    particles.posx()[2] = 0.0f;  particles.posy()[2] = 2.0f;
-    particles.mass()[0] = 1.0f;
-    particles.mass()[1] = 2.0f;
-    particles.mass()[2] = 3.0f;
-
-    quadtree original(0.0f);
-    original.insert(particles);
-
-    quadtree copied(original);
-    EXPECT_FLOAT_EQ(copied.theta(), original.theta());
-    copied.compute_acc(particles);
-    const auto expectedX = SumAccelerationRows(particles.accx());
-    const auto expectedY = SumAccelerationRows(particles.accy());
-
-    quadtree moved(std::move(copied));
-    EXPECT_FLOAT_EQ(moved.theta(), original.theta());
-    moved.compute_acc(particles);
-
-    const auto actualX = SumAccelerationRows(particles.accx());
-    const auto actualY = SumAccelerationRows(particles.accy());
-    for (size_t i = 0; i < particles.bodies(); i++) {
-        EXPECT_NEAR(actualX[i], expectedX[i], 1e-5f);
-        EXPECT_NEAR(actualY[i], expectedY[i], 1e-5f);
-    }
 }

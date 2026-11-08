@@ -40,6 +40,8 @@ struct renderer {
 
     private:
         static constexpr int MAX_FRAMES_IN_FLIGHT = 2;
+        static constexpr float MIN_RADIUS_PX = 1.0f;
+
         GLFWwindow* window = nullptr;
         vk::raii::Context context;
         vk::raii::Instance instance = nullptr;

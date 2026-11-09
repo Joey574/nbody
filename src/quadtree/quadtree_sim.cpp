@@ -1,8 +1,6 @@
 #include "quadtree.hpp"
 #include "util/util.hpp"
 
-#include <cfloat>
-#include <cmath>
 #include <assert.h>
 
 void quadtree::acc(data& d) const {

@@ -3,6 +3,7 @@
 #include "quadtree/node.hpp"
 #include "quadtree/quad.hpp"
 
+#include <cmath>
 #include <utility>
 
 // TODO
@@ -21,7 +22,7 @@ struct quadtree {
         quadtree(quadtree&& other) noexcept :
             quads_(std::move(other.quads_)),
             nodes_(std::move(other.nodes_)),
-            theta_(std::exchange(other.theta_, 0.0f))
+            thetasq_(std::exchange(other.thetasq_, 0.0f))
         {}
 
         // move operator
@@ -29,27 +30,28 @@ struct quadtree {
             if (this == &other) return *this;
             quads_ = std::move(other.quads_);
             nodes_ = std::move(other.nodes_);
-            theta_ = std::exchange(other.theta_, 0);
+            thetasq_ = std::exchange(other.thetasq_, 0);
 
             return *this;
         }
 
         // parameterized constructor
-        quadtree(float theta) : theta_(theta) {}
+        quadtree(float theta) : thetasq_(theta*theta) {}
 
         void insert(const data& d);
         void acc(data& d) const;
 
-        float theta() const noexcept { return theta_; }
+        float theta() const noexcept { return std::sqrtf(thetasq_); }
 
     private:
         static constexpr size_t ROOT = 0;
 
-        float theta_ = 1.0f;
+        float thetasq_ = 1.0f;
 
         quads quads_ = {};
         nodes nodes_ = {};
         std::vector<size_t> parents_;
+        std::vector<uint64_t> keys_;
 
         void insert_point(float x, float y, float m);
 

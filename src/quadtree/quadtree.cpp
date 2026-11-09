@@ -3,11 +3,20 @@
 #include <algorithm>
 #include <cassert>
 #include <cstdio>
+#include <numeric>
 #include <omp.h>
+#include <vector>
 
 void quadtree::insert(const data& d) {
     const size_t n = d.bodies();
     if (!n) return;
+
+    nodes_.reserve(n*4);
+    quads_.reserve(n*4);
+
+    nodes_.clear();
+    quads_.clear();
+    parents_.clear();
 
     // alias
     const float* __restrict px = d.posx();
@@ -23,24 +32,40 @@ void quadtree::insert(const data& d) {
 
     const float rangeX = (maxX) - (minX);
     const float rangeY = (maxY) - (minY);
-
-    nodes_.reserve(n*4);
-    quads_.reserve(n*4);
-
-    nodes_.clear();
-    quads_.clear();
-    parents_.clear();
-
     const float side = std::max(rangeX, rangeY);
-    quads_.push(minX + rangeX * 0.5f, minY + rangeY * 0.5f, side);
+
+    const float scale = side > 0.0f ? 65536.0f / side : 0.0f;
+    const float cx = minX + rangeX * 0.5f;
+    const float cy = minY + rangeY * 0.5f;
+    const float ox = cx - side * 0.5f;
+    const float oy = cy - side * 0.5f;
+
+    quads_.push(cx, cy, side);
     nodes_.push_empty(0);
 
-    for (size_t body = 0; body < n; body++) {
-        const float x = px[body];
-        const float y = py[body];
-        const float m = ma[body];
+    if (keys_.size() != n) {
+        keys_.resize(n);
+        std::iota(keys_.begin(), keys_.end(), 0);
+    }
 
-        insert_point(x, y, m);
+    // morton code sort
+    #pragma omp parallel for schedule(static)
+    for (size_t i = 0; i < n; i++) {
+        const size_t b = keys_[i] & 0xFFFFFFFFu;
+        uint32_t ix = (uint32_t)std::clamp((px[b] - ox) * scale, 0.0f, 65535.0f);
+        uint32_t iy = (uint32_t)std::clamp((py[b] - oy) * scale, 0.0f, 65535.0f);
+
+        uint32_t code = util::part1By1(ix) | (util::part1By1(iy) << 1);
+        keys_[i] = ((uint64_t)code << 32) | (uint32_t)i;
+    }
+
+    if (!util::insertion_sort_capped(keys_, 8 * n)) {
+        std::sort(keys_.begin(), keys_.end());
+    }
+
+    for (size_t i = 0; i < n; i++) {
+        const size_t b = keys_[i] & 0xFFFFFFFFu;
+        insert_point(px[b], py[b], ma[b]);
     }
 
     propagate();

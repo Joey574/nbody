@@ -6,19 +6,39 @@
 #include <immintrin.h>
 #include <climits>
 #include <string>
+#include <cstdint>
+#include <vector>
 
 namespace util {
-    inline size_t aligned_size(size_t size) {
+    static inline size_t aligned_size(size_t size) {
         return (size + 31) & ~31;
     }
 
     // automatically handles aligning bytes to MEM_ALIGNMENT
-    inline void* mem_aligned_alloc(size_t bytes) {
+    static inline void* mem_aligned_alloc(size_t bytes) {
         return aligned_alloc(MEM_ALIGNMENT, aligned_size(bytes));
     }
 
-    inline float frsqrt(float x) {
+    static inline float frsqrt(float x) {
         return _mm_cvtss_f32(_mm_rsqrt_ss(_mm_set_ss(x)));
+    }
+
+    static inline float inv_sqrt(float x) {
+        float inv = util::frsqrt(x);
+        return inv * (1.5f - 0.5f * x * inv * inv);
+    }
+
+    static bool insertion_sort_capped(std::vector<uint64_t>& k, size_t max_shifts) {
+        size_t shifts = 0;
+        for (size_t i = 1; i < k.size(); i++) {
+            const uint64_t v = k[i];
+            size_t j = i;
+            while (j > 0 && k[j-1] > v) { k[j] = k[j-1]; --j; ++shifts; }
+            k[j] = v;
+            if (shifts > max_shifts) return false;
+        }
+
+        return true;
     }
 
     inline size_t parse_string(const std::string& s) {
@@ -41,6 +61,15 @@ namespace util {
 
     static inline bool is_near(float a, float b, float epsl = 1e-12f) {
         return std::abs(a-b) < epsl;
+    }
+
+    static inline uint32_t part1By1(uint32_t v) {
+        v &= 0x0000FFFF;
+        v = (v | (v << 8)) & 0x00FF00FF;
+        v = (v | (v << 4)) & 0x0F0F0F0F;
+        v = (v | (v << 2)) & 0x33333333;
+        v = (v | (v << 1)) & 0x55555555;
+        return v;
     }
 
     // https://stackoverflow.com/questions/26856268/morton-index-from-2d-point-with-floats

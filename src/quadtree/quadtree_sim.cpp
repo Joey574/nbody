@@ -19,7 +19,7 @@ void quadtree::acc(data& d) const {
         float* __restrict ax = d.accx().row(tid);
         float* __restrict ay = d.accy().row(tid);
 
-        #pragma omp for schedule(guided)
+        #pragma omp for schedule(guided, 16)
         for (size_t i = 0; i < n; i++) {
             compute_acc_point(px[i], py[i], ax[i], ay[i]);
         }
@@ -44,30 +44,27 @@ void quadtree::compute_acc_point(
     const float* __restrict qs = quads_.S();
 
     while(1) {
-        const float x = nx[node];
-        const float y = ny[node];
-        const float m = nm[node];
+        const float dx = nx[node] - px;
+        const float dy = ny[node] - py;
+        const float dsq = dx*dx + dy*dy;
 
-        const float s = qs[node];
+        if (nodes_.is_leaf(node) || qs[node]*qs[node] < dsq * thetasq_) {
+            const float m = nm[node];
 
-        const float dx = x - px;
-        const float dy = y - py;
+            const float soft_dsq = dsq + util::epsl;
 
-        const float dsq = (dx*dx) + (dy*dy);
+            const   float inv = util::inv_sqrt(soft_dsq);
+            const float inv3 = inv * inv * inv;
 
-        if (nodes_.is_leaf(node) || s*s < dsq * theta_*theta_) {
-            const float denom = (dsq + util::epsl) * sqrtf(dsq);
+            ax += dx * inv3 * m;
+            ay += dy * inv3 * m;
 
-            const float f = fminf(m/denom, FLT_MAX);
-
-            ax += dx * f;
-            ay += dy * f;
-
-            if (nn[node] == 0) {
+            const size_t next = nn[node];
+            if (next == 0) {
                 break;
             }
 
-            node = nn[node];
+            node = next;
         } else {
             node = nc[node];
         }

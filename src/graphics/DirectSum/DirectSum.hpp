@@ -1,12 +1,12 @@
 #pragma once
-#include "data/data.hpp"
 
+#include "data/data.hpp"
 #include "graphics/LogicalDevice/LogicalDevice.hpp"
 #include "graphics/PhysicalDevice/PhysicalDevice.hpp"
 
 #include <cstdint>
 
-struct GPUSimulation {
+struct DirectSum {
     public:
         static constexpr uint32_t BLOCK_SIZE = 128;
 
@@ -15,14 +15,14 @@ struct GPUSimulation {
             float dt;
         };
 
-        GPUSimulation() = default;
-        GPUSimulation(const GPUSimulation&) = delete;
-        GPUSimulation& operator=(const GPUSimulation&) = delete;
+        DirectSum() = default;
+        DirectSum(const DirectSum&) = delete;
+        DirectSum& operator=(const DirectSum&) = delete;
 
-        GPUSimulation(GPUSimulation&& other) noexcept {
+        DirectSum(DirectSum&& other) noexcept {
             *this = std::move(other);
         }
-        GPUSimulation& operator=(GPUSimulation&& other) noexcept {
+        DirectSum& operator=(DirectSum&& other) noexcept {
             if (this == &other) return *this;
             cleanup();
 
@@ -41,7 +41,7 @@ struct GPUSimulation {
             return *this;
         }
 
-        ~GPUSimulation() { cleanup(); }
+        ~DirectSum() { cleanup(); }
 
         void init(const data& d, const LogicalDevice& ld, const PhysicalDevice& pd);
         void record(const vk::raii::CommandBuffer& cmd, float dt);

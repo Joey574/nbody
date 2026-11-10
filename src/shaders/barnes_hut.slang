@@ -161,3 +161,12 @@ void broadMain(
         GroupMemoryBarrierWithGroupSync();
     }
 }
+
+[shader("compute")]
+[numthreads(BLOCK_SIZE, 1, 1)]
+void broadSortMain(
+    uint3 dispatchID : SV_DispatchThreadID,
+    uint3 groupThreadID : SV_GroupThreadID
+) {
+
+}

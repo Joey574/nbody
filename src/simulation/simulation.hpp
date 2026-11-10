@@ -3,7 +3,7 @@
 #include "cli/cli.hpp"
 #include "quadtree/quadtree.hpp"
 
-#include "graphics/GPUSimulation/GPUSimulation.hpp"
+#include "graphics/DirectSum/DirectSum.hpp"
 
 #include <chrono>
 
@@ -35,10 +35,10 @@ struct simulation {
         data& get_data() { return data_; }
         const data& get_data() const { return data_; }
 
-        size_t points() const noexcept { return isGPU() ? gpu_.bodies() : data_.bodies(); }
+        size_t points() const noexcept { return isGPU() ? dsgpu_.bodies() : data_.bodies(); }
 
-        vk::Buffer gpuState() const { return gpu_.currentState(); }
-        vk::Buffer gpuMasses() const { return gpu_.massBuffer(); }
+        vk::Buffer gpuState() const { return dsgpu_.currentState(); }
+        vk::Buffer gpuMasses() const { return dsgpu_.massBuffer(); }
 
         void cleanup();
 
@@ -47,7 +47,7 @@ struct simulation {
         backend backend_ = backend::CPU;
 
         quadtree tree_;
-        GPUSimulation gpu_;
+        DirectSum dsgpu_;
 
         std::chrono::nanoseconds update_cpu(const float ft) noexcept;
         std::chrono::nanoseconds update_cpu_bh(const float ft) noexcept;

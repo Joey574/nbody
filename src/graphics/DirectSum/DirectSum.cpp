@@ -1,4 +1,4 @@
-#include "GPUSimulation.hpp"
+#include "DirectSum.hpp"
 #include "ParticleState.hpp"
 
 #include <cstring>
@@ -7,9 +7,6 @@
 #include <stdexcept>
 
 namespace {
-    constexpr float SOFTENING_SQUARED = 1.0e-12f;
-    constexpr float GRAVITATIONAL_CONSTANT = 1.0f;
-
     alignas(uint32_t) constexpr unsigned char computeShaderBytes[] = {
         #embed "../../shaders/direct_sum.spv"
     };
@@ -32,7 +29,7 @@ namespace {
 
 }
 
-uint32_t GPUSimulation::findMemoryType(
+uint32_t DirectSum::findMemoryType(
     const PhysicalDevice& pd,
     uint32_t memoryTypeBits,
     vk::MemoryPropertyFlags properties
@@ -50,7 +47,7 @@ uint32_t GPUSimulation::findMemoryType(
     throw std::runtime_error("failed to find a suitable Vulkan memory type");
 }
 
-void GPUSimulation::createBuffer(
+void DirectSum::createBuffer(
     const LogicalDevice& ld,
     const PhysicalDevice& pd,
     vk::DeviceSize size,
@@ -79,7 +76,7 @@ void GPUSimulation::createBuffer(
     buffer.bindMemory(*memory, 0);
 }
 
-void GPUSimulation::init(
+void DirectSum::init(
     const data& initialData,
     const LogicalDevice& ld,
     const PhysicalDevice& pd
@@ -342,7 +339,7 @@ void GPUSimulation::init(
     pipeline = vk::raii::Pipeline(ld.Device(), nullptr, pipelineInfo);
 }
 
-void GPUSimulation::record(const vk::raii::CommandBuffer& cmd, float dt) {
+void DirectSum::record(const vk::raii::CommandBuffer& cmd, float dt) {
     if (count == 0) {
         throw std::logic_error("GPU simulation has not been initialized");
     }
@@ -393,21 +390,21 @@ void GPUSimulation::record(const vk::raii::CommandBuffer& cmd, float dt) {
     currentIndex ^= 1;
 }
 
-vk::Buffer GPUSimulation::currentState() const {
+vk::Buffer DirectSum::currentState() const {
     if (count == 0) {
         throw std::logic_error("GPU simulation state requested before initialization");
     }
     return *stateBuffers[currentIndex];
 }
 
-vk::Buffer GPUSimulation::massBuffer() const {
+vk::Buffer DirectSum::massBuffer() const {
     if (count == 0) {
         throw std::logic_error("GPU simulation masses requested before initialization");
     }
     return *massesBuffer;
 }
 
-void GPUSimulation::cleanup() {
+void DirectSum::cleanup() {
     pipeline = nullptr;
     pipelineLayout = nullptr;
     descriptorSets.clear();

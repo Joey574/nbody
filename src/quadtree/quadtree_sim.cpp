@@ -8,12 +8,12 @@ void quadtree::acc(data& d) const {
     d.accx().zero();
     d.accy().zero();
 
+    const float* __restrict px = d.posx();
+    const float* __restrict py = d.posy();
+
     #pragma omp parallel
     {
         const int tid = omp_get_thread_num();
-
-        const float* __restrict px = d.posx();
-        const float* __restrict py = d.posy();
         float* __restrict ax = d.accx().row(tid);
         float* __restrict ay = d.accy().row(tid);
 

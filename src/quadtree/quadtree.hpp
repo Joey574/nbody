@@ -5,6 +5,7 @@
 
 #include <cmath>
 #include <utility>
+#include <functional>
 
 // TODO
 // should try to implement this is parrot and see what the perf is
@@ -37,6 +38,31 @@ struct quadtree {
 
         // parameterized constructor
         quadtree(float theta) : thetasq_(theta*theta) {}
+
+        template <typename Func>
+        requires std::invocable<Func, size_t, size_t, const nodes&>
+        void traverse_seq(Func&& visit) const {
+            const size_t n = nodes_.size();
+            for (size_t i = 0; i < n; i++) {
+                visit(i, nodes_);
+            }
+        }
+
+        template <typename Func>
+        requires std::invocable<Func, size_t, size_t, const nodes&>
+        void traverse_par(Func&& visit) const {
+            const size_t n = nodes_.size();
+
+            #pragma omp parallel
+            {
+                const int tid = omp_get_thread_num();
+
+                #pragma omp for schedule(guided, 16)
+                for (size_t i = 0; i < n; i++) {
+                    visit(i, tid, nodes_);
+                }
+            }
+        }
 
         void insert(const data& d);
         void acc(data& d) const;

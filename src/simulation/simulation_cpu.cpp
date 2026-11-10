@@ -50,8 +50,8 @@ void simulation::compute_acc() noexcept {
             const auto _p1y = util::set1(p1y);
             const auto _p1m = util::set1(p1m);
 
-            float _a1x_sum = util::zero();
-            float _a1y_sum = util::zero();
+            auto _a1x_sum = util::zero();
+            auto _a1y_sum = util::zero();
 
             size_t j = i+1;
             for (; j+util::last < n; j += util::width) {

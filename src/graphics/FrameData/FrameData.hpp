@@ -2,7 +2,7 @@
 #include "data/data.hpp"
 #include "graphics/PhysicalDevice/PhysicalDevice.hpp"
 #include "graphics/LogicalDevice/LogicalDevice.hpp"
-#include "graphics/GPUSimulation/ParticleState.hpp"
+#include "graphics/DirectSum/ParticleState.hpp"
 
 struct FrameData {
     public:

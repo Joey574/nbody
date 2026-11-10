@@ -2,7 +2,7 @@ fixed_time: 0.0000001
 
 galaxies:
   - type: spiral
-    points: 40000
+    points: 30000
     seed: 1234
     radius: 1200
     center_mass: 1e18
@@ -12,7 +12,7 @@ galaxies:
     y_vel: 0.5
 
   - type: spiral
-    points: 40000
+    points: 30000
     seed: 5678
     radius: 1200
     center_mass: 1e18

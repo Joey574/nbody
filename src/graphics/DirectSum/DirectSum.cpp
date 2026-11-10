@@ -8,7 +8,7 @@
 
 namespace {
     alignas(uint32_t) constexpr unsigned char computeShaderBytes[] = {
-        #embed "../../shaders/direct_sum.spv"
+        #embed "../../shaders/compiled/direct_sum.spv"
     };
 
     vk::raii::ShaderModule createShaderModule(

@@ -1,3 +1,6 @@
+SRC="./src/shaders"
+OUT="./src/shaders/compiled"
+
 slangc \
     -target spirv \
     -profile spirv_1_4 \
@@ -5,8 +8,8 @@ slangc \
     -fvk-use-entrypoint-name \
     -entry vertMain \
     -entry fragMain \
-    -o ./src/shaders/circles.spv \
-    ./src/shaders/circles.slang
+    -o "${OUT}/circles.spv" \
+    "${SRC}/circles.slang"
 
 slangc \
     -target spirv \
@@ -14,8 +17,8 @@ slangc \
     -emit-spirv-directly \
     -fvk-use-entrypoint-name \
     -entry computeMain \
-    -o ./src/shaders/direct_sum.spv \
-    ./src/shaders/direct_sum.slang
+    -o "${OUT}/direct_sum.spv" \
+    "${SRC}/direct_sum.slang"
 
 slangc \
     -target spirv \
@@ -23,5 +26,5 @@ slangc \
     -emit-spirv-directly \
     -fvk-use-entrypoint-name \
     -entry broadMain \
-    -o ./src/shaders/barnes_hut.spv \
-    ./src/shaders/barnes_hut.slang
+    -o "${OUT}/barnes_hut.spv" \
+    "${SRC}/barnes_hut.slang"

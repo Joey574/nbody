@@ -33,7 +33,7 @@ add_library(nbody_options INTERFACE)
 
 if (MSVC)
   target_compile_options(nbody_options INTERFACE
-    /utf-8 /permissive- /Zc:__cplusplus /fp:fast)
+    /utf-8 /permissive- /Zc:__cplusplus /fp:fast /arch:AVX2)
 
   target_compile_definitions(nbody_options INTERFACE
     NOMINMAX WIN32_LEAN_AND_MEAN _USE_MATH_DEFINES _CRT_SECURE_NO_WARNINGS)

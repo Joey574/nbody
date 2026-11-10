@@ -65,7 +65,13 @@
  *  Subject: Thinking Parallel
  *  Year: 2012
  *  Comment: Part 3 is the most directly relatable to this algorithm as it discusses parallel BVH creation
-*/
+
+ * https://gpuopen.com/learn/boosting_gpu_radix_sort/
+ *  Priority: HIGH
+ *  Subject: Boosting GPU Radix Sort performance
+ *  Year: 2025
+ *  Comment: Walks through an improved OneSweep algorithm, should provide the basis for our approach
+ */
 
 static const uint BLOCK_SIZE = 256;
 static const float epsl = 1e-12f;

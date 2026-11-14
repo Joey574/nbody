@@ -5,7 +5,6 @@
 
 #include <cmath>
 #include <utility>
-#include <functional>
 
 // TODO
 // should try to implement this is parrot and see what the perf is

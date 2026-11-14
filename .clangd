@@ -2,7 +2,9 @@ Diagnostics:
   Suppress: [builtin_definition]
 CompileFlags:
   CompilationDatabase: build
-  Add: [-fopenmp]
+  Add:
+    - -fopenmp
+    - -Wno-c23-extensions
   Remove:
     - -fmodule-mapper=*
     - -fdeps-format=*

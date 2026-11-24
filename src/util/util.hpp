@@ -21,12 +21,12 @@ namespace util {
 
     // automatically handles aligning bytes to MEM_ALIGNMENT
     static inline void* mem_aligned_alloc(size_t bytes) {
-        const n = aligned_size(bytes);
+        const size_t n = aligned_size(bytes);
 
         #ifdef _WIN32
-            return _aligned_malloc(size, MEM_ALIGNMENT);
+            return _aligned_malloc(n, MEM_ALIGNMENT);
         #else
-            return aligned_alloc(MEM_ALIGNMENT, size);
+            return aligned_alloc(MEM_ALIGNMENT, n);
         #endif
     }
 

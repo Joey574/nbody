@@ -23,7 +23,15 @@ FetchContent_Declare(
   GIT_SHALLOW TRUE
   FIND_PACKAGE_ARGS 3.4 CONFIG
 )
-FetchContent_MakeAvailable(yaml-cpp glfw3)
+
+FetchContent_Declare(
+  glm
+  GIT_REPOSITORY https://github.com/g-truc/glm.git
+  GIT_TAG 1.0.1
+  GIT_SHALLOW TRUE
+  FIND_PACKAGE_ARGS CONFIG
+)
+FetchContent_MakeAvailable(yaml-cpp glfw3 glm)
 
 find_package(OpenMP REQUIRED COMPONENTS CXX)
 find_package(Threads REQUIRED)
@@ -64,6 +72,7 @@ target_link_libraries(nbody_core PUBLIC
     yaml-cpp::yaml-cpp
     Vulkan::Vulkan
     glfw
+    glm::glm
     ${CMAKE_DL_LIBS}
 )
 

@@ -75,7 +75,7 @@ struct matrix {
             rows_ = 0;
             cols_ = 0;
             stride_ = 0;
-            free(data_);
+            util::mem_aligned_free(data_);
 
             data_ = nullptr;
         }

@@ -43,9 +43,9 @@ void quads::reserve(size_t n) {
         std::memcpy(ss, quad_s_, used);
     }
 
-    free(quad_s_); quad_s_ = ss;
-    free(quad_x_); quad_x_ = xs;
-    free(quad_y_); quad_y_ = ys;
+    util::mem_aligned_free(quad_s_); quad_s_ = ss;
+    util::mem_aligned_free(quad_x_); quad_x_ = xs;
+    util::mem_aligned_free(quad_y_); quad_y_ = ys;
 
     capacity_ = n;
 }
@@ -63,9 +63,9 @@ void quads::zero() {
 }
 
 void quads::cleanup() {
-    free(quad_x_); quad_x_ = nullptr;
-    free(quad_y_); quad_y_ = nullptr;
-    free(quad_s_); quad_s_ = nullptr;
+    util::mem_aligned_free(quad_x_); quad_x_ = nullptr;
+    util::mem_aligned_free(quad_y_); quad_y_ = nullptr;
+    util::mem_aligned_free(quad_s_); quad_s_ = nullptr;
 
     size_ = 0;
     capacity_ = 0;

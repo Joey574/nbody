@@ -104,11 +104,11 @@ struct data {
 
         inline void clear() noexcept {
             bodies_ = 0;
-            free(posx_);
-            free(posy_);
-            free(velx_);
-            free(vely_);
-            free(mass_);
+            util::mem_aligned_free(posx_);
+            util::mem_aligned_free(posy_);
+            util::mem_aligned_free(velx_);
+            util::mem_aligned_free(vely_);
+            util::mem_aligned_free(mass_);
 
             posx_ =  nullptr;
             posy_ =  nullptr;

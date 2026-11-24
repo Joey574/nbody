@@ -2,12 +2,17 @@
 #include "definitions/macros.hpp"
 
 #include <cstddef>
-#include <cstdlib>
 #include <immintrin.h>
 #include <climits>
 #include <string>
 #include <cstdint>
 #include <vector>
+
+#ifdef _WIN32
+    #include <malloc.h>
+#else
+    #include <cstdlib>
+#endif
 
 namespace util {
     static inline size_t aligned_size(size_t size) {
@@ -16,7 +21,22 @@ namespace util {
 
     // automatically handles aligning bytes to MEM_ALIGNMENT
     static inline void* mem_aligned_alloc(size_t bytes) {
-        return aligned_alloc(MEM_ALIGNMENT, aligned_size(bytes));
+        const n = aligned_size(bytes);
+
+        #ifdef _WIN32
+            return _aligned_malloc(size, MEM_ALIGNMENT);
+        #else
+            return aligned_alloc(MEM_ALIGNMENT, size);
+        #endif
+    }
+
+    // automatically handles freeing alligned bytes
+    static inline void mem_aligned_free(void* ptr) {
+        #ifdef _WIN32
+            _aligned_free(ptr);
+        #else
+            free(ptr);
+        #endif
     }
 
     static inline float frsqrt(float x) {

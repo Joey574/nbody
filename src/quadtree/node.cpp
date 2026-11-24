@@ -61,11 +61,11 @@ void nodes::reserve(size_t n) {
         std::memcpy(cs, node_children_, sizeUsed);
     }
 
-    free(node_x_);
-    free(node_y_);
-    free(node_m_);
-    free(node_next_);
-    free(node_children_);
+    util::mem_aligned_free(node_x_);
+    util::mem_aligned_free(node_y_);
+    util::mem_aligned_free(node_m_);
+    util::mem_aligned_free(node_next_);
+    util::mem_aligned_free(node_children_);
 
     node_x_ = xs;
     node_y_ = ys;
@@ -91,11 +91,11 @@ void nodes::zero() {
 }
 
 void nodes::cleanup() {
-    free(node_x_); node_x_ = nullptr;
-    free(node_y_); node_y_ = nullptr;
-    free(node_m_); node_m_ = nullptr;
-    free(node_next_); node_next_ = nullptr;
-    free(node_children_); node_children_ = nullptr;
+    util::mem_aligned_free(node_x_); node_x_ = nullptr;
+    util::mem_aligned_free(node_y_); node_y_ = nullptr;
+    util::mem_aligned_free(node_m_); node_m_ = nullptr;
+    util::mem_aligned_free(node_next_); node_next_ = nullptr;
+    util::mem_aligned_free(node_children_); node_children_ = nullptr;
 
     size_ = 0;
     capacity_ = 0;

@@ -13,6 +13,9 @@ cmake --build build -j
 
 # Usage
 To run the program simply run
-```
+```bash
 ./bin/nbody -f simulations/sample.yml
+
+# my recommendation
+./bin/nbody --cpu --bh -f simulations/big2spiral.yml
 ```

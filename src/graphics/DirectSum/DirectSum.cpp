@@ -26,7 +26,6 @@ namespace {
         };
         return vk::raii::ShaderModule(ld.Device(), info);
     }
-
 }
 
 uint32_t DirectSum::findMemoryType(

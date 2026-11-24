@@ -57,14 +57,14 @@ list(REMOVE_ITEM CORE_SOURCES ${CMAKE_CURRENT_SOURCE_DIR}/main.cpp)
 add_library(nbody_core STATIC ${CORE_SOURCES})
 target_include_directories(nbody_core PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
 
-target_link_libraries(nbody_core PRIVATE
+target_link_libraries(nbody_core PUBLIC
     nbody_options
     OpenMP::OpenMP_CXX
     Threads::Threads
     yaml-cpp::yaml-cpp
     Vulkan::Vulkan
     glfw
-    ${CMAKE_DL_FILES}
+    ${CMAKE_DL_LIBS}
 )
 
 add_executable(nbody main.cpp)

@@ -13,7 +13,7 @@ fi
 mkdir -p build
 mkdir -p bin
 
-cmake -S . -B build -DCMAKE_BUILD_TYPE="$MODE" -G Ninja
+cmake -S . -B build -DCMAKE_BUILD_TYPE="$MODE" -DBUILD_TESTING=ON -G Ninja
 cmake --build build -j
 
 # output basic information

@@ -23,8 +23,8 @@ TEST(UtilParsing, ParseStringRejectsNonNumericInput) {
 }
 
 TEST(UtilMath, IsNearUsesOneTenthTolerance) {
-    EXPECT_TRUE(util::is_near(1.0f, 1.05f));
-    EXPECT_FALSE(util::is_near(1.0f, 1.11f));
+    EXPECT_TRUE(util::is_near(1.0f, 1.05f, 0.1f));
+    EXPECT_FALSE(util::is_near(1.0f, 1.11f, 0.1f));
 }
 
 TEST(UtilForces, ApplyForceToOneUsesOtherMass) {

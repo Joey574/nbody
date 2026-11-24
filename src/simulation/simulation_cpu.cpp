@@ -9,8 +9,6 @@ compiler for vectorization
 #include "simulation/simulation.hpp"
 #include "util/util.hpp"
 
-#include <immintrin.h>
-
 std::chrono::nanoseconds simulation::update_cpu(const float ft) noexcept {
     auto start = std::chrono::high_resolution_clock::now();
 

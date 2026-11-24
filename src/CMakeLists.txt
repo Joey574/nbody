@@ -51,7 +51,7 @@ else()
 
   target_compile_options(nbody_options INTERFACE
     $<$<CONFIG:Debug>:-O0>
-    $<$<CONFIG:Release>:-Ofast>
+    $<$<CONFIG:Release>:-O3 -ffast-math>
     $<$<CONFIG:RelWithDebInfo>:-O3>
     $<$<CONFIG:RelWithDebInfo>:-fno-omit-frame-pointer>)
 endif()

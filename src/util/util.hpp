@@ -2,11 +2,16 @@
 #include "definitions/macros.hpp"
 
 #include <cstddef>
-#include <immintrin.h>
 #include <climits>
 #include <string>
 #include <cstdint>
 #include <vector>
+
+#ifdef __APPLE__
+
+#else
+    #include <immintrin.h>
+#endif
 
 #ifdef _WIN32
     #include <malloc.h>

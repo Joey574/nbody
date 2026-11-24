@@ -201,7 +201,7 @@ struct data {
             if (n) memcpy(tmp, data, n*sizeof(float));
             if (n_append) memcpy(tmp + n, append, n_append*sizeof(float));
 
-            free(data);
+            util::mem_aligned_free(data);
             return tmp;
         }
 };

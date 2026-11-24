@@ -2,9 +2,7 @@
 #include "util/util.hpp"
 
 #include <cstddef>
-#include <malloc.h>
 #include <cstring>
-#include <immintrin.h>
 #include <utility>
 
 /// @brief lightweight abstraction for a matrix of floats, each row is aligned to MEM_ALIGNMENT for simd usage

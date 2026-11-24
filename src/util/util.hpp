@@ -8,7 +8,7 @@
 #include <vector>
 
 #ifdef __APPLE__
-
+    #include <arm_neon.h>
 #else
     #include <immintrin.h>
 #endif
@@ -45,7 +45,11 @@ namespace util {
     }
 
     static inline float frsqrt(float x) {
-        return _mm_cvtss_f32(_mm_rsqrt_ss(_mm_set_ss(x)));
+        #ifdef __APPLE__
+            return vget_lane_f32(vrsqrte_f32(vdup_n_f32(x)), 0);
+        #else
+            return _mm_cvtss_f32(_mm_rsqrt_ss(_mm_set_ss(x)));
+        #endif
     }
 
     static inline float inv_sqrt(float x) {

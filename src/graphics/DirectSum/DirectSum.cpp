@@ -1,5 +1,6 @@
 #include "DirectSum.hpp"
 #include "ParticleState.hpp"
+#include "vulkan/vulkan.hpp"
 
 #include <cstring>
 #include <cmath>
@@ -281,11 +282,14 @@ void DirectSum::init(
     const std::array<vk::DescriptorSetLayout, 2> layouts{
         *descriptorLayout, *descriptorLayout
     };
-    descriptorSets = ld.Device().allocateDescriptorSets(vk::DescriptorSetAllocateInfo{
-        .descriptorPool = *descriptorPool,
-        .descriptorSetCount = static_cast<uint32_t>(layouts.size()),
-        .pSetLayouts = layouts.data()
-    });
+    descriptorSets = vk::raii::DescriptorSets(
+        ld.Device(),
+        vk::DescriptorSetAllocateInfo{
+            .descriptorPool = *descriptorPool,
+            .descriptorSetCount = static_cast<uint32_t>(layouts.size()),
+            .pSetLayouts = layouts.data()
+        }
+    );
 
     const std::array<vk::DescriptorBufferInfo, 6> bufferInfos{{
         {*stateBuffers[0], 0, stateBytes},

@@ -10,7 +10,7 @@ void CommandBuffer::init(const LogicalDevice& ldevice, uint32_t frames) {
 
     commandBuffers.clear();
     vk::CommandBufferAllocateInfo allocInfo {
-        .commandPool = commandPool,
+        .commandPool = *commandPool,
         .level = vk::CommandBufferLevel::ePrimary,
         .commandBufferCount = frames
     };

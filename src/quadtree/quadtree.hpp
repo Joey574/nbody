@@ -66,7 +66,7 @@ struct quadtree {
         void insert(const data& d);
         void acc(data& d) const;
 
-        float theta() const noexcept { return std::sqrtf(thetasq_); }
+        float theta() const noexcept { return std::sqrt(thetasq_); }
 
     private:
         static constexpr size_t ROOT = 0;

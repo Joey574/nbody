@@ -15,14 +15,19 @@ if(NOT CMAKE_CONFIGURATION_TYPES AND NOT CMAKE_BUILD_TYPE)
 endif()
 
 include(FetchContent)
-FetchContent_Declare(
-  googletest
-  GIT_REPOSITORY https://github.com/google/googletest.git
-  GIT_TAG v1.15.2
-  GIT_SHALLOW TRUE
-)
-FetchContent_MakeAvailable(googletest)
-enable_testing()
+include(CTest)
+
+if(BUILD_TESTING)
+  FetchContent_Declare(
+    GTest
+    GIT_REPOSITORY https://github.com/google/googletest.git
+    GIT_TAG v1.15.2
+    GIT_SHALLOW TRUE
+    FIND_PACKAGE_ARGS 1.15.2 CONFIG
+  )
+
+  FetchContent_MakeAvailable(GTest)
+  add_subdirectory(tests)
+endif()
 
 add_subdirectory(src)
-add_subdirectory(tests)

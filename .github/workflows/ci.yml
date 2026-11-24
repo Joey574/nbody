@@ -54,3 +54,29 @@ jobs:
 
       - name: Test
         run: ctest --test-dir build --output-on-failure
+
+  macos:
+    runs-on: macos-15
+
+    env:
+      CC: /usr/bin/clang
+      CXX: /usr/bin/clang++
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install dependencies
+        run: |
+          brew install libomp vulkan-loader
+
+      - name: Configure
+        run: |
+          cmake -S . -B build -G Ninja \
+            -DCMAKE_BUILD_TYPE=Release \
+            -DCMAKE_PREFIX_PATH="$(brew --prefix);$(brew --prefix libomp)"
+
+      - name: Build
+        run: cmake --build build --parallel
+
+      - name: Test
+        run: ctest --test-dir build --output-on-failure

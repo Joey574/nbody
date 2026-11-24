@@ -20,13 +20,6 @@ jobs:
       - name: Configure
         run: cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release
 
-      - name: Dump CMake logs
-        if: failure()
-        shell: msys2 {0}
-        run: |
-          cat build/CMakeFiles/CMakeConfigureLog.yaml | tail -n 120
-          cat build/CMakeFiles/CMakeError.log 2>/dev/null | tail -n 80
-
       - name: Build
         run: cmake --build build --parallel
 
@@ -48,10 +41,16 @@ jobs:
             mingw-w64-ucrt-x86_64-ninja
             mingw-w64-ucrt-x86_64-vulkan-headers
             mingw-w64-ucrt-x86_64-vulkan-loader
-            mingw-w64-ucrt-x86_64-shaderc
 
       - name: Configure
         run: cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release
+
+      - name: Dump CMake logs
+        if: failure()
+        shell: msys2 {0}
+        run: |
+          cat build/CMakeFiles/CMakeConfigureLog.yaml | tail -n 120
+          cat build/CMakeFiles/CMakeError.log 2>/dev/null | tail -n 80
 
       - name: Build
         run: cmake --build build --parallel

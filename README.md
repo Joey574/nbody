@@ -1,31 +1,53 @@
 # nbody
-A rewrite of an older project of mine, hopefully a whole lot better this time around
+
+A real-time N-body gravity simulator with a Vulkan renderer. Simulations are defined in YAML files, and can run on either the GPU (default) or the CPU, with an optional Barnes-Hut approximation for large particle counts.
+
+This is a rewrite of an older project of mine, hopefully a whole lot better this time around.
+
+## Quick start
+
+```bash
+git clone https://github.com/Joey574/nbody
+cd nbody
+cmake -B build
+cmake --build build -j
+./bin/nbody --cpu --bh -f simulations/big2spiral.yml
+```
+
+Press `space` to unpause. The build step assumes the dependencies for your platform are installed, see [Build](#build).
 
 ## Build
-You will need CMake, Git, a C++23 compiler, and OpenMP. A Vulkan-capable graphics driver and runtime must also be installed to run the application.
 
+### Requirements
+
+- CMake, Git, and a C++23 compiler
+- OpenMP
+- A Vulkan-capable GPU driver (the Vulkan loader is found at runtime)
+- Network access on first configure, since CMake fetches its dependencies
 
 ### Linux
 
-Install the common dependencies:
+**1. Install the base dependencies:**
 
 ```bash
 # Debian / Ubuntu
 sudo apt update
-sudo apt install build-essential cmake git pkg-config libvulkan-dev mesa-vulkan-drivers
+sudo apt install build-essential cmake git pkg-config libvulkan1 mesa-vulkan-drivers
 
 # Fedora
-sudo dnf install gcc-c++ cmake git pkgconf-pkg-config vulkan-loader-devel mesa-vulkan-drivers
+sudo dnf install gcc-c++ cmake git pkgconf-pkg-config vulkan-loader mesa-vulkan-drivers
 
 # Arch
-sudo pacman -S base-devel cmake git vulkan-icd-loader vulkan-headers
+sudo pacman -S base-devel cmake git vulkan-icd-loader
 ```
 
-If you use Clang instead of GCC, also install the OpenMP runtime (`libomp-dev` on Debian/Ubuntu, `libomp-devel` on Fedora, `openmp` on Arch).
+`mesa-vulkan-drivers` covers AMD and Intel GPUs. For NVIDIA, install the proprietary driver (or `nvidia-utils` on Arch). On Arch, also install the Vulkan driver for your GPU, e.g. `vulkan-radeon` or `vulkan-intel`.
 
-Then install the windowing dependencies for your display server. If you want a single binary that works on both, install both sets and use the default configure step.
+If you use Clang instead of GCC, also install the OpenMP runtime: `libomp-dev` (Debian/Ubuntu), `libomp-devel` (Fedora), or `openmp` (Arch).
 
-#### X11
+**2. Install the windowing dependencies.** Not sure which you use? Run `echo $XDG_SESSION_TYPE`. Installing both sets gives you a single binary that works on either.
+
+*X11:*
 
 ```bash
 # Debian / Ubuntu
@@ -38,12 +60,7 @@ sudo dnf install libX11-devel libXrandr-devel libXinerama-devel libXcursor-devel
 sudo pacman -S libx11 libxrandr libxinerama libxcursor libxi
 ```
 
-```bash
-cmake -B build -DGLFW_BUILD_WAYLAND=OFF
-cmake --build build -j
-```
-
-#### Wayland
+*Wayland:*
 
 ```bash
 # Debian / Ubuntu
@@ -56,35 +73,64 @@ sudo dnf install wayland-devel libxkbcommon-devel wayland-protocols-devel extra-
 sudo pacman -S wayland libxkbcommon wayland-protocols extra-cmake-modules
 ```
 
-```bash
-cmake -B build -DGLFW_BUILD_X11=OFF
-cmake --build build -j
-```
-### Windows
-
-Builds use [MSYS2](https://www.msys2.org/) with the UCRT64 toolchain. Open an **MSYS2 UCRT64** shell and run:
+**3. Clone and build:**
 
 ```bash
-pacman -S --needed git \
-    mingw-w64-ucrt-x86_64-gcc \
-    mingw-w64-ucrt-x86_64-cmake \
-    mingw-w64-ucrt-x86_64-libgomp
+git clone https://github.com/Joey574/nbody
+cd nbody
 ```
+
+With both sets of windowing dependencies installed (the default):
 
 ```bash
 cmake -B build
 cmake --build build -j
 ```
 
-The Vulkan runtime ships with your GPU driver, so no extra install is needed to run.
+With only one set installed, disable the other backend:
+
+```bash
+# X11 only
+cmake -B build -DGLFW_BUILD_WAYLAND=OFF
+cmake --build build -j
+
+# Wayland only
+cmake -B build -DGLFW_BUILD_X11=OFF
+cmake --build build -j
+```
+
+### Windows
+
+Builds use [MSYS2](https://www.msys2.org/) with the UCRT64 toolchain. Open an **MSYS2 UCRT64** shell and run:
+
+```bash
+pacman -S --needed \
+    git \
+    mingw-w64-ucrt-x86_64-gcc \
+    mingw-w64-ucrt-x86_64-cmake \
+    mingw-w64-ucrt-x86_64-libgomp
+```
+
+```bash
+git clone https://github.com/Joey574/nbody
+cd nbody
+cmake -B build
+cmake --build build -j
+```
+
+The Vulkan runtime ships with your GPU driver, so no extra install is needed. The binary is `bin/nbody.exe`.
 
 ### macOS
+
+Install the Xcode Command Line Tools (`xcode-select --install`) and [Homebrew](https://brew.sh/), then:
 
 ```bash
 brew install cmake libomp molten-vk
 ```
 
 ```bash
+git clone https://github.com/Joey574/nbody
+cd nbody
 cmake -B build \
     -DCMAKE_PREFIX_PATH="$(brew --prefix);$(brew --prefix libomp)"
 cmake --build build -j
@@ -92,17 +138,36 @@ cmake --build build -j
 
 If CMake picks up a Homebrew compiler instead of Apple Clang, force it with `CC=/usr/bin/clang CXX=/usr/bin/clang++` before the configure step.
 
-### Tests
+## Usage
+
+```bash
+./bin/nbody [Options] -f path.yml
+```
+
+Press `space` to unpause the simulation.
+
+| Option | Description |
+| --- | --- |
+| `-f`, `--file` | Simulation config file (YAML). **Required.** |
+| `--cpu` | Run the computation on the CPU instead of the GPU |
+| `--bh` | Use the Barnes-Hut algorithm |
+| `-q`, `--quiet` | Quiet performance output |
+| `--refresh` | Set the refresh rate of the performance output |
+
+Example scenarios live in `simulations/`. A few to start with:
+
+```bash
+# Basic sample
+./bin/nbody -f simulations/sample.yml
+
+# My recommendation
+./bin/nbody --cpu --bh -f simulations/big2spiral.yml
+```
+
+## Tests
 
 ```bash
 ctest --test-dir build --output-on-failure
 ```
 
-## Usage
-To run the program simply run the command & press ```space``` to unpause
-```bash
-./bin/nbody -f simulations/sample.yml
-
-# my recommendation
-./bin/nbody --cpu --bh -f simulations/big2spiral.yml
-```
+With multi-config generators (e.g. Visual Studio), add `-C Release`.

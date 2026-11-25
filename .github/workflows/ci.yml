@@ -24,6 +24,8 @@ jobs:
   ubuntu:
     name: ubuntu (${{ matrix.backend }})
     runs-on: ubuntu-26.04
+    timeout-minutes: 10
+
     strategy:
       fail-fast: false
       matrix:
@@ -31,16 +33,19 @@ jobs:
           - backend: headless
             packages: ""
             cmake_args: -DGLFW_BUILD_X11=OFF -DGLFW_BUILD_WAYLAND=OFF
+
           - backend: x11
             packages: >-
               libx11-dev libxrandr-dev libxinerama-dev
               libxcursor-dev libxi-dev libxext-dev
             cmake_args: -DGLFW_BUILD_WAYLAND=OFF
+
           - backend: wayland
             packages: >-
               libwayland-dev libxkbcommon-dev wayland-protocols
               extra-cmake-modules
             cmake_args: -DGLFW_BUILD_X11=OFF
+
           - backend: x11+wayland
             packages: >-
               libx11-dev libxrandr-dev libxinerama-dev
@@ -69,6 +74,8 @@ jobs:
         run: ctest --test-dir build --output-on-failure
   windows:
     runs-on: windows-latest
+    timeout-minutes: 10
+
     defaults:
       run:
         shell: msys2 {0}
@@ -82,7 +89,6 @@ jobs:
           install: >-
             mingw-w64-ucrt-x86_64-gcc
             mingw-w64-ucrt-x86_64-cmake
-            mingw-w64-ucrt-x86_64-ninja
             mingw-w64-ucrt-x86_64-libgomp
 
       - name: Configure
@@ -98,6 +104,8 @@ jobs:
 
   macos:
     runs-on: macos-15
+    timeout-minutes: 10
+
     env:
       CC: /usr/bin/clang
       CXX: /usr/bin/clang++

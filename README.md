@@ -51,13 +51,13 @@ If you use Clang instead of GCC, also install the OpenMP runtime: `libomp-dev` (
 
 ```bash
 # Debian / Ubuntu
-sudo apt install libx11-dev libxrandr-dev libxinerama-dev libxcursor-dev libxi-dev
+sudo apt install libx11-dev libxrandr-dev libxinerama-dev libxcursor-dev libxi-dev libxext-dev
 
 # Fedora
-sudo dnf install libX11-devel libXrandr-devel libXinerama-devel libXcursor-devel libXi-devel
+sudo dnf install libX11-devel libXrandr-devel libXinerama-devel libXcursor-devel libXi-devel libXext-devel
 
 # Arch
-sudo pacman -S libx11 libxrandr libxinerama libxcursor libxi
+sudo pacman -S libx11 libxrandr libxinerama libxcursor libxi libxext
 ```
 
 *Wayland:*

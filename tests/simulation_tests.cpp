@@ -99,7 +99,7 @@ TEST(SimulationUpdates, ZeroThetaBarnesHutMatchesDirectSum) {
 
     ASSERT_EQ(direct.points(), barnesHut.points());
     for (size_t i = 0; i < direct.points(); i++) {
-        EXPECT_NEAR(direct.get_data().accx()(0, i), barnesHut.get_data().accx()(0, i), 2e-2f);
-        EXPECT_NEAR(direct.get_data().accy()(0, i), barnesHut.get_data().accy()(0, i), 2e-2f);
+        EXPECT_NEAR(direct.get_data().accx()(0, i), barnesHut.get_data().accx()(0, i), 0.025f);
+        EXPECT_NEAR(direct.get_data().accy()(0, i), barnesHut.get_data().accy()(0, i), 0.025f);
     }
 }

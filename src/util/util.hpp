@@ -52,14 +52,16 @@ namespace util {
     }
 
     static inline float frsqrt(float x) {
-        #ifdef __APPLE__
+        #if defined(__ARM_NEON) || defined(__ARM_NEON__)
             return vget_lane_f32(vrsqrte_f32(vdup_n_f32(x)), 0);
-        #else
+        #elif defined(__SSE__)
             return _mm_cvtss_f32(_mm_rsqrt_ss(_mm_set_ss(x)));
+        #else
+            return 1.0f / std::sqrt(x);
         #endif
     }
 
-    static inline float inv_sqrt(float x) {
+        static inline float inv_sqrt(float x) {
         float inv = util::frsqrt(x);
         return inv * (1.5f - 0.5f * x * inv * inv);
     }

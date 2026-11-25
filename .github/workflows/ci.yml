@@ -1,29 +1,50 @@
-
 jobs:
   ubuntu:
+    name: ubuntu (${{ matrix.backend }})
     runs-on: ubuntu-26.04
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - backend: headless
+            packages: ""
+            cmake_args: -DGLFW_BUILD_X11=OFF -DGLFW_BUILD_WAYLAND=OFF
+          - backend: x11
+            packages: >-
+              libx11-dev libxrandr-dev libxinerama-dev
+              libxcursor-dev libxi-dev libxext-dev
+            cmake_args: -DGLFW_BUILD_WAYLAND=OFF
+          - backend: wayland
+            packages: >-
+              libwayland-dev libxkbcommon-dev wayland-protocols
+              extra-cmake-modules
+            cmake_args: -DGLFW_BUILD_X11=OFF
+          - backend: x11+wayland
+            packages: >-
+              libx11-dev libxrandr-dev libxinerama-dev
+              libxcursor-dev libxi-dev libxext-dev
+              libwayland-dev libxkbcommon-dev wayland-protocols
+              extra-cmake-modules
+            cmake_args: ""
     steps:
       - uses: actions/checkout@v4
 
       - name: Install dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install -y ninja-build
+          sudo apt-get install -y pkg-config ${{ matrix.packages }}
 
       - name: Configure
         run: |
-          cmake -S . -B build -G Ninja \
-            -DCMAKE_BUILD_TYPE=Release \
+          cmake -B build \
             -DFETCHCONTENT_TRY_FIND_PACKAGE_MODE=NEVER \
-            -DGLFW_BUILD_X11=OFF \
-            -DGLFW_BUILD_WAYLAND=OFF
+            ${{ matrix.cmake_args }}
 
       - name: Build
-        run: cmake --build build --parallel
+        run: cmake --build build -j
 
       - name: Test
         run: ctest --test-dir build --output-on-failure
-
   windows:
     runs-on: windows-latest
     defaults:
@@ -44,12 +65,11 @@ jobs:
 
       - name: Configure
         run: |
-          cmake -S . -B build -G Ninja \
-            -DCMAKE_BUILD_TYPE=Release \
+          cmake -B build \
             -DFETCHCONTENT_TRY_FIND_PACKAGE_MODE=NEVER
 
       - name: Build
-        run: cmake --build build --parallel
+        run: cmake --build build -j
 
       - name: Test
         run: ctest --test-dir build --output-on-failure
@@ -68,13 +88,12 @@ jobs:
 
       - name: Configure
         run: |
-          cmake -S . -B build -G Ninja \
-            -DCMAKE_BUILD_TYPE=Release \
+          cmake -B build \
             -DCMAKE_PREFIX_PATH="$(brew --prefix);$(brew --prefix libomp)" \
             -DFETCHCONTENT_TRY_FIND_PACKAGE_MODE=NEVER
 
       - name: Build
-        run: cmake --build build --parallel
+        run: cmake --build build -j
 
       - name: Test
         run: ctest --test-dir build --output-on-failure

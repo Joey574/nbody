@@ -1,9 +1,8 @@
-# nbody Simulation
+# nbody
 A rewrite of an older project of mine, hopefully a whole lot better this time around
 
 ## Build
 You will need CMake, Git, a C++23 compiler, and OpenMP. A Vulkan-capable graphics driver and runtime must also be installed to run the application.
-<br>
 
 
 ### Linux
@@ -40,7 +39,7 @@ sudo pacman -S libx11 libxrandr libxinerama libxcursor libxi
 ```
 
 ```bash
-cmake -S . -B build -DGLFW_BUILD_WAYLAND=OFF
+cmake -B build -DGLFW_BUILD_WAYLAND=OFF
 cmake --build build -j
 ```
 
@@ -58,7 +57,7 @@ sudo pacman -S wayland libxkbcommon wayland-protocols extra-cmake-modules
 ```
 
 ```bash
-cmake -S . -B build -DGLFW_BUILD_X11=OFF
+cmake -B build -DGLFW_BUILD_X11=OFF
 cmake --build build -j
 ```
 ### Windows
@@ -73,7 +72,7 @@ pacman -S --needed git \
 ```
 
 ```bash
-cmake -S . -B build
+cmake -B build
 cmake --build build -j
 ```
 
@@ -86,7 +85,7 @@ brew install cmake libomp molten-vk
 ```
 
 ```bash
-cmake -S . -B build \
+cmake -B build \
     -DCMAKE_PREFIX_PATH="$(brew --prefix);$(brew --prefix libomp)"
 cmake --build build -j
 ```
@@ -99,8 +98,8 @@ If CMake picks up a Homebrew compiler instead of Apple Clang, force it with `CC=
 ctest --test-dir build --output-on-failure
 ```
 
-# Usage
-To run the program simply run
+## Usage
+To run the program simply run the command & press ```space``` to unpause
 ```bash
 ./bin/nbody -f simulations/sample.yml
 

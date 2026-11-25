@@ -36,17 +36,22 @@ int app::main_loop(const cliargs& f) {
     const auto ft = f.config.FixedTime();
 
     while (!ren.should_close()) {
-        count++;
         auto time = high_resolution_clock::now();
         float dt = duration<float>(high_resolution_clock::now() - frame_start).count();
         frame_start = time;
 
-        auto sim_time = sim.update(ft).count() * 0.000001;
-        sim_sum += sim_time;
+        double sim_time = 0.0;
+        if (!ren.Paused()) {
+            sim_time = sim.update(ft).count() * 0.000001;
+            sim_sum += sim_time;
+            count++;
+        }
 
         auto ren_time = ren.render(sim, dt, ft).count() * 0.000001;
-        ren_sum += ren_time;
-        tot_sum += sim_time + ren_time;
+        if (!ren.Paused()) {
+            ren_sum += ren_time;
+            tot_sum += sim_time + ren_time;
+        }
 
         // lock debugging output to 100ms refresh
         if (!f.quiet && high_resolution_clock::now() - last_print >= milliseconds(f.refresh)) {

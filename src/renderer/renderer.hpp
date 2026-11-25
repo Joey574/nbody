@@ -10,6 +10,7 @@
 #include "graphics/UBOBuffer/UBOBuffer.hpp"
 
 #include "camera/camera.hpp"
+#include "interactions/interactions.hpp"
 #include "simulation/simulation.hpp"
 
 #include <chrono>
@@ -37,6 +38,9 @@ struct renderer {
 
         bool should_close() { return window == nullptr || glfwWindowShouldClose(window); }
 
+        GLFWwindow* Window() { return this->window; }
+
+        bool Paused() const { return this->in.Paused(); }
 
     private:
         static constexpr int MAX_FRAMES_IN_FLIGHT = 2;
@@ -48,6 +52,7 @@ struct renderer {
         vk::raii::SurfaceKHR surface = nullptr;
 
         camera         cam;
+        interactions   in;
         LogicalDevice  ldevice;
         PhysicalDevice pdevice;
         Swapchain      swapchain;

@@ -55,8 +55,13 @@ void renderer::init_window() {
     glfwSetFramebufferSizeCallback(window, framebufferResizeCallback);
 
     glfwSetScrollCallback(window, [](GLFWwindow* w, double x, double y){
+       auto r = static_cast<renderer*>(glfwGetWindowUserPointer(w));
+       r->cam.onScroll(y);
+    });
+
+    glfwSetKeyCallback(window, [](GLFWwindow* w, int key, int scancode, int action, int mods){
         auto r = static_cast<renderer*>(glfwGetWindowUserPointer(w));
-        r->cam.onScroll(y);
+        r->in.callback(w, key, scancode, action, mods);
     });
 
     glfwShowWindow(window);
@@ -342,8 +347,11 @@ void renderer::vulkan_record_command_buffer(uint32_t imageIndex, simulation& sim
     vk::Buffer particleState{};
     vk::Buffer particleMasses{};
 
-    if (sim.isGPU()) {
+    if (sim.isGPU() && !Paused()) {
         sim.recordGPU(cmd, ft);
+    }
+
+    if (sim.isGPU()) {
         particleState = sim.gpuState();
         particleMasses = sim.gpuMasses();
 

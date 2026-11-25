@@ -1,7 +1,7 @@
 #pragma once
-#include "../simulation/simulation.hpp"
-#include "../renderer/renderer.hpp"
-#include "../cli/cli.hpp"
+#include "simulation/simulation.hpp"
+#include "renderer/renderer.hpp"
+#include "cli/cli.hpp"
 
 struct app {
     public:

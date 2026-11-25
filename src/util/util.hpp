@@ -20,8 +20,14 @@
 #endif
 
 namespace util {
+
+    static_assert(
+        MEM_ALIGNMENT != 0 &&
+        (MEM_ALIGNMENT & (MEM_ALIGNMENT - 1)) == 0,
+        "MEM_ALIGNMENT must be a power of two"
+    );
     static inline size_t aligned_size(size_t size) {
-        return (size + 31) & ~31;
+        return (size + (MEM_ALIGNMENT - 1)) & ~(MEM_ALIGNMENT - 1);
     }
 
     // automatically handles aligning bytes to MEM_ALIGNMENT

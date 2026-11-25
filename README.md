@@ -2,12 +2,28 @@
 A rewrite of an older project of mine, hopefully a whole lot better this time around
 
 ## Build
-Dependencies are automatically brought in, except for vulkan, which must be installed ahead of time 
+You will need CMake, Ninja, Git, a C++23 compiler, and OpenMP. A Vulkan-capable graphics driver and runtime must also be installed to run the application.
 <br>
-https://www.vulkan.org/
 
+### Linux
+```bash
+sudo apt update
+sudo apt install 
 ```
-cmake -B build -G Ninja
+
+```bash
+cmake -B build
+cmake --build build -j
+```
+### Windows
+
+### MacOS
+```bash
+brew install cmake libomp
+```
+
+```bash
+cmake -B build -DCMAKE_PREFIX_PATH="$(brew --prefix);$(brew --prefix libomp)"
 cmake --build build -j
 ```
 

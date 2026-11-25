@@ -46,6 +46,7 @@ FetchContent_Declare(
   GIT_SHALLOW TRUE
 )
 FetchContent_MakeAvailable(yaml-cpp glfw3 glm vulkan-headers volk)
+target_link_libraries(volk PUBLIC Vulkan::Headers)
 
 find_package(OpenMP REQUIRED COMPONENTS CXX)
 find_package(Threads REQUIRED)

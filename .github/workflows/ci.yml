@@ -14,8 +14,8 @@ jobs:
       - name: Install dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install -y ninja-build libvulkan-dev libwayland-dev wayland-protocols libxkbcommon-dev \
-            libx11-dev libxrandr-dev libxinerama-dev libxcursor-dev libxi-dev libvulkan-dev
+          sudo apt-get install -y ninja-build libwayland-dev wayland-protocols libxkbcommon-dev \
+            libx11-dev libxrandr-dev libxinerama-dev libxcursor-dev libxi-dev
 
       - name: Configure
         run: cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release
@@ -43,8 +43,6 @@ jobs:
             mingw-w64-ucrt-x86_64-cmake
             mingw-w64-ucrt-x86_64-ninja
             mingw-w64-ucrt-x86_64-libgomp
-            mingw-w64-ucrt-x86_64-vulkan-headers
-            mingw-w64-ucrt-x86_64-vulkan-loader
 
       - name: Configure
         run: cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release
@@ -67,7 +65,7 @@ jobs:
 
       - name: Install dependencies
         run: |
-          brew install libomp vulkan-loader
+          brew install libomp
 
       - name: Configure
         run: |

@@ -8,13 +8,20 @@ Comments: Most of this code is ripped from https://docs.vulkan.org/tutorial/late
 
 #include <chrono>
 #include <stdexcept>
+#include <vulkan/vulkan_raii.hpp>
 
 void renderer::initVulkan() {
+    if (volkInitialize() != VK_SUCCESS) {
+        throw std::runtime_error("no vulkan loader on this machine");
+    }
+
     init_window();
     vulkan_instance();
+    volkLoadInstance(*instance);
     vulkan_surface();
     pdevice.init(instance);
     ldevice.init(pdevice, surface);
+    volkLoadDevice(*ldevice.Device());
     deviceInitialized = true;
 
     swapchain.init(pdevice, ldevice, surface, window);
@@ -302,7 +309,7 @@ void renderer::vulkan_init_descriptors() {
         .pSetLayouts = layouts.data()
     };
 
-    descriptorSets = ldevice.Device().allocateDescriptorSets(allocInfo);
+    descriptorSets = vk::raii::DescriptorSets{ldevice, allocInfo};
 }
 
 void renderer::vulkan_write_descriptors(size_t i, vk::Buffer state, vk::Buffer masses) {

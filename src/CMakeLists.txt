@@ -31,11 +31,24 @@ FetchContent_Declare(
   GIT_SHALLOW TRUE
   FIND_PACKAGE_ARGS 1.0.1 CONFIG
 )
-FetchContent_MakeAvailable(yaml-cpp glfw3 glm)
+
+FetchContent_Declare(
+  vulkan-headers
+  GIT_REPOSITORY https://github.com/KhronosGroup/Vulkan-Headers.git
+  GIT_TAG v1.4.309
+  GIT_SHALLOW TRUE
+)
+
+FetchContent_Declare(
+  volk
+  GIT_REPOSITORY https://github.com/zeux/volk.git
+  GIT_TAG vulkan-sdk-1.4.309.0
+  GIT_SHALLOW TRUE
+)
+FetchContent_MakeAvailable(yaml-cpp glfw3 glm vulkan-headers volk)
 
 find_package(OpenMP REQUIRED COMPONENTS CXX)
 find_package(Threads REQUIRED)
-find_package(Vulkan REQUIRED)
 
 add_library(nbody_options INTERFACE)
 
@@ -70,7 +83,8 @@ target_link_libraries(nbody_core PUBLIC
     OpenMP::OpenMP_CXX
     Threads::Threads
     yaml-cpp::yaml-cpp
-    Vulkan::Vulkan
+    Vulkan::Headers
+    volk::volk
     glfw
     glm::glm
     ${CMAKE_DL_LIBS}

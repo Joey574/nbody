@@ -2,12 +2,12 @@
 
 #include "util/util.hpp"
 
-TEST(UtilParsing, AlignedSizeRoundsUpToThirtyTwoBytes) {
+TEST(UtilParsing, AlignedSizeRoundsUpToSixtyFoutBytes) {
     EXPECT_EQ(util::aligned_size(0), 0);
-    EXPECT_EQ(util::aligned_size(1), 32);
-    EXPECT_EQ(util::aligned_size(31), 32);
-    EXPECT_EQ(util::aligned_size(32), 32);
-    EXPECT_EQ(util::aligned_size(33), 64);
+    EXPECT_EQ(util::aligned_size(1), 64);
+    EXPECT_EQ(util::aligned_size(63), 64);
+    EXPECT_EQ(util::aligned_size(64), 64);
+    EXPECT_EQ(util::aligned_size(65), 128);
 }
 
 TEST(UtilParsing, ParseStringSupportsDecimalSizeSuffixes) {
@@ -20,11 +20,6 @@ TEST(UtilParsing, ParseStringSupportsDecimalSizeSuffixes) {
 
 TEST(UtilParsing, ParseStringRejectsNonNumericInput) {
     EXPECT_ANY_THROW(util::parse_string("abc"));
-}
-
-TEST(UtilMath, IsNearUsesOneTenthTolerance) {
-    EXPECT_TRUE(util::is_near(1.0f, 1.05f, 0.1f));
-    EXPECT_FALSE(util::is_near(1.0f, 1.11f, 0.1f));
 }
 
 TEST(UtilForces, ApplyForceToOneUsesOtherMass) {

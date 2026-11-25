@@ -32,6 +32,7 @@ namespace util {
 
     // automatically handles aligning bytes to MEM_ALIGNMENT
     static inline void* mem_aligned_alloc(size_t bytes) {
+        if (bytes == 0) return nullptr;
         const size_t n = aligned_size(bytes);
 
         #ifdef _WIN32

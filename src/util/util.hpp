@@ -61,7 +61,7 @@ namespace util {
         #endif
     }
 
-        static inline float inv_sqrt(float x) {
+    static inline float inv_sqrt(float x) {
         float inv = util::frsqrt(x);
         return inv * (1.5f - 0.5f * x * inv * inv);
     }

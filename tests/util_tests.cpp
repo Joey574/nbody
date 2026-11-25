@@ -1,13 +1,14 @@
 #include "gtest/gtest.h"
 
+#include "definitions/macros.hpp"
 #include "util/util.hpp"
 
-TEST(UtilParsing, AlignedSizeRoundsUpToSixtyFoutBytes) {
+TEST(UtilParsing, AlignedSizeRoundsUpToMemoryAlignment) {
     EXPECT_EQ(util::aligned_size(0), 0);
-    EXPECT_EQ(util::aligned_size(1), 64);
-    EXPECT_EQ(util::aligned_size(63), 64);
-    EXPECT_EQ(util::aligned_size(64), 64);
-    EXPECT_EQ(util::aligned_size(65), 128);
+    EXPECT_EQ(util::aligned_size(1), MEM_ALIGNMENT);
+    EXPECT_EQ(util::aligned_size(MEM_ALIGNMENT), MEM_ALIGNMENT);
+    EXPECT_EQ(util::aligned_size(MEM_ALIGNMENT-1), MEM_ALIGNMENT);
+    EXPECT_EQ(util::aligned_size(MEM_ALIGNMENT+1), 2 * MEM_ALIGNMENT);
 }
 
 TEST(UtilParsing, ParseStringSupportsDecimalSizeSuffixes) {

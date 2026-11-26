@@ -15,6 +15,10 @@ struct cliargs {
         bool bh = false;
         bool quiet = false;
 
+        std::string record;
+        uint32_t fps = 60;
+        size_t frames = 0;
+
         bool pause = false;
         float zoom = 1.0f;
         float x = 0.0f;

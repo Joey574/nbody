@@ -4,10 +4,12 @@ Purpose: Contains vulkan initilization utilities for the renderer struct
 Comments: Most of this code is ripped from https://docs.vulkan.org/tutorial/latest/00_Introduction.html
 */
 
+#include "graphics/FrameCapture/FrameCapture.hpp"
 #include "renderer/renderer.hpp"
 #include "graphics/vutil.hpp"
 
 #include <chrono>
+#include <cstdio>
 #include <stdexcept>
 
 void renderer::initVulkan(const cliargs& cli) {
@@ -26,6 +28,8 @@ void renderer::initVulkan(const cliargs& cli) {
     ldevice.init(pdevice, surface);
     volkLoadDevice(*ldevice.Device());
     deviceInitialized = true;
+
+    if (recording()) swapchain.setExtraUsage(vk::ImageUsageFlagBits::eTransferSrc);
 
     swapchain.init(pdevice, ldevice, surface, window);
     vulkan_init_descriptors();
@@ -53,6 +57,7 @@ void renderer::init_window() {
 
     this->glfwInitialized = true;
     glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
+    glfwWindowHint(GLFW_RESIZABLE, recording() ? GLFW_FALSE : GLFW_TRUE);
 
     window = glfwCreateWindow(width_, height_, "nbody", nullptr, nullptr);
     if (!window) {
@@ -445,13 +450,41 @@ void renderer::vulkan_record_command_buffer(uint32_t imageIndex, simulation& sim
     cmd.draw(3, static_cast<uint32_t>(sim.points()), 0, 0);
     cmd.endRendering();
 
+    vk::ImageLayout lastLayout = vk::ImageLayout::eColorAttachmentOptimal;
+    vk::AccessFlags2 lastAccess = vk::AccessFlagBits2::eColorAttachmentWrite;
+    vk::PipelineStageFlags2 lastStage = vk::PipelineStageFlagBits2::eColorAttachmentOutput;
+
+    const bool grab = encoder.isOpen() && !recordLimitReached();
+    if (grab && !capture.matches(swapchain.Extent())) {
+        if (!recordSizeWarned) {
+            fprintf(stderr, "window size changed while recording, skipping frames\n");
+            recordSizeWarned = true;
+        }
+    } else if (grab) {
+        transition_image_layout(
+            imageIndex,
+            lastLayout,
+            vk::ImageLayout::eTransferSrcOptimal,
+            lastAccess,
+            vk::AccessFlagBits2::eTransferRead,
+            lastStage,
+            vk::PipelineStageFlagBits2::eCopy
+        );
+
+        capture.record(cmd, swapchain.Images()[imageIndex], frameIndex);
+
+        lastLayout = vk::ImageLayout::eTransferSrcOptimal;
+        lastAccess = {};
+        lastStage = vk::PipelineStageFlagBits2::eCopy;
+    }
+
     transition_image_layout(
         imageIndex,
-        vk::ImageLayout::eColorAttachmentOptimal,
+        lastLayout,
         vk::ImageLayout::ePresentSrcKHR,
-        vk::AccessFlagBits2::eColorAttachmentWrite,
+        lastAccess,
         {},
-        vk::PipelineStageFlagBits2::eColorAttachmentOutput,
+        lastStage,
         vk::PipelineStageFlagBits2::eBottomOfPipe
     );
 
@@ -529,12 +562,22 @@ std::chrono::nanoseconds renderer::render(simulation& sim, float dt, float ft) {
         throw std::runtime_error("failed to wait for fence");
     }
 
+    if (encoder.isOpen()) {
+        if (const void* pixels = capture.take(frameIndex)) {
+            encoder.push(pixels);
+        }
+    }
+
     auto [result, imageIndex] = swapchain.SwapChain().acquireNextImage(UINT64_MAX, *presentCompleteSemaphores[frameIndex], nullptr);
     if (result == vk::Result::eErrorOutOfDateKHR) {
         recreate_swapchain();
         return std::chrono::high_resolution_clock::now() - s;
     } else if (result != vk::Result::eSuccess && result != vk::Result::eSuboptimalKHR) {
         throw std::runtime_error("failed to acquire swap chain image");
+    }
+
+    if (recording() && !encoder.isOpen()) {
+        start_recording();
     }
 
     if (!sim.isGPU()) {
@@ -597,6 +640,8 @@ void renderer::cleanup() {
     try {
         waitIdle();
     } catch (...) {}
+
+    finishRecording();
     deviceInitialized = false;
 
     commandBuffers.clear();
@@ -638,4 +683,31 @@ void renderer::cleanup() {
         glfwTerminate();
         glfwInitialized = false;
     }
+}
+
+void renderer::start_recording() {
+    const auto format = swapchain.SurfaceFormat().format;
+    const auto extent = swapchain.Extent();
+
+    capture.init(ldevice, pdevice, extent, format, MAX_FRAMES_IN_FLIGHT);
+    encoder.open(recordPath, extent.width, extent.height, recordFps, FrameCapture::ffmpegPixelFormat(format));
+}
+
+void renderer::finishRecording() {
+    if (!encoder.isOpen()) return;
+
+    try {
+        waitIdle();
+
+        for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
+            if (const void* pixels = capture.take((frameIndex + i) % MAX_FRAMES_IN_FLIGHT)) {
+                encoder.push(pixels);
+            }
+        }
+    } catch (const std::exception& e) {
+        fprintf(stderr, "recording: %s\n", e.what());
+    }
+
+    encoder.close();
+    capture.cleanup();
 }

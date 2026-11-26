@@ -8,6 +8,8 @@
 #include "graphics/CommandBuffer/CommandBuffer.hpp"
 #include "graphics/FrameData/FrameData.hpp"
 #include "graphics/UBOBuffer/UBOBuffer.hpp"
+#include "graphics/FrameCapture/FrameCapture.hpp"
+#include "graphics/VideoEncoder/VideoEncoder.hpp"
 
 #include "camera/camera.hpp"
 #include "interactions/interactions.hpp"
@@ -15,6 +17,7 @@
 
 #include <chrono>
 #include <cstdint>
+#include <string>
 
 struct renderer {
     public:
@@ -36,7 +39,15 @@ struct renderer {
         void initVulkan(const cliargs& cli);
         void initRendering(const simulation& sim);
 
-        bool should_close() { return window == nullptr || glfwWindowShouldClose(window); }
+        bool shouldClose() { return window == nullptr || glfwWindowShouldClose(window) || recordLimitReached(); }
+
+        void enableRecording(std::string path, uint32_t fps, size_t maxFrames) {
+            recordPath = std::move(path);
+            recordFps = fps;
+            recordMaxFrames = maxFrames;
+        }
+
+        void finishRecording();
 
         GLFWwindow* Window() { return this->window; }
 
@@ -88,6 +99,17 @@ struct renderer {
 
         bool glfwInitialized = false;
         bool deviceInitialized = false;
+
+        std::string recordPath;
+        uint32_t recordFps = 60;
+        size_t recordMaxFrames = 0;
+        bool recordSizeWarned = false;
+        FrameCapture capture;
+        VideoEncoder encoder;
+
+        inline bool recording() const noexcept { return !recordPath.empty(); }
+        bool recordLimitReached() const noexcept { return recordMaxFrames != 0 && capture.captured() >= recordMaxFrames; }
+        void start_recording();
 
         void recreate_swapchain();
 

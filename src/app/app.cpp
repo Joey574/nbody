@@ -8,6 +8,10 @@
 int app::run(const cliargs& f) {
     if (!f.quiet) { printf("\033c"); }
     sim = simulation(f);
+    if (!f.record.empty()) {
+        ren.enableRecording(f.record, f.fps, f.frames);
+    }
+
     ren.initVulkan(f);
 
     if (sim.isGPU()) {
@@ -35,7 +39,7 @@ int app::main_loop(const cliargs& f) {
     auto last_print = high_resolution_clock::now();
     const auto ft = f.config.FixedTime();
 
-    while (!ren.should_close()) {
+    while (!ren.shouldClose()) {
         auto time = high_resolution_clock::now();
         float dt = duration<float>(high_resolution_clock::now() - frame_start).count();
         frame_start = time;

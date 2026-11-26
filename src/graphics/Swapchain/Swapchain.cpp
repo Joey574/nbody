@@ -14,6 +14,9 @@ void Swapchain::init(const PhysicalDevice& pdevice, const LogicalDevice& ldevice
     swapChainExtent = chooseSwapExtent(sfCapabilities, window);
     swapChainSurfaceFormat = chooseSwapSurfaceFormat(pd.getSurfaceFormatsKHR(surface));
 
+    const vk::ImageUsageFlags usage = vk::ImageUsageFlagBits::eColorAttachment | extraUsage;
+    if ((sfCapabilities.supportedUsageFlags & usage) != usage) throw std::runtime_error("surface does not support the requested swapchain image usage");
+
     vk::SwapchainCreateInfoKHR swapChainCreateInfo {
         .surface = surface,
         .minImageCount = chooseSwapMinImageCount(sfCapabilities),
@@ -21,7 +24,7 @@ void Swapchain::init(const PhysicalDevice& pdevice, const LogicalDevice& ldevice
         .imageColorSpace = swapChainSurfaceFormat.colorSpace,
         .imageExtent = swapChainExtent,
         .imageArrayLayers = 1,
-        .imageUsage = vk::ImageUsageFlagBits::eColorAttachment,
+        .imageUsage = usage,
         .imageSharingMode = vk::SharingMode::eExclusive,
         .preTransform = sfCapabilities.currentTransform,
         .compositeAlpha = vk::CompositeAlphaFlagBitsKHR::eOpaque,

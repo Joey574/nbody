@@ -17,6 +17,16 @@ namespace vutil {
         throw std::runtime_error("failed to find a suitable memory type");
     }
 
+    static inline uint32_t findMemoryType(const vk::PhysicalDeviceMemoryProperties& mp, uint32_t f, vk::MemoryPropertyFlags p) {
+        for (uint32_t i = 0; i < mp.memoryTypeCount; i++) {
+            if ((f & (1u << i)) && (mp.memoryTypes[i].propertyFlags & p) == p) {
+                return i;
+            }
+        }
+
+        return ~0u;
+    }
+
     static inline void createBuffer(
         const LogicalDevice& ld,
         const PhysicalDevice& pd,

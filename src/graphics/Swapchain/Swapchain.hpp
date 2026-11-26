@@ -10,6 +10,8 @@ struct Swapchain {
         bool recreate(const PhysicalDevice& pdevice, const LogicalDevice& ldevice, const vk::raii::SurfaceKHR& surface, GLFWwindow* window);
         void cleanup();
 
+        inline void setExtraUsage(vk::ImageUsageFlags usage) noexcept { extraUsage = usage; }
+
         inline operator vk::raii::SwapchainKHR&() { return swapChain; }
         inline operator const vk::raii::SwapchainKHR&() const { return swapChain; }
 
@@ -31,6 +33,7 @@ struct Swapchain {
         vk::SurfaceFormatKHR             swapChainSurfaceFormat;
         vk::Extent2D                     swapChainExtent;
         std::vector<vk::raii::ImageView> swapChainImageViews;
+        vk::ImageUsageFlags              extraUsage;
 
         void image_views(const vk::raii::Device& ldevice);
 

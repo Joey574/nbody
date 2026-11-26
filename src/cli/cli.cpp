@@ -39,6 +39,18 @@ void cliargs::parse(int argc, char* argv[]) {
             if (argc > i+1) {
                 this->y = std::stof(argv[++i]);
             }
+        } else if (v == "--record") {
+            if (argc > i+1) {
+                record = argv[++i];
+            }
+        } else if (v == "--fps") {
+            if (argc > i+1) {
+                fps = std::stoul(argv[++i]);
+            }
+        } else if (v == "--max-frames") {
+            if (argc > i+1) {
+                frames = std::stoul(argv[++i]);
+            }
         } else {
             throw std::invalid_argument(("unrecognized argument \"" + v + "\"").c_str());
         }
@@ -54,6 +66,9 @@ void cliargs::printUsage() const {
         "\n\t--bh: use barnes-hut algorithm"
         "\n\t-q, --quiet: quiet perf output"
         "\n\t--refresh: set refresh rate of perf output"
+        "\n\t--record: encode frames to this video file (requires ffmpeg)"
+        "\n\t--fps: playback fps on the video"
+        "\n\t--max-frames: stop after this many frames"
         "\n\t-f, --file: config file for simulation"
         "\n\n"
     );

@@ -1,4 +1,6 @@
 #include "FrameData.hpp"
+#include "graphics/vutil.hpp"
+
 #include <stdexcept>
 
 void FrameData::init(const data& d, const LogicalDevice& ld, const PhysicalDevice& pd) {
@@ -20,8 +22,8 @@ void FrameData::init(const data& d, const LogicalDevice& ld, const PhysicalDevic
         vk::MemoryPropertyFlagBits::eHostVisible |
         vk::MemoryPropertyFlagBits::eHostCoherent;
 
-    createBuffer(ld, pd, stateBytes, usage, properties, stateBuffer, stateMemory);
-    createBuffer(ld, pd, massBytes, usage, properties, massBuffer, massMemory);
+    vutil::createBuffer(ld, pd, stateBytes, usage, properties, stateBuffer, stateMemory);
+    vutil::createBuffer(ld, pd, massBytes, usage, properties, massBuffer, massMemory);
 
     mappedState = static_cast<ParticleState*>(stateMemory.mapMemory(0, stateBytes));
     mappedMasses = static_cast<float*>(massMemory.mapMemory(0, massBytes));
@@ -68,46 +70,4 @@ vk::DescriptorBufferInfo FrameData::stateInfo() const {
 
 vk::DescriptorBufferInfo FrameData::massInfo() const {
     return {*massBuffer, 0, count * sizeof(float)};
-}
-
-uint32_t FrameData::findMemType(
-    const PhysicalDevice& pd,
-    uint32_t memoryTypeBits,
-    vk::MemoryPropertyFlags properties
-) {
-    const auto memoryProperties = pd.Device().getMemoryProperties();
-    for (uint32_t i = 0; i < memoryProperties.memoryTypeCount; ++i) {
-        const bool supported = (memoryTypeBits & (1u << i)) != 0;
-        const bool hasProperties =
-            (memoryProperties.memoryTypes[i].propertyFlags & properties) == properties;
-        if (supported && hasProperties) {
-            return i;
-        }
-    }
-    throw std::runtime_error("failed to find a suitable Vulkan memory type");
-}
-
-void FrameData::createBuffer(
-    const LogicalDevice& ld,
-    const PhysicalDevice& pd,
-    vk::DeviceSize size,
-    vk::BufferUsageFlags usage,
-    vk::MemoryPropertyFlags properties,
-    vk::raii::Buffer& buffer,
-    vk::raii::DeviceMemory& bufferMemory
-) {
-    const vk::BufferCreateInfo bufferInfo{
-        .size = size,
-        .usage = usage,
-        .sharingMode = vk::SharingMode::eExclusive
-    };
-    buffer = vk::raii::Buffer(ld.Device(), bufferInfo);
-
-    const auto requirements = buffer.getMemoryRequirements();
-    const vk::MemoryAllocateInfo allocation{
-        .allocationSize = requirements.size,
-        .memoryTypeIndex = findMemType(pd, requirements.memoryTypeBits, properties)
-    };
-    bufferMemory = vk::raii::DeviceMemory(ld.Device(), allocation);
-    buffer.bindMemory(*bufferMemory, 0);
 }

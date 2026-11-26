@@ -66,20 +66,4 @@ struct DirectSum {
 
         vk::raii::PipelineLayout pipelineLayout = nullptr;
         vk::raii::Pipeline pipeline = nullptr;
-
-        static uint32_t findMemoryType(
-            const PhysicalDevice& pd,
-            uint32_t memoryTypeBits,
-            vk::MemoryPropertyFlags properties
-        );
-
-        static void createBuffer(
-            const LogicalDevice& ld,
-            const PhysicalDevice& pd,
-            vk::DeviceSize size,
-            vk::BufferUsageFlags usage,
-            vk::MemoryPropertyFlags properties,
-            vk::raii::Buffer& buffer,
-            vk::raii::DeviceMemory& memory
-        );
 };

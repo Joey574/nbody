@@ -5,10 +5,10 @@ Comments: Most of this code is ripped from https://docs.vulkan.org/tutorial/late
 */
 
 #include "renderer/renderer.hpp"
+#include "graphics/vutil.hpp"
 
 #include <chrono>
 #include <stdexcept>
-#include <vulkan/vulkan_raii.hpp>
 
 void renderer::initVulkan(const cliargs& cli) {
     if (volkInitialize() != VK_SUCCESS) {
@@ -16,6 +16,7 @@ void renderer::initVulkan(const cliargs& cli) {
     }
 
     cam = camera(cli.x, cli.y, cli.zoom);
+    in = interactions(cli.pause);
 
     init_window();
     vulkan_instance();
@@ -124,7 +125,7 @@ void renderer::vulkan_surface() {
 }
 
 void renderer::vulkan_graphics_pipeline() {
-    vk::raii::ShaderModule shaderModule = createShaderModule(reinterpret_cast<const char*>(renderer::shader_bytes), renderer::shader_size);
+    vk::raii::ShaderModule shaderModule = vutil::createShaderModule(ldevice, reinterpret_cast<const unsigned char*>(renderer::shader_bytes), renderer::shader_size);
 
     vk::PipelineShaderStageCreateInfo vertShaderStageInfo {
         .stage  = vk::ShaderStageFlagBits::eVertex,

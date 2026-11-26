@@ -112,7 +112,6 @@ struct renderer {
             vk::PipelineStageFlags2 dstStageMask
         );
         std::vector<const char*> getRequiredInstanceExtensions();
-        vk::raii::ShaderModule createShaderModule(const char* code, const size_t size);
 
 
         static uint32_t chooseSwapMinImageCount(const vk::SurfaceCapabilitiesKHR& capabilities);

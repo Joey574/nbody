@@ -53,7 +53,7 @@ int app::main_loop(const cliargs& f) {
             tot_sum += sim_time + ren_time;
         }
 
-        // lock debugging output to 100ms refresh
+        // lock debugging output to refresh
         if (!f.quiet && high_resolution_clock::now() - last_print >= milliseconds(f.refresh)) {
             if (sim.isGPU()) {
                 printf(

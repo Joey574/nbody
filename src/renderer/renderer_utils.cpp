@@ -9,16 +9,6 @@ Comments:
 #include <vector>
 #include <iostream>
 
-vk::raii::ShaderModule renderer::createShaderModule(const char* code, const size_t size) {
-    vk::ShaderModuleCreateInfo createInfo {
-        .codeSize = size * sizeof(char),
-        .pCode = reinterpret_cast<const uint32_t*>(code)
-    };
-
-    vk::raii::ShaderModule shaderModule{ldevice, createInfo};
-    return shaderModule;
-}
-
 uint32_t renderer::findQueueFamilies(vk::raii::PhysicalDevice physicalDevice) {
     // find the index of the first queue family that supports graphics
     std::vector<vk::QueueFamilyProperties> queueFamilyProperties = physicalDevice.getQueueFamilyProperties();

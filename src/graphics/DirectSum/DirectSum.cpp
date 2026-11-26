@@ -1,9 +1,9 @@
 #include "DirectSum.hpp"
 #include "ParticleState.hpp"
-#include "vulkan/vulkan.hpp"
+
+#include "graphics/vutil.hpp"
 
 #include <cstring>
-#include <cmath>
 #include <limits>
 #include <stdexcept>
 
@@ -11,69 +11,6 @@ namespace {
     alignas(uint32_t) constexpr unsigned char computeShaderBytes[] = {
         #embed "../../shaders/compiled/direct_sum.spv"
     };
-
-    vk::raii::ShaderModule createShaderModule(
-        const LogicalDevice& ld,
-        const unsigned char* code,
-        size_t size
-    ) {
-        if (size == 0 || size % sizeof(uint32_t) != 0) {
-            throw std::runtime_error("invalid direct_sum.spv size");
-        }
-
-        vk::ShaderModuleCreateInfo info{
-            .codeSize = size,
-            .pCode = reinterpret_cast<const uint32_t*>(code)
-        };
-        return vk::raii::ShaderModule(ld.Device(), info);
-    }
-}
-
-uint32_t DirectSum::findMemoryType(
-    const PhysicalDevice& pd,
-    uint32_t memoryTypeBits,
-    vk::MemoryPropertyFlags properties
-) {
-    const auto memoryProperties = pd.Device().getMemoryProperties();
-    for (uint32_t i = 0; i < memoryProperties.memoryTypeCount; ++i) {
-        const bool supported = (memoryTypeBits & (1u << i)) != 0;
-        const bool hasProperties =
-            (memoryProperties.memoryTypes[i].propertyFlags & properties) == properties;
-        if (supported && hasProperties) {
-            return i;
-        }
-    }
-
-    throw std::runtime_error("failed to find a suitable Vulkan memory type");
-}
-
-void DirectSum::createBuffer(
-    const LogicalDevice& ld,
-    const PhysicalDevice& pd,
-    vk::DeviceSize size,
-    vk::BufferUsageFlags usage,
-    vk::MemoryPropertyFlags properties,
-    vk::raii::Buffer& buffer,
-    vk::raii::DeviceMemory& memory
-) {
-    if (size == 0) {
-        throw std::invalid_argument("cannot create a zero-sized GPU buffer");
-    }
-
-    const vk::BufferCreateInfo bufferInfo{
-        .size = size,
-        .usage = usage,
-        .sharingMode = vk::SharingMode::eExclusive
-    };
-    buffer = vk::raii::Buffer(ld.Device(), bufferInfo);
-
-    const auto requirements = buffer.getMemoryRequirements();
-    const vk::MemoryAllocateInfo allocation{
-        .allocationSize = requirements.size,
-        .memoryTypeIndex = findMemoryType(pd, requirements.memoryTypeBits, properties)
-    };
-    memory = vk::raii::DeviceMemory(ld.Device(), allocation);
-    buffer.bindMemory(*memory, 0);
 }
 
 void DirectSum::init(
@@ -120,20 +57,22 @@ void DirectSum::init(
         throw std::length_error("particle count exceeds maxComputeWorkGroupCount[0]");
     }
 
-    createBuffer(
+    vutil::createBuffer(
         ld, pd, stateBytes,
         vk::BufferUsageFlagBits::eStorageBuffer |
         vk::BufferUsageFlagBits::eTransferDst,
         vk::MemoryPropertyFlagBits::eDeviceLocal,
         stateBuffers[0], stateMemories[0]
     );
-    createBuffer(
+
+    vutil::createBuffer(
         ld, pd, stateBytes,
         vk::BufferUsageFlagBits::eStorageBuffer,
         vk::MemoryPropertyFlagBits::eDeviceLocal,
         stateBuffers[1], stateMemories[1]
     );
-    createBuffer(
+
+    vutil::createBuffer(
         ld, pd, massBytes,
         vk::BufferUsageFlagBits::eStorageBuffer |
         vk::BufferUsageFlagBits::eTransferDst,
@@ -158,7 +97,7 @@ void DirectSum::init(
         const auto requirements = buffer.getMemoryRequirements();
         const vk::MemoryAllocateInfo allocation{
             .allocationSize = requirements.size,
-            .memoryTypeIndex = findMemoryType(
+            .memoryTypeIndex = vutil::findMemoryType(
                 pd,
                 requirements.memoryTypeBits,
                 vk::MemoryPropertyFlagBits::eHostVisible |
@@ -330,7 +269,7 @@ void DirectSum::init(
         }
     );
 
-    auto shaderModule = createShaderModule(ld, computeShaderBytes, sizeof(computeShaderBytes));
+    auto shaderModule = vutil::createShaderModule(ld, computeShaderBytes, sizeof(computeShaderBytes));
     const vk::ComputePipelineCreateInfo pipelineInfo{
         .stage = vk::PipelineShaderStageCreateInfo{
             .stage = vk::ShaderStageFlagBits::eCompute,
@@ -343,12 +282,8 @@ void DirectSum::init(
 }
 
 void DirectSum::record(const vk::raii::CommandBuffer& cmd, float dt) {
-    if (count == 0) {
-        throw std::logic_error("GPU simulation has not been initialized");
-    }
-    if (!std::isfinite(dt) || dt <= 0.0f) {
-        throw std::invalid_argument("GPU simulation timestep must be positive and finite");
-    }
+    if (count == 0) throw std::logic_error("GPU simulation has not been initialized");
+    if (dt <= 0.0f) throw std::invalid_argument("GPU simulation timestep must be positive");
 
     const vk::MemoryBarrier2 reuseBarrier{
         .srcStageMask = vk::PipelineStageFlagBits2::eComputeShader |

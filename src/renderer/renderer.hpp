@@ -33,7 +33,7 @@ struct renderer {
 
         std::chrono::nanoseconds render(simulation& sim, float dt, float ft);
 
-        void initVulkan();
+        void initVulkan(const cliargs& cli);
         void initRendering(const simulation& sim);
 
         bool should_close() { return window == nullptr || glfwWindowShouldClose(window); }

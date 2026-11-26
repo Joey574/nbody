@@ -10,10 +10,12 @@ Comments: Most of this code is ripped from https://docs.vulkan.org/tutorial/late
 #include <stdexcept>
 #include <vulkan/vulkan_raii.hpp>
 
-void renderer::initVulkan() {
+void renderer::initVulkan(const cliargs& cli) {
     if (volkInitialize() != VK_SUCCESS) {
         throw std::runtime_error("no vulkan loader on this machine");
     }
+
+    cam = camera(cli.x, cli.y, cli.zoom);
 
     init_window();
     vulkan_instance();

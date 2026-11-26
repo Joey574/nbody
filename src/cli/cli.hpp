@@ -5,7 +5,7 @@
 
 struct cliargs {
     public:
-        cliargs() : refresh(100), cpu(false), bh(false), quiet(false) {}
+        cliargs() = default;
 
         void parse(int argc, char* argv[]);
 
@@ -14,6 +14,11 @@ struct cliargs {
         bool cpu = false;
         bool bh = false;
         bool quiet = false;
+
+        bool pause = false;
+        float zoom = 1.0f;
+        float x = 0.0f;
+        float y = 0.0f;
 
     private:
         void printUsage() const;

@@ -8,7 +8,7 @@
 int app::run(const cliargs& f) {
     if (!f.quiet) { printf("\033c"); }
     sim = simulation(f);
-    ren.initVulkan();
+    ren.initVulkan(f);
 
     if (sim.isGPU()) {
         sim.initGPU(ren.logicalDevice(), ren.physicalDevice());

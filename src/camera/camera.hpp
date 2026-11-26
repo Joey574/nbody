@@ -4,6 +4,7 @@
 struct camera {
     public:
         camera() = default;
+        camera(float x, float y, float zoom) : position({x, y}), zoom(zoom), targetZoom(zoom) {}
 
         void update(GLFWwindow* window, float dt);
         void onScroll(float yOffset);

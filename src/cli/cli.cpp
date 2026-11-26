@@ -1,6 +1,7 @@
 #include "cli.hpp"
 #include <stdexcept>
 #include <string>
+#include <unistd.h>
 
 void cliargs::parse(int argc, char* argv[]) {
     if (argc == 1) printUsage();
@@ -23,6 +24,20 @@ void cliargs::parse(int argc, char* argv[]) {
         } else if (v == "-f" || v == "--file") {
             if (argc > i+1) {
                 this->config.Load(argv[++i]);
+            }
+        } else if (v == "--pause") {
+            this->pause = true;
+        } else if (v == "--zoom") {
+            if (argc > i+1) {
+                this->zoom = std::stof(argv[++i]);
+            }
+        } else if (v == "-x") {
+            if (argc > i+1) {
+                this->x = std::stof(argv[++i]);
+            }
+        } else if (v == "-y") {
+            if (argc > i+1) {
+                this->y = std::stof(argv[++i]);
             }
         } else {
             throw std::invalid_argument(("unrecognized argument \"" + v + "\"").c_str());

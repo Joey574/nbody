@@ -11,5 +11,5 @@ struct interactions {
         bool Paused() const { return paused; }
     private:
 
-        bool paused = true;
+        bool paused = false;
 };

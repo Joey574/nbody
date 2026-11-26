@@ -24,6 +24,9 @@ struct cliargs {
         float x = 0.0f;
         float y = 0.0f;
 
+        size_t width = 800;
+        size_t height = 800;
+
     private:
         void printUsage() const;
 };

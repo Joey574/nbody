@@ -20,7 +20,7 @@ void renderer::initVulkan(const cliargs& cli) {
     cam = camera(cli.x, cli.y, cli.zoom);
     in = interactions(cli.pause);
 
-    init_window();
+    init_window(cli.width, cli.height);
     vulkan_instance();
     volkLoadInstance(*instance);
     vulkan_surface();
@@ -50,16 +50,15 @@ void renderer::initRendering(const simulation& sim) {
     vulkan_sync_objects();
 }
 
-void renderer::init_window() {
-    if (!glfwInit()) {
-        throw std::runtime_error("failed to init glfw");
-    }
+void renderer::init_window(size_t width, size_t height) {
+    if (!glfwInit()) throw std::runtime_error("failed to init glfw");
+    if (width % 2 || height % 2) throw std::invalid_argument("width & height must both be even");
 
     this->glfwInitialized = true;
     glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
     glfwWindowHint(GLFW_RESIZABLE, recording() ? GLFW_FALSE : GLFW_TRUE);
 
-    window = glfwCreateWindow(width_, height_, "nbody", nullptr, nullptr);
+    window = glfwCreateWindow(width, height, "nbody", nullptr, nullptr);
     if (!window) {
         glfwTerminate();
         this->glfwInitialized = false;

@@ -113,7 +113,7 @@ struct renderer {
 
         void recreate_swapchain();
 
-        void init_window();
+        void init_window(size_t width, size_t height);
         void vulkan_instance();
         void vulkan_surface();
         void vulkan_graphics_pipeline();
@@ -143,7 +143,4 @@ struct renderer {
 
         static const unsigned char shader_bytes[];
         static const size_t shader_size;
-
-        static const size_t width_ = 800;
-        static const size_t height_ = 800;
 };

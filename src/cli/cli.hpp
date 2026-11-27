@@ -15,6 +15,7 @@ struct cliargs {
         bool bh = false;
         bool quiet = false;
 
+        bool headless = false;
         std::string record;
         uint32_t fps = 60;
         size_t frames = 0;

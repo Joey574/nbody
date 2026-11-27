@@ -20,7 +20,7 @@ void renderer::initVulkan(const cliargs& cli) {
     cam = camera(cli.x, cli.y, cli.zoom);
     in = interactions(cli.pause);
 
-    init_window(cli.width, cli.height);
+    init_window(cli.width, cli.height, cli.headless);
     vulkan_instance();
     volkLoadInstance(*instance);
     vulkan_surface();
@@ -50,7 +50,7 @@ void renderer::initRendering(const simulation& sim) {
     vulkan_sync_objects();
 }
 
-void renderer::init_window(size_t width, size_t height) {
+void renderer::init_window(size_t width, size_t height, bool headless) {
     if (!glfwInit()) throw std::runtime_error("failed to init glfw");
     if (width % 2 || height % 2) throw std::invalid_argument("width & height must both be even");
 
@@ -78,7 +78,11 @@ void renderer::init_window(size_t width, size_t height) {
         r->in.callback(w, key, scancode, action, mods);
     });
 
-    glfwShowWindow(window);
+    if (headless) {
+        glfwHideWindow(window);
+    } else {
+        glfwShowWindow(window);
+    }
 }
 
 void renderer::vulkan_instance() {

@@ -113,7 +113,7 @@ struct renderer {
 
         void recreate_swapchain();
 
-        void init_window(size_t width, size_t height);
+        void init_window(size_t width, size_t height, bool headless);
         void vulkan_instance();
         void vulkan_surface();
         void vulkan_graphics_pipeline();

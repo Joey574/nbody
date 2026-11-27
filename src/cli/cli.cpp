@@ -39,6 +39,8 @@ void cliargs::parse(int argc, char* argv[]) {
             if (argc > i+1) width = std::stoul(argv[++i]);
         } else if (v == "--height") {
             if (argc > i+1) height = std::stoul(argv[++i]);
+        } else if (v == "--headless") {
+            headless = true;
         } else {
             throw std::invalid_argument(("unrecognized argument \"" + v + "\"").c_str());
         }

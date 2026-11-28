@@ -1,16 +1,18 @@
 #pragma ocne
 #include "definitions/graphics.hpp" // IWYU pragma: keep
 
+#include <functional>
+#include <map>
+
 struct interactions {
+    using KeyCallback = std::function<void(GLFWwindow*, int, int, int)>;
+
     public:
         interactions() = default;
-        interactions(bool paused) : paused(paused) {}
 
-        void update(GLFWwindow* window, float dt);
-        void callback(GLFWwindow* w, int key, int scancode, int action, int mods);
+        void Register(int key, KeyCallback callback);
+        void Handler(GLFWwindow* w, int key, int scancode, int action, int mods);
 
-        bool Paused() const { return paused; }
     private:
-
-        bool paused = false;
+        std::map<int, KeyCallback> registry;
 };

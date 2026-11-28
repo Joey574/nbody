@@ -1,6 +1,6 @@
 #include "renderer.hpp"
 
-constexpr const unsigned char renderer::shader_bytes[] = {
+constexpr const unsigned char renderer::shaderBytes[] = {
     #embed "../shaders/compiled/circles.spv"
 };
-constexpr const size_t renderer::shader_size = sizeof(shader_bytes);
+constexpr const size_t renderer::shaderSize = sizeof(shaderBytes);

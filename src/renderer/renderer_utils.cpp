@@ -9,7 +9,7 @@ Comments:
 #include <vector>
 #include <iostream>
 
-uint32_t renderer::findQueueFamilies(vk::raii::PhysicalDevice physicalDevice) {
+uint32_t renderer::FindQueueFamilies(vk::raii::PhysicalDevice physicalDevice) {
     // find the index of the first queue family that supports graphics
     std::vector<vk::QueueFamilyProperties> queueFamilyProperties = physicalDevice.getQueueFamilyProperties();
 
@@ -22,7 +22,7 @@ uint32_t renderer::findQueueFamilies(vk::raii::PhysicalDevice physicalDevice) {
     return static_cast<uint32_t>( std::distance( queueFamilyProperties.begin(), graphicsQueueFamilyProperty ) );
 }
 
-std::vector<const char*> renderer::getRequiredInstanceExtensions() {
+std::vector<const char*> renderer::GetRequiredInstanceExtensions() {
     uint32_t glfwExtensionCount = 0;
     auto glfwExtensions = glfwGetRequiredInstanceExtensions(&glfwExtensionCount);
 
@@ -33,12 +33,12 @@ std::vector<const char*> renderer::getRequiredInstanceExtensions() {
     return extensions;
 }
 
-void renderer::framebufferResizeCallback(GLFWwindow* window, int width, int height) {
+void renderer::FramebufferResizeCallback(GLFWwindow* window, int width, int height) {
     auto r    = reinterpret_cast<renderer*>(glfwGetWindowUserPointer(window));
     r->framebufferResized = true;
 }
 
-VKAPI_ATTR vk::Bool32 VKAPI_CALL renderer::debugCallback(vk::DebugUtilsMessageSeverityFlagBitsEXT severity, vk::DebugUtilsMessageTypeFlagsEXT type, const vk::DebugUtilsMessengerCallbackDataEXT* pCallbackData, void* pUserData) {
+VKAPI_ATTR vk::Bool32 VKAPI_CALL renderer::DebugCallback(vk::DebugUtilsMessageSeverityFlagBitsEXT severity, vk::DebugUtilsMessageTypeFlagsEXT type, const vk::DebugUtilsMessengerCallbackDataEXT* pCallbackData, void* pUserData) {
     std::cerr << "validation layer: type " << to_string(type) << " msg: " << pCallbackData->pMessage << std::endl;
     return vk::False;
 }

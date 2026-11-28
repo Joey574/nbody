@@ -5,11 +5,14 @@
 
 struct app {
     public:
-    int run(const cliargs& f);
+    int Run(const cliargs& f);
 
     private:
     simulation sim;
     renderer   ren;
 
-    int main_loop(const cliargs& f);
+    int MainLoop(const cliargs& f);
+
+    static bool paused;
+    static void PauseCallback(GLFWwindow* w, int scancode, int action, int mods);
 };

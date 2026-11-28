@@ -24,34 +24,36 @@ struct renderer {
         renderer() = default;
         renderer(const renderer&) = delete;
         renderer& operator=(const renderer&) = delete;
-        ~renderer() { cleanup(); }
+        ~renderer() { Cleanup(); }
 
-        void cleanup();
-        void waitIdle();
+        void Cleanup();
+        void WaitIdle();
 
-        void releaseSimulationReferences();
+        void ReleaseSimulationReferences();
 
-        LogicalDevice& logicalDevice() noexcept { return ldevice; }
-        PhysicalDevice& physicalDevice() noexcept { return pdevice; }
+        LogicalDevice& GetLogicalDevice() noexcept { return ldevice; }
+        PhysicalDevice& GetPhysicalDevice() noexcept { return pdevice; }
 
-        std::chrono::nanoseconds render(simulation& sim, float dt, float ft);
+        std::chrono::nanoseconds Render(simulation& sim, float dt, float ft, bool paused);
 
-        void initVulkan(const cliargs& cli);
+        void InitVulkan(const cliargs& cli);
         void initRendering(const simulation& sim);
 
-        bool shouldClose() { return window == nullptr || glfwWindowShouldClose(window) || recordLimitReached(); }
+        bool ShouldClose() { return window == nullptr || glfwWindowShouldClose(window) || RecordLimitReached(); }
 
-        void enableRecording(std::string path, uint32_t fps, size_t maxFrames) {
-            recordPath = std::move(path);
+        void EnableRecording(const std::string& path, uint32_t fps, size_t maxFrames) {
+            recordPath = path;
             recordFps = fps;
             recordMaxFrames = maxFrames;
         }
 
-        void finishRecording();
+        inline void RegisterKey(int key, interactions::KeyCallback callback) {
+            in.Register(key, callback);
+        }
+
+        void FinishRecording();
 
         GLFWwindow* Window() { return this->window; }
-
-        bool Paused() const { return this->in.Paused(); }
 
     private:
         static constexpr int MAX_FRAMES_IN_FLIGHT = 2;
@@ -107,24 +109,24 @@ struct renderer {
         FrameCapture capture;
         VideoEncoder encoder;
 
-        inline bool recording() const noexcept { return !recordPath.empty(); }
-        bool recordLimitReached() const noexcept { return recordMaxFrames != 0 && capture.captured() >= recordMaxFrames; }
-        void start_recording();
+        inline bool Recording() const noexcept { return !recordPath.empty(); }
+        bool RecordLimitReached() const noexcept { return recordMaxFrames != 0 && capture.captured() >= recordMaxFrames; }
+        void StartRecording();
 
-        void recreate_swapchain();
+        void RecreateSwapchain();
 
-        void init_window(size_t width, size_t height, bool headless);
-        void vulkan_instance();
-        void vulkan_surface();
-        void vulkan_graphics_pipeline();
-        void vulkan_command_pool();
-        void vulkan_command_buffer();
-        void vulkan_sync_objects();
-        void vulkan_init_descriptors();
-        void vulkan_write_descriptors(size_t i, vk::Buffer state, vk::Buffer masses);
+        void InitWindow(size_t width, size_t height, bool headless);
+        void InitInstance();
+        void InitSurface();
+        void GraphicsPipeline();
+        void CommandPool();
+        void InitCommandBuffer();
+        void SyncObjects();
+        void InitDescriptors();
+        void WriteDescriptors(size_t i, vk::Buffer state, vk::Buffer masses);
 
-        void vulkan_record_command_buffer(uint32_t imageIndex, simulation& sim, float ft);
-        void transition_image_layout(
+        void RecordCommandBuffers(uint32_t imageIndex, simulation& sim, float ft, bool paused);
+        void TransitionImageLayout(
             uint32_t imageIndex,
             vk::ImageLayout oldLayout,
             vk::ImageLayout newLayout,
@@ -133,14 +135,14 @@ struct renderer {
             vk::PipelineStageFlags2 srcStageMask,
             vk::PipelineStageFlags2 dstStageMask
         );
-        std::vector<const char*> getRequiredInstanceExtensions();
+        std::vector<const char*> GetRequiredInstanceExtensions();
 
 
-        static uint32_t chooseSwapMinImageCount(const vk::SurfaceCapabilitiesKHR& capabilities);
-        static uint32_t findQueueFamilies(vk::raii::PhysicalDevice physicalDevice);
-        static void framebufferResizeCallback(GLFWwindow* window, int width, int height);
-        static VKAPI_ATTR vk::Bool32 VKAPI_CALL debugCallback(vk::DebugUtilsMessageSeverityFlagBitsEXT severity, vk::DebugUtilsMessageTypeFlagsEXT type, const vk::DebugUtilsMessengerCallbackDataEXT* pCallbackData, void* pUserData);
+        static uint32_t ChooseSwapMinImageCount(const vk::SurfaceCapabilitiesKHR& capabilities);
+        static uint32_t FindQueueFamilies(vk::raii::PhysicalDevice physicalDevice);
+        static void FramebufferResizeCallback(GLFWwindow* window, int width, int height);
+        static VKAPI_ATTR vk::Bool32 VKAPI_CALL DebugCallback(vk::DebugUtilsMessageSeverityFlagBitsEXT severity, vk::DebugUtilsMessageTypeFlagsEXT type, const vk::DebugUtilsMessengerCallbackDataEXT* pCallbackData, void* pUserData);
 
-        static const unsigned char shader_bytes[];
-        static const size_t shader_size;
+        static const unsigned char shaderBytes[];
+        static const size_t shaderSize;
 };

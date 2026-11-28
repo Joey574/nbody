@@ -12,29 +12,28 @@ Comments: Most of this code is ripped from https://docs.vulkan.org/tutorial/late
 #include <cstdio>
 #include <stdexcept>
 
-void renderer::initVulkan(const cliargs& cli) {
+void renderer::InitVulkan(const cliargs& cli) {
     if (volkInitialize() != VK_SUCCESS) {
         throw std::runtime_error("no vulkan loader on this machine");
     }
 
     cam = camera(cli.x, cli.y, cli.zoom);
-    in = interactions(cli.pause);
 
-    init_window(cli.width, cli.height, cli.headless);
-    vulkan_instance();
+    InitWindow(cli.width, cli.height, cli.headless);
+    InitInstance();
     volkLoadInstance(*instance);
-    vulkan_surface();
+    InitSurface();
     pdevice.init(instance);
     ldevice.init(pdevice, surface);
     volkLoadDevice(*ldevice.Device());
     deviceInitialized = true;
 
-    if (recording()) swapchain.setExtraUsage(vk::ImageUsageFlagBits::eTransferSrc);
+    if (Recording()) swapchain.setExtraUsage(vk::ImageUsageFlagBits::eTransferSrc);
 
     swapchain.init(pdevice, ldevice, surface, window);
-    vulkan_init_descriptors();
-    vulkan_graphics_pipeline();
-    vulkan_command_pool();
+    InitDescriptors();
+    GraphicsPipeline();
+    CommandPool();
 }
 
 void renderer::initRendering(const simulation& sim) {
@@ -46,17 +45,17 @@ void renderer::initRendering(const simulation& sim) {
         uboBuffers[i].init(ldevice, pdevice);
     }
 
-    vulkan_command_buffer();
-    vulkan_sync_objects();
+    InitCommandBuffer();
+    SyncObjects();
 }
 
-void renderer::init_window(size_t width, size_t height, bool headless) {
+void renderer::InitWindow(size_t width, size_t height, bool headless) {
     if (!glfwInit()) throw std::runtime_error("failed to init glfw");
     if (width % 2 || height % 2) throw std::invalid_argument("width & height must both be even");
 
     this->glfwInitialized = true;
     glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
-    glfwWindowHint(GLFW_RESIZABLE, recording() ? GLFW_FALSE : GLFW_TRUE);
+    glfwWindowHint(GLFW_RESIZABLE, Recording() ? GLFW_FALSE : GLFW_TRUE);
 
     window = glfwCreateWindow(width, height, "nbody", nullptr, nullptr);
     if (!window) {
@@ -66,7 +65,7 @@ void renderer::init_window(size_t width, size_t height, bool headless) {
     }
 
     glfwSetWindowUserPointer(window, this);
-    glfwSetFramebufferSizeCallback(window, framebufferResizeCallback);
+    glfwSetFramebufferSizeCallback(window, FramebufferResizeCallback);
 
     glfwSetScrollCallback(window, [](GLFWwindow* w, double x, double y){
        auto r = static_cast<renderer*>(glfwGetWindowUserPointer(w));
@@ -75,7 +74,7 @@ void renderer::init_window(size_t width, size_t height, bool headless) {
 
     glfwSetKeyCallback(window, [](GLFWwindow* w, int key, int scancode, int action, int mods){
         auto r = static_cast<renderer*>(glfwGetWindowUserPointer(w));
-        r->in.callback(w, key, scancode, action, mods);
+        r->in.Handler(w, key, scancode, action, mods);
     });
 
     if (headless) {
@@ -85,7 +84,7 @@ void renderer::init_window(size_t width, size_t height, bool headless) {
     }
 }
 
-void renderer::vulkan_instance() {
+void renderer::InitInstance() {
     constexpr vk::ApplicationInfo appInfo {
         .pApplicationName = "nbody",
         .applicationVersion = VK_MAKE_VERSION( 1, 0, 0 ),
@@ -94,7 +93,7 @@ void renderer::vulkan_instance() {
         .apiVersion         = vk::ApiVersion14
     };
 
-    auto requiredExtensions = getRequiredInstanceExtensions();
+    auto requiredExtensions = GetRequiredInstanceExtensions();
 
     std::vector<char const*> requiredLayers;
     if (enableValidationLayers) {
@@ -123,7 +122,7 @@ void renderer::vulkan_instance() {
     instance = vk::raii::Instance(context, createInfo);
 }
 
-void renderer::vulkan_surface() {
+void renderer::InitSurface() {
     VkSurfaceKHR _surface;
     if (glfwCreateWindowSurface(*instance, window, nullptr, &_surface) != VK_SUCCESS) {
         throw std::runtime_error("failed to create glfw window surface");
@@ -132,8 +131,8 @@ void renderer::vulkan_surface() {
     surface = vk::raii::SurfaceKHR(instance, _surface);
 }
 
-void renderer::vulkan_graphics_pipeline() {
-    vk::raii::ShaderModule shaderModule = vutil::createShaderModule(ldevice, reinterpret_cast<const unsigned char*>(renderer::shader_bytes), renderer::shader_size);
+void renderer::GraphicsPipeline() {
+    vk::raii::ShaderModule shaderModule = vutil::createShaderModule(ldevice, reinterpret_cast<const unsigned char*>(renderer::shaderBytes), renderer::shaderSize);
 
     vk::PipelineShaderStageCreateInfo vertShaderStageInfo {
         .stage  = vk::ShaderStageFlagBits::eVertex,
@@ -253,7 +252,7 @@ void renderer::vulkan_graphics_pipeline() {
     pipeline = vk::raii::Pipeline(ldevice, nullptr, pipelineInfo);
 }
 
-void renderer::vulkan_command_pool() {
+void renderer::CommandPool() {
     vk::CommandPoolCreateInfo poolInfo {
         .flags = vk::CommandPoolCreateFlagBits::eResetCommandBuffer,
         .queueFamilyIndex = ldevice.QueueIdx()
@@ -262,7 +261,7 @@ void renderer::vulkan_command_pool() {
     commandPool = vk::raii::CommandPool(ldevice, poolInfo);
 }
 
-void renderer::vulkan_command_buffer() {
+void renderer::InitCommandBuffer() {
     commandBuffers.clear();
 
     vk::CommandBufferAllocateInfo allocInfo {
@@ -274,7 +273,7 @@ void renderer::vulkan_command_buffer() {
     commandBuffers = vk::raii::CommandBuffers(ldevice, allocInfo);
 }
 
-void renderer::vulkan_sync_objects() {
+void renderer::SyncObjects() {
     assert(presentCompleteSemaphores.empty() && renderFinishedSemaphores.empty() && inFlightFences.empty());
 
     for (size_t i = 0; i <MAX_FRAMES_IN_FLIGHT; i++) {
@@ -289,7 +288,7 @@ void renderer::vulkan_sync_objects() {
     }
 }
 
-void renderer::vulkan_init_descriptors() {
+void renderer::InitDescriptors() {
     std::array<vk::DescriptorPoolSize, 2> poolSize {{
         {.type = vk::DescriptorType::eStorageBuffer, .descriptorCount = 2 * MAX_FRAMES_IN_FLIGHT},
         { .type = vk::DescriptorType::eUniformBuffer, .descriptorCount = 1 * MAX_FRAMES_IN_FLIGHT},
@@ -323,7 +322,7 @@ void renderer::vulkan_init_descriptors() {
     descriptorSets = vk::raii::DescriptorSets{ldevice, allocInfo};
 }
 
-void renderer::vulkan_write_descriptors(size_t i, vk::Buffer state, vk::Buffer masses) {
+void renderer::WriteDescriptors(size_t i, vk::Buffer state, vk::Buffer masses) {
     const vk::DescriptorBufferInfo stateInfo{state, 0, VK_WHOLE_SIZE};
     const vk::DescriptorBufferInfo massInfo{masses, 0, VK_WHOLE_SIZE};
     const vk::DescriptorBufferInfo uboInfo = uboBuffers[i].Info();
@@ -358,14 +357,14 @@ void renderer::vulkan_write_descriptors(size_t i, vk::Buffer state, vk::Buffer m
     ldevice.Device().updateDescriptorSets(writes, {});
 }
 
-void renderer::vulkan_record_command_buffer(uint32_t imageIndex, simulation& sim, float ft) {
+void renderer::RecordCommandBuffers(uint32_t imageIndex, simulation& sim, float ft, bool paused) {
     auto& cmd = commandBuffers[frameIndex];
     cmd.begin({});
 
     vk::Buffer particleState{};
     vk::Buffer particleMasses{};
 
-    if (sim.isGPU() && !Paused()) {
+    if (sim.isGPU() && !paused) {
         sim.recordGPU(cmd, ft);
     }
 
@@ -398,9 +397,9 @@ void renderer::vulkan_record_command_buffer(uint32_t imageIndex, simulation& sim
 
     // The frame fence was waited before recording, so this frame's set is no
     // longer in use and can safely be rebound to the selected state buffer.
-    vulkan_write_descriptors(frameIndex, particleState, particleMasses);
+    WriteDescriptors(frameIndex, particleState, particleMasses);
 
-    transition_image_layout(
+    TransitionImageLayout(
         imageIndex,
         vk::ImageLayout::eUndefined,
         vk::ImageLayout::eColorAttachmentOptimal,
@@ -457,14 +456,14 @@ void renderer::vulkan_record_command_buffer(uint32_t imageIndex, simulation& sim
     vk::AccessFlags2 lastAccess = vk::AccessFlagBits2::eColorAttachmentWrite;
     vk::PipelineStageFlags2 lastStage = vk::PipelineStageFlagBits2::eColorAttachmentOutput;
 
-    const bool grab = encoder.isOpen() && !recordLimitReached();
+    const bool grab = encoder.isOpen() && !RecordLimitReached();
     if (grab && !capture.matches(swapchain.Extent())) {
         if (!recordSizeWarned) {
             fprintf(stderr, "window size changed while recording, skipping frames\n");
             recordSizeWarned = true;
         }
     } else if (grab) {
-        transition_image_layout(
+        TransitionImageLayout(
             imageIndex,
             lastLayout,
             vk::ImageLayout::eTransferSrcOptimal,
@@ -481,7 +480,7 @@ void renderer::vulkan_record_command_buffer(uint32_t imageIndex, simulation& sim
         lastStage = vk::PipelineStageFlagBits2::eCopy;
     }
 
-    transition_image_layout(
+    TransitionImageLayout(
         imageIndex,
         lastLayout,
         vk::ImageLayout::ePresentSrcKHR,
@@ -494,7 +493,7 @@ void renderer::vulkan_record_command_buffer(uint32_t imageIndex, simulation& sim
     cmd.end();
 }
 
-void renderer::transition_image_layout(
+void renderer::TransitionImageLayout(
     uint32_t imageIndex,
     vk::ImageLayout oldLayout,
     vk::ImageLayout newLayout,
@@ -532,7 +531,7 @@ void renderer::transition_image_layout(
     commandBuffer.pipelineBarrier2(dependencyInfo);
 }
 
-void renderer::recreate_swapchain() {
+void renderer::RecreateSwapchain() {
     const auto previousFormat = swapchain.SurfaceFormat().format;
     if (!swapchain.recreate(pdevice, ldevice, surface, window)) {
         return;
@@ -541,7 +540,7 @@ void renderer::recreate_swapchain() {
     if (swapchain.SurfaceFormat().format != previousFormat) {
         pipeline = nullptr;
         pipelineLayout = nullptr;
-        vulkan_graphics_pipeline();
+        GraphicsPipeline();
     }
 
     renderFinishedSemaphores.clear();
@@ -551,7 +550,7 @@ void renderer::recreate_swapchain() {
 }
 
 
-std::chrono::nanoseconds renderer::render(simulation& sim, float dt, float ft) {
+std::chrono::nanoseconds renderer::Render(simulation& sim, float dt, float ft, bool paused) {
     const auto s = std::chrono::high_resolution_clock::now();
     glfwPollEvents();
     if (glfwWindowShouldClose(window)) {
@@ -573,14 +572,14 @@ std::chrono::nanoseconds renderer::render(simulation& sim, float dt, float ft) {
 
     auto [result, imageIndex] = swapchain.SwapChain().acquireNextImage(UINT64_MAX, *presentCompleteSemaphores[frameIndex], nullptr);
     if (result == vk::Result::eErrorOutOfDateKHR) {
-        recreate_swapchain();
+        RecreateSwapchain();
         return std::chrono::high_resolution_clock::now() - s;
     } else if (result != vk::Result::eSuccess && result != vk::Result::eSuboptimalKHR) {
         throw std::runtime_error("failed to acquire swap chain image");
     }
 
-    if (recording() && !encoder.isOpen()) {
-        start_recording();
+    if (Recording() && !encoder.isOpen()) {
+        StartRecording();
     }
 
     if (!sim.isGPU()) {
@@ -595,7 +594,7 @@ std::chrono::nanoseconds renderer::render(simulation& sim, float dt, float ft) {
 
     ldevice.Device().resetFences(*inFlightFences[frameIndex]);
     commandBuffers[frameIndex].reset();
-    vulkan_record_command_buffer(imageIndex, sim, ft);
+    RecordCommandBuffers(imageIndex, sim, ft, paused);
 
     const vk::PipelineStageFlags waitDestinationStageMask(vk::PipelineStageFlagBits::eColorAttachmentOutput);
     const vk::SubmitInfo submitInfo {
@@ -620,31 +619,31 @@ std::chrono::nanoseconds renderer::render(simulation& sim, float dt, float ft) {
     result = ldevice.Queue().presentKHR(presentInfoKHR);
     if (result == vk::Result::eSuboptimalKHR || result == vk::Result::eErrorOutOfDateKHR || framebufferResized) {
         framebufferResized = false;
-        recreate_swapchain();
+        RecreateSwapchain();
     }
 
     frameIndex = (frameIndex + 1) % MAX_FRAMES_IN_FLIGHT;
     return std::chrono::high_resolution_clock::now() - s;
 }
 
-void renderer::waitIdle() {
+void renderer::WaitIdle() {
     if (deviceInitialized) {
         ldevice.Device().waitIdle();
     }
 }
 
-void renderer::releaseSimulationReferences() {
+void renderer::ReleaseSimulationReferences() {
     commandBuffers.clear();
     descriptorSets.clear();
     descriptorPool = nullptr;
 }
 
-void renderer::cleanup() {
+void renderer::Cleanup() {
     try {
-        waitIdle();
+        WaitIdle();
     } catch (...) {}
 
-    finishRecording();
+    FinishRecording();
     deviceInitialized = false;
 
     commandBuffers.clear();
@@ -688,7 +687,7 @@ void renderer::cleanup() {
     }
 }
 
-void renderer::start_recording() {
+void renderer::StartRecording() {
     const auto format = swapchain.SurfaceFormat().format;
     const auto extent = swapchain.Extent();
 
@@ -696,11 +695,11 @@ void renderer::start_recording() {
     encoder.open(recordPath, extent.width, extent.height, recordFps, FrameCapture::ffmpegPixelFormat(format));
 }
 
-void renderer::finishRecording() {
+void renderer::FinishRecording() {
     if (!encoder.isOpen()) return;
 
     try {
-        waitIdle();
+        WaitIdle();
 
         for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
             if (const void* pixels = capture.take((frameIndex + i) % MAX_FRAMES_IN_FLIGHT)) {

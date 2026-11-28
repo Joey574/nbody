@@ -5,5 +5,5 @@ int main(int argc, char* argv[]) {
     auto a = app();
 
     f.parse(argc, argv);
-    return a.run(f);
+    return a.Run(f);
 }

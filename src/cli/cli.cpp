@@ -49,7 +49,7 @@ void cliargs::parse(int argc, char* argv[]) {
 
 void cliargs::printUsage() const {
     printf(
-        "nbody v0"
+        "nbody unstable"
         "\nUsage: nbody [Options] -f path.yml"
         "\n\nOPTIONS:"
         "\n\t-f, --file: config file for simulation"

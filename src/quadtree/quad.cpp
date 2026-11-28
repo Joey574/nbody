@@ -23,7 +23,7 @@ void quads::push_quadrant(size_t quad, size_t quadrant) {
 void quads::subdivide_and_push(size_t quad, size_t nexts[4], nodes& n) {
     for (size_t i = 0; i < 4; i++) {
         push_quadrant(quad, i);
-        n.push_empty(nexts[i]);
+        n.PushEmpty(nexts[i]);
     }
 }
 

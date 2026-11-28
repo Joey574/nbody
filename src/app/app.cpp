@@ -21,8 +21,8 @@ int app::Run(const cliargs& f) {
     ren.RegisterKey(GLFW_KEY_SPACE, std::function(PauseCallback));
     ren.InitVulkan(f);
 
-    if (sim.isGPU()) {
-        sim.initGPU(ren.GetLogicalDevice(), ren.GetPhysicalDevice());
+    if (sim.IsGPU()) {
+        sim.InitGPU(ren.GetLogicalDevice(), ren.GetPhysicalDevice());
     }
 
     ren.initRendering(sim);
@@ -30,7 +30,7 @@ int app::Run(const cliargs& f) {
 
     ren.WaitIdle();
     ren.ReleaseSimulationReferences();
-    sim.cleanup();
+    sim.Cleanup();
     ren.Cleanup();
     return 0;
 }
@@ -53,7 +53,7 @@ int app::MainLoop(const cliargs& f) {
 
         double sim_time = 0.0;
         if (!app::paused) {
-            sim_time = sim.update(ft).count() * 0.000001;
+            sim_time = sim.Update(ft).count() * 0.000001;
             sim_sum += sim_time;
             count++;
         }
@@ -66,7 +66,7 @@ int app::MainLoop(const cliargs& f) {
 
         // lock debugging output to refresh
         if (!f.quiet && high_resolution_clock::now() - last_print >= milliseconds(f.refresh)) {
-            if (sim.isGPU()) {
+            if (sim.IsGPU()) {
                 printf(
                     "\033[H"
                     "Frame %zu"

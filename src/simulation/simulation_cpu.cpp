@@ -9,34 +9,34 @@ compiler for vectorization
 #include "simulation/simulation.hpp"
 #include "util/util.hpp"
 
-std::chrono::nanoseconds simulation::update_cpu(const float ft) noexcept {
+std::chrono::nanoseconds simulation::UpdateCPU(const float ft) noexcept {
     auto start = std::chrono::high_resolution_clock::now();
 
-    compute_acc();
-    sum_acc();
-    move_points(ft);
+    ComputeAcc();
+    SumAcc();
+    MovePoints(ft);
 
     return std::chrono::high_resolution_clock::now() - start;
 }
 
 /// @brief Generic custom simd update function
 /// @return Nanoseconds it took to run update
-void simulation::compute_acc() noexcept {
-    data_.zero_acc();
+void simulation::ComputeAcc() noexcept {
+    data_.ZeroAcc();
 
     // aliasing
-    const size_t n = data_.bodies();
-    const float* __restrict ma = data_.mass();
-    const float* __restrict px = data_.posx();
-    const float* __restrict py = data_.posy();
-    matrix& __restrict ax = data_.accx();
-    matrix& __restrict ay = data_.accy();
+    const size_t n = data_.Bodies();
+    const float* __restrict ma = data_.Mass();
+    const float* __restrict px = data_.PosX();
+    const float* __restrict py = data_.PosY();
+    matrix& __restrict ax = data_.AccX();
+    matrix& __restrict ay = data_.AccY();
 
     #pragma omp parallel
     {
         int tid = omp_get_thread_num();
-        float* __restrict ax_row = ax.row(tid);
-        float* __restrict ay_row = ay.row(tid);
+        float* __restrict ax_row = ax.Row(tid);
+        float* __restrict ay_row = ay.Row(tid);
 
         #pragma omp for schedule(static)
         for (size_t i = 0; i < n; i++) {
@@ -52,10 +52,12 @@ void simulation::compute_acc() noexcept {
             auto _a1y_sum = util::zero();
 
             size_t j = i+1;
+            const bool j_aligned = j % util::width == 0;
+
             for (; j+util::last < n; j += util::width) {
-                const auto _p2x = util::loadu(&px[j]);
-                const auto _p2y = util::loadu(&py[j]);
-                const auto _p2m = util::loadu(&ma[j]);
+                const auto _p2x = j_aligned ? util::load(&px[j]) : util::loadu(&px[j]);
+                const auto _p2y = j_aligned ? util::load(&py[j]) : util::loadu(&py[j]);
+                const auto _p2m = j_aligned ? util::load(&ma[j]) : util::loadu(&ma[j]);
 
                 // compute distance squared
                 const auto _dx = _p2x - _p1x;
@@ -71,8 +73,14 @@ void simulation::compute_acc() noexcept {
                 const auto _ivy = _dy * _inv3;
 
                 // compute and store accelerations
-                util::storeu(&ax_row[j], util::loadu(&ax_row[j]) - (_ivx * _p1m));
-                util::storeu(&ay_row[j], util::loadu(&ay_row[j]) - (_ivy * _p1m));
+                // only 1 in util::width iterations are aligned
+                if (j_aligned) [[unlikely]] {
+                    util::store(&ax_row[j], util::load(&ax_row[j]) - (_ivx * _p1m));
+                    util::store(&ay_row[j], util::load(&ay_row[j]) - (_ivy * _p1m));
+                } else {
+                    util::storeu(&ax_row[j], util::loadu(&ax_row[j]) - (_ivx * _p1m));
+                    util::storeu(&ay_row[j], util::loadu(&ay_row[j]) - (_ivy * _p1m));
+                }
                 _a1x_sum += _ivx * _p2m;
                 _a1y_sum += _ivy * _p2m;
             }

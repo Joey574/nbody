@@ -72,9 +72,9 @@ data Galaxy::New(bool init_acc) const {
     data d(points, init_acc);
     std::mt19937 rng(seed);
 
-    float* __restrict px = d.posx();
-    float* __restrict py = d.posy();
-    float* __restrict ma = d.mass();
+    float* __restrict px = d.PosX();
+    float* __restrict py = d.PosY();
+    float* __restrict ma = d.Mass();
 
     size_t first = 0;
     if (HasCenter()) {
@@ -103,12 +103,12 @@ data Galaxy::New(bool init_acc) const {
 void Galaxy::SetInitialVelocity(data& d, size_t first) const {
 
     // alias
-    const size_t total = d.bodies();
-    const float* __restrict px = d.posx();
-    const float* __restrict py = d.posy();
-    const float* __restrict ma = d.mass();
-    float* __restrict vx = d.velx();
-    float* __restrict vy = d.vely();
+    const size_t total = d.Bodies();
+    const float* __restrict px = d.PosX();
+    const float* __restrict py = d.PosY();
+    const float* __restrict ma = d.Mass();
+    float* __restrict vx = d.VelX();
+    float* __restrict vy = d.VelY();
 
     if (HasCenter()) {
         vx[0] = x_vel;

@@ -23,24 +23,24 @@ struct simulation {
             tree_(f.config.Theta())
             {}
 
-        void initGPU(const LogicalDevice& ld, const PhysicalDevice& pd);
-        void recordGPU(const vk::raii::CommandBuffer& cmd, float dt);
+        void InitGPU(const LogicalDevice& ld, const PhysicalDevice& pd);
+        void RecordGPU(const vk::raii::CommandBuffer& cmd, float dt);
 
-        std::chrono::nanoseconds update(float dt);
+        std::chrono::nanoseconds Update(float ft);
 
-        bool isGPU() const noexcept { return backend_ == backend::GPU || backend_ == backend::GPU_BH; }
+        bool IsGPU() const noexcept { return backend_ == backend::GPU || backend_ == backend::GPU_BH; }
 
-        backend get_backend() const noexcept { return backend_; }
+        backend GetBackend() const noexcept { return backend_; }
 
-        data& get_data() { return data_; }
-        const data& get_data() const { return data_; }
+        data& GetData() { return data_; }
+        const data& GetData() const { return data_; }
 
-        size_t points() const noexcept { return isGPU() ? dsgpu_.bodies() : data_.bodies(); }
+        size_t Points() const noexcept { return IsGPU() ? dsgpu_.bodies() : data_.Bodies(); }
 
-        vk::Buffer gpuState() const { return dsgpu_.currentState(); }
-        vk::Buffer gpuMasses() const { return dsgpu_.massBuffer(); }
+        vk::Buffer GPUState() const { return dsgpu_.currentState(); }
+        vk::Buffer GPUMasses() const { return dsgpu_.massBuffer(); }
 
-        void cleanup();
+        void Cleanup();
 
     private:
         data data_;
@@ -49,10 +49,10 @@ struct simulation {
         quadtree tree_;
         DirectSum dsgpu_;
 
-        std::chrono::nanoseconds update_cpu(const float ft) noexcept;
-        std::chrono::nanoseconds update_cpu_bh(const float ft) noexcept;
+        std::chrono::nanoseconds UpdateCPU(const float ft) noexcept;
+        std::chrono::nanoseconds UpdateCPUBH(const float ft) noexcept;
 
-        void compute_acc() noexcept;
-        void move_points(const float ft) noexcept;
-        void sum_acc() noexcept;
+        void ComputeAcc() noexcept;
+        void MovePoints(const float ft) noexcept;
+        void SumAcc() noexcept;
 }; // struct simulation

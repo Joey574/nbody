@@ -38,8 +38,8 @@ void renderer::InitVulkan(const cliargs& cli) {
 
 void renderer::initRendering(const simulation& sim) {
     for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
-        if (!sim.isGPU()) {
-            frames[i].init(sim.get_data(), ldevice, pdevice);
+        if (!sim.IsGPU()) {
+            frames[i].init(sim.GetData(), ldevice, pdevice);
         }
 
         uboBuffers[i].init(ldevice, pdevice);
@@ -69,7 +69,7 @@ void renderer::InitWindow(size_t width, size_t height, bool headless) {
 
     glfwSetScrollCallback(window, [](GLFWwindow* w, double x, double y){
        auto r = static_cast<renderer*>(glfwGetWindowUserPointer(w));
-       r->cam.onScroll(y);
+       r->cam.OnScroll(y);
     });
 
     glfwSetKeyCallback(window, [](GLFWwindow* w, int key, int scancode, int action, int mods){
@@ -364,13 +364,13 @@ void renderer::RecordCommandBuffers(uint32_t imageIndex, simulation& sim, float 
     vk::Buffer particleState{};
     vk::Buffer particleMasses{};
 
-    if (sim.isGPU() && !paused) {
-        sim.recordGPU(cmd, ft);
+    if (sim.IsGPU() && !paused) {
+        sim.RecordGPU(cmd, ft);
     }
 
-    if (sim.isGPU()) {
-        particleState = sim.gpuState();
-        particleMasses = sim.gpuMasses();
+    if (sim.IsGPU()) {
+        particleState = sim.GPUState();
+        particleMasses = sim.GPUMasses();
 
         const vk::BufferMemoryBarrier2 computeToVertex{
             .srcStageMask = vk::PipelineStageFlagBits2::eComputeShader,
@@ -449,7 +449,7 @@ void renderer::RecordCommandBuffers(uint32_t imageIndex, simulation& sim, float 
     };
 
     cmd.pushConstants<PushConstants>(*pipelineLayout, vk::ShaderStageFlagBits::eFragment | vk::ShaderStageFlagBits::eVertex, 0, pc);
-    cmd.draw(3, static_cast<uint32_t>(sim.points()), 0, 0);
+    cmd.draw(3, static_cast<uint32_t>(sim.Points()), 0, 0);
     cmd.endRendering();
 
     vk::ImageLayout lastLayout = vk::ImageLayout::eColorAttachmentOptimal;
@@ -557,7 +557,7 @@ std::chrono::nanoseconds renderer::Render(simulation& sim, float dt, float ft, b
         return std::chrono::high_resolution_clock::now() - s;
     }
 
-    cam.update(window, dt);
+    cam.Update(window, dt);
 
     const auto fenceResult = ldevice.Device().waitForFences(*inFlightFences[frameIndex], vk::True, UINT64_MAX);
     if (fenceResult != vk::Result::eSuccess) {
@@ -582,13 +582,13 @@ std::chrono::nanoseconds renderer::Render(simulation& sim, float dt, float ft, b
         StartRecording();
     }
 
-    if (!sim.isGPU()) {
-        frames[frameIndex].update(sim.get_data());
+    if (!sim.IsGPU()) {
+        frames[frameIndex].update(sim.GetData());
     }
 
     const UBO ubo {
-        .view = cam.viewMatrix(),
-        .proj = cam.projMatrix(swapchain.Extent().width, swapchain.Extent().height)
+        .view = cam.ViewMatrix(),
+        .proj = cam.ProjMatrix(swapchain.Extent().width, swapchain.Extent().height)
     };
     uboBuffers[frameIndex].update(ubo);
 

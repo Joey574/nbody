@@ -4,8 +4,8 @@
 #include <cstring>
 #include <assert.h>
 
-void nodes::push(float x, float y, float m) {
-    if (size_+1 > capacity_) reserve(capacity_ ? capacity_*2 : 64);
+void nodes::Push(float x, float y, float m) {
+    if (size_+1 > capacity_) Reserve(capacity_ ? capacity_*2 : 64);
     assert(capacity_ > size_);
 
     node_x_[size_] = x;
@@ -16,8 +16,8 @@ void nodes::push(float x, float y, float m) {
     size_++;
 }
 
-void nodes::push_empty(size_t next) {
-    if (size_+1 > capacity_) reserve(capacity_ ? capacity_*2 : 64);
+void nodes::PushEmpty(size_t next) {
+    if (size_+1 > capacity_) Reserve(capacity_ ? capacity_*2 : 64);
     assert(capacity_ > size_);
 
     node_x_[size_] = 0.0f;
@@ -30,7 +30,7 @@ void nodes::push_empty(size_t next) {
 
 }
 
-void nodes::set(size_t i, float x, float y, float m) {
+void nodes::Set(size_t i, float x, float y, float m) {
     assert(i < size_);
 
     node_x_[i] = x;
@@ -38,7 +38,7 @@ void nodes::set(size_t i, float x, float y, float m) {
     node_m_[i] = m;
 }
 
-void nodes::reserve(size_t n) {
+void nodes::Reserve(size_t n) {
     if (capacity_ >= n) return;
 
     const size_t floatBytes = n * sizeof(float);
@@ -75,11 +75,11 @@ void nodes::reserve(size_t n) {
     capacity_ = n;
 }
 
-void nodes::clear() {
+void nodes::Clear() {
     size_ = 0;
 }
 
-void nodes::zero() {
+void nodes::Zero() {
     const size_t floatBytes = size_ * sizeof(float);
     const size_t sizeBytes = size_ * sizeof(size_t);
 
@@ -90,7 +90,7 @@ void nodes::zero() {
     std::memset(node_children_, 0, sizeBytes);
 }
 
-void nodes::cleanup() {
+void nodes::Cleanup() {
     util::mem_aligned_free(node_x_); node_x_ = nullptr;
     util::mem_aligned_free(node_y_); node_y_ = nullptr;
     util::mem_aligned_free(node_m_); node_m_ = nullptr;

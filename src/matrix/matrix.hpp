@@ -39,7 +39,7 @@ struct matrix {
         // move operator
         matrix& operator = (matrix&& other) noexcept {
             if (this == &other) return *this;
-            clear();
+            Clear();
 
             rows_ = std::exchange(other.rows_, 0);
             cols_ = std::exchange(other.cols_, 0);
@@ -51,7 +51,7 @@ struct matrix {
         // copy operator
         matrix& operator = (const matrix& other) {
             if (this == &other) return *this;
-            clear();
+            Clear();
 
             rows_ = other.rows_;
             cols_ = other.cols_;
@@ -66,10 +66,10 @@ struct matrix {
 
         // deconstructor
         ~matrix() {
-            clear();
+            Clear();
         }
 
-        inline void clear() noexcept {
+        inline void Clear() noexcept {
             rows_ = 0;
             cols_ = 0;
             stride_ = 0;
@@ -78,7 +78,7 @@ struct matrix {
             data_ = nullptr;
         }
 
-        void zero() noexcept {
+        void Zero() noexcept {
             const size_t bytes = rows_*stride_*sizeof(float);
             std::memset(data_, 0, bytes);
         }
@@ -90,19 +90,19 @@ struct matrix {
             return data_[r*stride_+c];
         }
 
-        const inline float* row(size_t r) const noexcept {
+        const inline float* Row(size_t r) const noexcept {
             return &data_[r*stride_];
         }
-        inline float* row(size_t r) noexcept {
+        inline float* Row(size_t r) noexcept {
             return &data_[r*stride_];
         }
 
-        const inline float* data() const { return data_; }
+        const inline float* Data() const { return data_; }
         inline float* data() { return data_; }
 
-        constexpr size_t rows() const noexcept { return rows_; }
-        constexpr size_t cols() const noexcept { return cols_; }
-        constexpr size_t size() const noexcept { return rows_ * cols_; }
+        constexpr size_t Rows() const noexcept { return rows_; }
+        constexpr size_t Cols() const noexcept { return cols_; }
+        constexpr size_t Size() const noexcept { return rows_ * cols_; }
 
     private:
         // stride_ must appear before data_ due to its use in initializer list

@@ -8,9 +8,9 @@
 
 namespace {
     std::vector<float> SumAccelerationRows(const matrix& acceleration) {
-        std::vector<float> result(acceleration.cols(), 0.0f);
-        for (size_t r = 0; r < acceleration.rows(); r++) {
-            for (size_t c = 0; c < acceleration.cols(); c++) {
+        std::vector<float> result(acceleration.Cols(), 0.0f);
+        for (size_t r = 0; r < acceleration.Rows(); r++) {
+            for (size_t c = 0; c < acceleration.Cols(); c++) {
                 result[c] += acceleration(r, c);
             }
         }
@@ -21,18 +21,18 @@ namespace {
         const data& particles,
         const bool xComponent
     ) {
-        std::vector<float> result(particles.bodies(), 0.0f);
-        for (size_t i = 0; i < particles.bodies(); i++) {
-            for (size_t j = 0; j < particles.bodies(); j++) {
+        std::vector<float> result(particles.Bodies(), 0.0f);
+        for (size_t i = 0; i < particles.Bodies(); i++) {
+            for (size_t j = 0; j < particles.Bodies(); j++) {
                 if (i == j) continue;
 
-                const float dx = particles.posx()[j] - particles.posx()[i];
-                const float dy = particles.posy()[j] - particles.posy()[i];
+                const float dx = particles.PosX()[j] - particles.PosX()[i];
+                const float dy = particles.PosY()[j] - particles.PosY()[i];
                 const float distanceSquared = dx * dx + dy * dy;
                 const float inverseDistanceCubed =
                     1.0f / (distanceSquared * std::sqrt(distanceSquared));
 
-                result[i] += (xComponent ? dx : dy) * particles.mass()[j] * inverseDistanceCubed;
+                result[i] += (xComponent ? dx : dy) * particles.Mass()[j] * inverseDistanceCubed;
             }
         }
         return result;
@@ -41,35 +41,35 @@ namespace {
 
 TEST(QuadtreeConstruction, ThetaIsStoredAsSquaredValue) {
     quadtree tree(0.5f);
-    EXPECT_FLOAT_EQ(tree.theta(), 0.5f);
+    EXPECT_FLOAT_EQ(tree.Theta(), 0.5f);
 }
 
 TEST(QuadtreeForces, ZeroThetaMatchesDirectPairwiseForces) {
     data particles(4, true);
 
-    particles.posx()[0] = -1.0f; particles.posy()[0] = 0.5f;
-    particles.posx()[1] = 1.5f;  particles.posy()[1] = -0.5f;
-    particles.posx()[2] = 0.25f; particles.posy()[2] = 2.0f;
-    particles.posx()[3] = -2.0f; particles.posy()[3] = -1.5f;
+    particles.PosX()[0] = -1.0f; particles.PosY()[0] = 0.5f;
+    particles.PosX()[1] = 1.5f;  particles.PosY()[1] = -0.5f;
+    particles.PosX()[2] = 0.25f; particles.PosY()[2] = 2.0f;
+    particles.PosX()[3] = -2.0f; particles.PosY()[3] = -1.5f;
 
-    particles.mass()[0] = 2.0f;
-    particles.mass()[1] = 3.0f;
-    particles.mass()[2] = 0.5f;
-    particles.mass()[3] = 1.25f;
+    particles.Mass()[0] = 2.0f;
+    particles.Mass()[1] = 3.0f;
+    particles.Mass()[2] = 0.5f;
+    particles.Mass()[3] = 1.25f;
 
     const auto expectedX = DirectAcceleration(particles, true);
     const auto expectedY = DirectAcceleration(particles, false);
 
     quadtree tree(0.0f);
-    tree.insert(particles);
-    tree.acc(particles);
+    tree.Insert(particles);
+    tree.Acc(particles);
 
-    const auto actualX = SumAccelerationRows(particles.accx());
-    const auto actualY = SumAccelerationRows(particles.accy());
+    const auto actualX = SumAccelerationRows(particles.AccX());
+    const auto actualY = SumAccelerationRows(particles.AccY());
 
-    ASSERT_EQ(actualX.size(), particles.bodies());
-    ASSERT_EQ(actualY.size(), particles.bodies());
-    for (size_t i = 0; i < particles.bodies(); i++) {
+    ASSERT_EQ(actualX.size(), particles.Bodies());
+    ASSERT_EQ(actualY.size(), particles.Bodies());
+    for (size_t i = 0; i < particles.Bodies(); i++) {
         EXPECT_NEAR(actualX[i], expectedX[i], 2e-4f);
         EXPECT_NEAR(actualY[i], expectedY[i], 2e-4f);
     }
@@ -77,16 +77,16 @@ TEST(QuadtreeForces, ZeroThetaMatchesDirectPairwiseForces) {
 
 TEST(QuadtreeForces, SingleBodyHasZeroAcceleration) {
     data particles(1, true);
-    particles.posx()[0] = 4.0f;
-    particles.posy()[0] = -3.0f;
-    particles.mass()[0] = 10.0f;
+    particles.PosX()[0] = 4.0f;
+    particles.PosY()[0] = -3.0f;
+    particles.Mass()[0] = 10.0f;
 
     quadtree tree(0.5f);
-    tree.insert(particles);
-    tree.acc(particles);
+    tree.Insert(particles);
+    tree.Acc(particles);
 
-    const auto actualX = SumAccelerationRows(particles.accx());
-    const auto actualY = SumAccelerationRows(particles.accy());
+    const auto actualX = SumAccelerationRows(particles.AccX());
+    const auto actualY = SumAccelerationRows(particles.AccY());
     EXPECT_FLOAT_EQ(actualX[0], 0.0f);
     EXPECT_FLOAT_EQ(actualY[0], 0.0f);
 }

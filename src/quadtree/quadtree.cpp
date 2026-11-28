@@ -7,21 +7,21 @@
 #include <omp.h>
 #include <vector>
 
-void quadtree::insert(const data& d) {
-    const size_t n = d.bodies();
+void quadtree::Insert(const data& d) {
+    const size_t n = d.Bodies();
     if (!n) return;
 
-    nodes_.reserve(n*4);
+    nodes_.Reserve(n*4);
     quads_.reserve(n*4);
 
-    nodes_.clear();
+    nodes_.Clear();
     quads_.clear();
     parents_.clear();
 
     // alias
-    const float* __restrict px = d.posx();
-    const float* __restrict py = d.posy();
-    const float* __restrict ma = d.mass();
+    const float* __restrict px = d.PosX();
+    const float* __restrict py = d.PosY();
+    const float* __restrict ma = d.Mass();
 
     auto [minXptr, maxXptr] = std::minmax_element(&px[0], &px[n]);
     auto [minYptr, maxYptr] = std::minmax_element(&py[0], &py[n]);
@@ -41,7 +41,7 @@ void quadtree::insert(const data& d) {
     const float oy = cy - side * 0.5f;
 
     quads_.push(cx, cy, side);
-    nodes_.push_empty(0);
+    nodes_.PushEmpty(0);
 
     if (keys_.size() != n) {
         keys_.resize(n);
@@ -65,22 +65,22 @@ void quadtree::insert(const data& d) {
 
     for (size_t i = 0; i < n; i++) {
         const size_t b = keys_[i] & 0xFFFFFFFFu;
-        insert_point(px[b], py[b], ma[b]);
+        InsertPoints(px[b], py[b], ma[b]);
     }
 
-    propagate();
+    Propogate();
 }
 
-void quadtree::insert_point(float x, float y, float m) {
+void quadtree::InsertPoints(float x, float y, float m) {
     size_t node = ROOT;
 
-    while (nodes_.is_branch(node)) {
+    while (nodes_.IsBranch(node)) {
         size_t quadrant = quads_.find_quadrant(node, x, y);
         node = nodes_.C()[node] + quadrant;
     }
 
-    if (nodes_.is_empty(node)) {
-        nodes_.set(node, x, y, m);
+    if (nodes_.IsEmpty(node)) {
+        nodes_.Set(node, x, y, m);
         return;
     }
 
@@ -95,7 +95,7 @@ void quadtree::insert_point(float x, float y, float m) {
     }
 
     while(1) {
-        size_t children = subdivide(node);
+        size_t children = Subdivide(node);
 
         size_t q1 = quads_.find_quadrant(node, nx, ny);
         size_t q2 = quads_.find_quadrant(node, x, y);
@@ -106,16 +106,16 @@ void quadtree::insert_point(float x, float y, float m) {
             size_t n1 = children + q1;
             size_t n2 = children + q2;
 
-            nodes_.set(n1, nx, ny, nm);
-            nodes_.set(n2, x, y, m);
+            nodes_.Set(n1, nx, ny, nm);
+            nodes_.Set(n2, x, y, m);
             return;
         }
     }
 }
 
-size_t quadtree::subdivide(size_t node) {
+size_t quadtree::Subdivide(size_t node) {
     parents_.push_back(node);
-    size_t children = nodes_.size();
+    size_t children = nodes_.Size();
     nodes_.C()[node] = children;
 
     size_t nexts[4] = {
@@ -129,7 +129,7 @@ size_t quadtree::subdivide(size_t node) {
     return children;
 }
 
-void quadtree::propagate() {
+void quadtree::Propogate() {
     float* __restrict nx = nodes_.X();
     float* __restrict ny = nodes_.Y();
     float* __restrict nm = nodes_.M();

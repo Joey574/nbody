@@ -20,14 +20,14 @@ void DirectSum::init(
 ) {
     cleanup();
 
-    if (initialData.bodies() == 0) {
+    if (initialData.Bodies() == 0) {
         throw std::invalid_argument("GPU simulation requires at least one particle");
     }
-    if (initialData.bodies() > std::numeric_limits<uint32_t>::max()) {
+    if (initialData.Bodies() > std::numeric_limits<uint32_t>::max()) {
         throw std::length_error("particle count exceeds the GPU shader's uint range");
     }
 
-    count = static_cast<uint32_t>(initialData.bodies());
+    count = static_cast<uint32_t>(initialData.Bodies());
     currentIndex = 0;
 
     const vk::DeviceSize stateBytes =
@@ -116,16 +116,16 @@ void DirectSum::init(
     );
     for (uint32_t i = 0; i < count; ++i) {
         mappedState[i] = {
-            initialData.posx()[i],
-            initialData.posy()[i],
-            initialData.velx()[i],
-            initialData.vely()[i]
+            initialData.PosX()[i],
+            initialData.PosY()[i],
+            initialData.VelX()[i],
+            initialData.VelY()[i]
         };
     }
     stateStagingMemory.unmapMemory();
 
     void* mappedMasses = massStagingMemory.mapMemory(0, massBytes);
-    std::memcpy(mappedMasses, initialData.mass(), static_cast<size_t>(massBytes));
+    std::memcpy(mappedMasses, initialData.Mass(), static_cast<size_t>(massBytes));
     massStagingMemory.unmapMemory();
 
     vk::CommandPoolCreateInfo poolInfo{

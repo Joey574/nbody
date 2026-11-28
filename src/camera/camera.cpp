@@ -1,6 +1,6 @@
 #include "camera.hpp"
 
-void camera::update(GLFWwindow* window, float dt) {
+void camera::Update(GLFWwindow* window, float dt) {
     const float zoomBlend = 1.0f - std::exp(-12.0f * dt);
     zoom = std::exp(std::log(zoom) + (std::log(targetZoom) - std::log(zoom)) * zoomBlend);
 
@@ -11,18 +11,18 @@ void camera::update(GLFWwindow* window, float dt) {
     if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS) position.x += step;
 }
 
-void camera::onScroll(float yOffset) {
+void camera::OnScroll(float yOffset) {
     targetZoom = glm::clamp(targetZoom * std::exp(yOffset * zoomSpeed), 1e-9f, 100.0f);
 }
 
-glm::mat4 camera::viewMatrix() const {
+glm::mat4 camera::ViewMatrix() const {
     glm::mat4 view = glm::mat4(1.0f);
     view = glm::scale(view, glm::vec3(zoom, zoom, 1.0f));
     view = glm::translate(view, glm::vec3(-position, 0.0f));
     return view;
 }
 
-glm::mat4 camera::projMatrix(float w, float h) const {
+glm::mat4 camera::ProjMatrix(float w, float h) const {
     auto p = glm::ortho(
         -w / 2.0f, w / 2.0f,
         -h / 2.0f, h / 2.0f,

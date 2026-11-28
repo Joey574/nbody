@@ -60,7 +60,7 @@ struct data {
         // move operator
         data& operator = (data&& other) noexcept {
             if (this == &other) return *this;
-            clear();
+            Clear();
 
             bodies_= std::exchange(other.bodies_, 0);
             posx_ = std::exchange(other.posx_, nullptr);
@@ -76,7 +76,7 @@ struct data {
         // copy operator
         data& operator = (const data& other) noexcept {
             if (this == &other) return *this;
-            clear();
+            Clear();
 
             bodies_ = other.bodies_;
             accx_ = other.accx_;
@@ -99,10 +99,10 @@ struct data {
 
         // deconstructor
         ~data() {
-            clear();
+            Clear();
         }
 
-        inline void clear() noexcept {
+        inline void Clear() noexcept {
             bodies_ = 0;
             util::mem_aligned_free(posx_);
             util::mem_aligned_free(posy_);
@@ -119,28 +119,28 @@ struct data {
             accy_ = matrix{};
         }
 
-        const inline size_t bodies() const noexcept { return bodies_; }
-        const inline float* __restrict posx() const noexcept { return posx_; }
-        const inline float* __restrict posy() const noexcept { return posy_; }
-        const inline float* __restrict velx() const noexcept { return velx_; }
-        const inline float* __restrict vely() const noexcept { return vely_; }
-        const inline float* __restrict mass() const noexcept { return mass_; }
+        const inline size_t Bodies() const noexcept { return bodies_; }
+        const inline float* __restrict PosX() const noexcept { return posx_; }
+        const inline float* __restrict PosY() const noexcept { return posy_; }
+        const inline float* __restrict VelX() const noexcept { return velx_; }
+        const inline float* __restrict VelY() const noexcept { return vely_; }
+        const inline float* __restrict Mass() const noexcept { return mass_; }
 
-        const inline matrix& accx() const noexcept { return accx_; }
-        const inline matrix& accy() const noexcept { return accy_; }
+        const inline matrix& AccX() const noexcept { return accx_; }
+        const inline matrix& AccY() const noexcept { return accy_; }
 
-        inline float* __restrict posx() noexcept { return posx_; }
-        inline float* __restrict posy() noexcept { return posy_; }
-        inline float* __restrict velx() noexcept { return velx_; }
-        inline float* __restrict vely() noexcept { return vely_; }
-        inline float* __restrict mass() noexcept { return mass_; }
+        inline float* __restrict PosX() noexcept { return posx_; }
+        inline float* __restrict PosY() noexcept { return posy_; }
+        inline float* __restrict VelX() noexcept { return velx_; }
+        inline float* __restrict VelY() noexcept { return vely_; }
+        inline float* __restrict Mass() noexcept { return mass_; }
 
-        inline matrix& accx() noexcept { return accx_; }
-        inline matrix& accy() noexcept { return accy_; }
+        inline matrix& AccX() noexcept { return accx_; }
+        inline matrix& AccY() noexcept { return accy_; }
 
-        inline void zero_acc() noexcept { accx_.zero(); accy_.zero(); }
+        inline void ZeroAcc() noexcept { accx_.Zero(); accy_.Zero(); }
 
-        inline void sort() noexcept {
+        inline void Sort() noexcept {
             std::vector<std::pair<float, size_t>> values(bodies_);
 
             #pragma omp parallel for simd schedule(static)
@@ -169,15 +169,15 @@ struct data {
         }
 
         // appends an existing data object to itself
-        inline void append(const data& other, bool init_acc) {
+        inline void Append(const data& other, bool init_acc) {
             const size_t n = this->bodies_;
             const size_t n_append = other.bodies_;
 
-            this->posx_ = grow(posx_, other.posx_, n, n_append);
-            this->posy_ = grow(posy_, other.posy_, n, n_append);
-            this->velx_ = grow(velx_, other.velx_, n, n_append);
-            this->vely_ = grow(vely_, other.vely_, n, n_append);
-            this->mass_ = grow(mass_, other.mass_, n, n_append);
+            this->posx_ = Grow(posx_, other.posx_, n, n_append);
+            this->posy_ = Grow(posy_, other.posy_, n, n_append);
+            this->velx_ = Grow(velx_, other.velx_, n, n_append);
+            this->vely_ = Grow(vely_, other.vely_, n, n_append);
+            this->mass_ = Grow(mass_, other.mass_, n, n_append);
 
             this->bodies_ = n + n_append;
             this->accx_ = init_acc ? matrix(omp_get_max_threads(), this->bodies_) : matrix{};
@@ -194,7 +194,7 @@ struct data {
         matrix accx_ = matrix{};
         matrix accy_ = matrix{};
 
-        static float* grow(float* __restrict data, const float* __restrict append, size_t n, size_t n_append) {
+        static float* Grow(float* __restrict data, const float* __restrict append, size_t n, size_t n_append) {
             const size_t total = n + n_append;
             float* tmp = (float*)util::mem_aligned_alloc(total*sizeof(float));
 

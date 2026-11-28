@@ -23,7 +23,7 @@ TEST(CliParsing, ParsesBackendAndOutputOptions) {
     };
 
     cliargs args;
-    args.parse(8, argv);
+    args.Parse(8, argv);
 
     EXPECT_TRUE(args.cpu);
     EXPECT_TRUE(args.bh);
@@ -46,5 +46,5 @@ TEST(CliParsing, RejectsUnknownArguments) {
     char* argv[] = { program, invalid };
 
     cliargs args;
-    EXPECT_ANY_THROW(args.parse(2, argv));
+    EXPECT_ANY_THROW(args.Parse(2, argv));
 }

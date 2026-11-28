@@ -1,20 +1,20 @@
 #include "simulation/simulation.hpp"
 #include <chrono>
 
-void simulation::sum_acc() noexcept {
+void simulation::SumAcc() noexcept {
     // aliasing
-    matrix& ax = data_.accx();
-    matrix& ay = data_.accy();
-    float* __restrict ax_top = ax.row(0);
-    float* __restrict ay_top = ay.row(0);
+    matrix& ax = data_.AccX();
+    matrix& ay = data_.AccY();
+    float* __restrict ax_top = ax.Row(0);
+    float* __restrict ay_top = ay.Row(0);
 
     // TODO : hand roll the simd implementation
     // sum acceleration into top row
     #pragma omp parallel for simd schedule(static)
-    for (size_t c = 0; c < ax.cols(); c++) {
+    for (size_t c = 0; c < ax.Cols(); c++) {
         float sx = ax_top[c], sy = ay_top[c];
 
-        for (size_t r = 1; r < ax.rows(); r++) {
+        for (size_t r = 1; r < ax.Rows(); r++) {
             sx += ax(r, c);
             sy += ay(r, c);
         }
@@ -24,15 +24,15 @@ void simulation::sum_acc() noexcept {
     }
 }
 
-void simulation::move_points(const float ft) noexcept {
+void simulation::MovePoints(const float ft) noexcept {
     // aliasing
-    const size_t n = data_.bodies();
-    float* __restrict px = data_.posx();
-    float* __restrict py = data_.posy();
-    float* __restrict vx = data_.velx();
-    float* __restrict vy = data_.vely();
-    const float* ax = data_.accx().row(0);
-    const float* ay = data_.accy().row(0);
+    const size_t n = data_.Bodies();
+    float* __restrict px = data_.PosX();
+    float* __restrict py = data_.PosY();
+    float* __restrict vx = data_.VelX();
+    float* __restrict vy = data_.VelY();
+    const float* ax = data_.AccX().Row(0);
+    const float* ay = data_.AccY().Row(0);
 
     const auto _ft = util::set1(ft);
     const size_t nv = n - (n % util::width);
@@ -67,12 +67,12 @@ void simulation::move_points(const float ft) noexcept {
     }
 }
 
-std::chrono::nanoseconds simulation::update(float ft) {
+std::chrono::nanoseconds simulation::Update(float ft) {
     switch (backend_) {
         case backend::CPU:
-            return update_cpu(ft);
+            return UpdateCPU(ft);
         case backend::CPU_BH:
-            return update_cpu_bh(ft);
+            return UpdateCpuBH(ft);
         default:
             return std::chrono::nanoseconds::zero();
     }

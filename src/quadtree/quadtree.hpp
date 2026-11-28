@@ -40,8 +40,8 @@ struct quadtree {
 
         template <typename Func>
         requires std::invocable<Func, size_t, size_t, const nodes&>
-        void traverse_seq(Func&& visit) const {
-            const size_t n = nodes_.size();
+        void TraverseSeq(Func&& visit) const {
+            const size_t n = nodes_.Size();
             for (size_t i = 0; i < n; i++) {
                 visit(i, nodes_);
             }
@@ -49,8 +49,8 @@ struct quadtree {
 
         template <typename Func>
         requires std::invocable<Func, size_t, size_t, const nodes&>
-        void traverse_par(Func&& visit) const {
-            const size_t n = nodes_.size();
+        void TraversePar(Func&& visit) const {
+            const size_t n = nodes_.Size();
 
             #pragma omp parallel
             {
@@ -63,10 +63,10 @@ struct quadtree {
             }
         }
 
-        void insert(const data& d);
-        void acc(data& d) const;
+        void Insert(const data& d);
+        void Acc(data& d) const;
 
-        float theta() const noexcept { return std::sqrt(thetasq_); }
+        float Theta() const noexcept { return std::sqrt(thetasq_); }
 
     private:
         static constexpr size_t ROOT = 0;
@@ -78,12 +78,12 @@ struct quadtree {
         std::vector<size_t> parents_;
         std::vector<uint64_t> keys_;
 
-        void insert_point(float x, float y, float m);
+        void InsertPoints(float x, float y, float m);
 
-        size_t subdivide(size_t node);
-        void propagate();
+        size_t Subdivide(size_t node);
+        void Propogate();
 
-        void compute_acc_point(
+        void ComputeAccPoint(
             float px,
             float py,
             float& __restrict ax,

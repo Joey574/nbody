@@ -7,7 +7,7 @@ struct cliargs {
     public:
         cliargs() = default;
 
-        void parse(int argc, char* argv[]);
+        void Parse(int argc, char* argv[]);
 
         Config config;
         size_t refresh = 100;
@@ -29,5 +29,5 @@ struct cliargs {
         size_t height = 800;
 
     private:
-        void printUsage() const;
+        void PrintUsage() const;
 };

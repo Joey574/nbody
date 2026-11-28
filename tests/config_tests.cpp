@@ -68,15 +68,15 @@ galaxies:
     config.Load(file.path().string());
     data generated = config.New(true);
 
-    ASSERT_EQ(generated.bodies(), 5);
-    EXPECT_FLOAT_EQ(generated.posx()[0], 1.0f);
-    EXPECT_FLOAT_EQ(generated.posy()[0], 2.0f);
-    EXPECT_FLOAT_EQ(generated.mass()[0], 5.0f);
-    EXPECT_FLOAT_EQ(generated.posx()[3], -3.0f);
-    EXPECT_FLOAT_EQ(generated.posy()[3], -4.0f);
-    EXPECT_FLOAT_EQ(generated.mass()[3], 7.0f);
-    EXPECT_EQ(generated.accx().cols(), 5);
-    EXPECT_EQ(generated.accy().cols(), 5);
+    ASSERT_EQ(generated.Bodies(), 5);
+    EXPECT_FLOAT_EQ(generated.PosX()[0], 1.0f);
+    EXPECT_FLOAT_EQ(generated.PosY()[0], 2.0f);
+    EXPECT_FLOAT_EQ(generated.Mass()[0], 5.0f);
+    EXPECT_FLOAT_EQ(generated.PosX()[3], -3.0f);
+    EXPECT_FLOAT_EQ(generated.PosY()[3], -4.0f);
+    EXPECT_FLOAT_EQ(generated.Mass()[3], 7.0f);
+    EXPECT_EQ(generated.AccX().Cols(), 5);
+    EXPECT_EQ(generated.AccY().Cols(), 5);
 }
 
 TEST(ConfigInitialization, RejectsMissingOrEmptyGalaxySequence) {
@@ -94,9 +94,9 @@ TEST(ConfigInitialization, OmitsAccelerationStorageWhenNotRequested) {
     config.Load(file.path().string());
     data generated = config.New(false);
 
-    ASSERT_EQ(generated.bodies(), 2);
-    EXPECT_EQ(generated.accx().rows(), 0);
-    EXPECT_EQ(generated.accx().cols(), 0);
-    EXPECT_EQ(generated.accy().rows(), 0);
-    EXPECT_EQ(generated.accy().cols(), 0);
+    ASSERT_EQ(generated.Bodies(), 2);
+    EXPECT_EQ(generated.AccX().Rows(), 0);
+    EXPECT_EQ(generated.AccX().Cols(), 0);
+    EXPECT_EQ(generated.AccY().Rows(), 0);
+    EXPECT_EQ(generated.AccY().Cols(), 0);
 }

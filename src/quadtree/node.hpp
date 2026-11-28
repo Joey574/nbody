@@ -25,7 +25,7 @@ struct nodes {
         // move operator
         nodes& operator=(nodes&& other) noexcept {
             if (this == &other) return *this;
-            cleanup();
+            Cleanup();
 
             size_ = std::exchange(other.size_, 0);
             capacity_ = std::exchange(other.capacity_, 0);
@@ -38,23 +38,23 @@ struct nodes {
         }
 
         // parameterized constructor
-        nodes(size_t n) { reserve(n); }
+        nodes(size_t n) { Reserve(n); }
 
-        void reserve(size_t n);
+        void Reserve(size_t n);
 
-        void clear();
-        void zero();
+        void Clear();
+        void Zero();
 
-        void push(float x, float y, float m);
-        void push_empty(size_t next);
+        void Push(float x, float y, float m);
+        void PushEmpty(size_t next);
 
-        void set(size_t i, float x, float y, float m);
+        void Set(size_t i, float x, float y, float m);
 
-        inline bool is_leaf(size_t i) const { return node_children_[i] == 0; }
-        inline bool is_branch(size_t i) const { return node_children_[i] != 0; }
-        inline bool is_empty(size_t i) const { return node_m_[i] == 0; }
+        inline bool IsLeaf(size_t i) const { return node_children_[i] == 0; }
+        inline bool IsBranch(size_t i) const { return node_children_[i] != 0; }
+        inline bool IsEmpty(size_t i) const { return node_m_[i] == 0; }
 
-        inline size_t size() const { return size_; }
+        inline size_t Size() const { return size_; }
         inline const float* __restrict X() const { return node_x_; }
         inline const float* __restrict Y() const { return node_y_; }
         inline const float* __restrict M() const { return node_m_; }
@@ -67,7 +67,7 @@ struct nodes {
         inline size_t* __restrict N() { return node_next_; }
         inline size_t* __restrict C() { return node_children_; }
 
-        ~nodes() { cleanup(); }
+        ~nodes() { Cleanup(); }
     private:
         size_t size_ = 0;
         size_t capacity_ = 0;
@@ -78,5 +78,5 @@ struct nodes {
         size_t* __restrict node_next_ = nullptr;
         size_t* __restrict node_children_ = nullptr;
 
-        void cleanup();
+        void Cleanup();
 };

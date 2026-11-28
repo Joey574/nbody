@@ -3,28 +3,28 @@
 
 #include <assert.h>
 
-void quadtree::acc(data& d) const {
-    const size_t n = d.bodies();
-    d.accx().zero();
-    d.accy().zero();
+void quadtree::Acc(data& d) const {
+    const size_t n = d.Bodies();
+    d.AccX().Zero();
+    d.AccY().Zero();
 
-    const float* __restrict px = d.posx();
-    const float* __restrict py = d.posy();
+    const float* __restrict px = d.PosX();
+    const float* __restrict py = d.PosY();
 
     #pragma omp parallel
     {
         const int tid = omp_get_thread_num();
-        float* __restrict ax = d.accx().row(tid);
-        float* __restrict ay = d.accy().row(tid);
+        float* __restrict ax = d.AccX().Row(tid);
+        float* __restrict ay = d.AccY().Row(tid);
 
         #pragma omp for schedule(guided, 16)
         for (size_t i = 0; i < n; i++) {
-            compute_acc_point(px[i], py[i], ax[i], ay[i]);
+            ComputeAccPoint(px[i], py[i], ax[i], ay[i]);
         }
     }
 }
 
-void quadtree::compute_acc_point(
+void quadtree::ComputeAccPoint(
     float px,
     float py,
     float& __restrict ax,
@@ -46,7 +46,7 @@ void quadtree::compute_acc_point(
         const float dy = ny[node] - py;
         const float dsq = dx*dx + dy*dy;
 
-        if (nodes_.is_leaf(node) || qs[node]*qs[node] < dsq * thetasq_) {
+        if (nodes_.IsLeaf(node) || qs[node]*qs[node] < dsq * thetasq_) {
             const float m = nm[node];
 
             const float soft_dsq = dsq + util::epsl;

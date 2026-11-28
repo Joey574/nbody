@@ -17,9 +17,9 @@ TEST(SimulationBackends, SelectsCpuDirectSumBackend) {
 
     simulation sim(args);
 
-    EXPECT_EQ(sim.get_backend(), simulation::backend::CPU);
-    EXPECT_FALSE(sim.isGPU());
-    EXPECT_EQ(sim.points(), 2);
+    EXPECT_EQ(sim.GetBackend(), simulation::backend::CPU);
+    EXPECT_FALSE(sim.IsGPU());
+    EXPECT_EQ(sim.Points(), 2);
 }
 
 TEST(SimulationBackends, SelectsCpuBarnesHutBackend) {
@@ -32,9 +32,9 @@ TEST(SimulationBackends, SelectsCpuBarnesHutBackend) {
 
     simulation sim(args);
 
-    EXPECT_EQ(sim.get_backend(), simulation::backend::CPU_BH);
-    EXPECT_FALSE(sim.isGPU());
-    EXPECT_EQ(sim.points(), 2);
+    EXPECT_EQ(sim.GetBackend(), simulation::backend::CPU_BH);
+    EXPECT_FALSE(sim.IsGPU());
+    EXPECT_EQ(sim.Points(), 2);
 }
 
 TEST(SimulationUpdates, CpuDirectSumComputesFinitePairwiseAcceleration) {
@@ -46,18 +46,18 @@ TEST(SimulationUpdates, CpuDirectSumComputesFinitePairwiseAcceleration) {
     args.config.Load(file.path().string());
 
     simulation sim(args);
-    const float originalX = sim.get_data().posx()[0];
-    const float originalY = sim.get_data().posy()[0];
+    const float originalX = sim.GetData().PosX()[0];
+    const float originalY = sim.GetData().PosY()[0];
 
-    sim.update(0.0f);
+    sim.Update(0.0f);
 
-    const float ax = sim.get_data().accx()(0, 0);
-    const float ay = sim.get_data().accy()(0, 0);
+    const float ax = sim.GetData().AccX()(0, 0);
+    const float ay = sim.GetData().AccY()(0, 0);
     EXPECT_TRUE(std::isfinite(ax));
     EXPECT_TRUE(std::isfinite(ay));
     EXPECT_GT(std::sqrt(ax * ax + ay * ay), 0.0f);
-    EXPECT_FLOAT_EQ(sim.get_data().posx()[0], originalX);
-    EXPECT_FLOAT_EQ(sim.get_data().posy()[0], originalY);
+    EXPECT_FLOAT_EQ(sim.GetData().PosX()[0], originalX);
+    EXPECT_FLOAT_EQ(sim.GetData().PosY()[0], originalY);
 }
 
 TEST(SimulationUpdates, CpuBarnesHutComputesFinitePairwiseAcceleration) {
@@ -69,10 +69,10 @@ TEST(SimulationUpdates, CpuBarnesHutComputesFinitePairwiseAcceleration) {
     args.config.Load(file.path().string());
 
     simulation sim(args);
-    sim.update(0.0f);
+    sim.Update(0.0f);
 
-    const float ax = sim.get_data().accx()(0, 0);
-    const float ay = sim.get_data().accy()(0, 0);
+    const float ax = sim.GetData().AccX()(0, 0);
+    const float ay = sim.GetData().AccY()(0, 0);
     EXPECT_TRUE(std::isfinite(ax));
     EXPECT_TRUE(std::isfinite(ay));
     EXPECT_GT(std::sqrt(ax * ax + ay * ay), 0.0f);
@@ -94,12 +94,12 @@ TEST(SimulationUpdates, ZeroThetaBarnesHutMatchesDirectSum) {
     simulation direct(directArgs);
     simulation barnesHut(barnesHutArgs);
 
-    direct.update(0.0f);
-    barnesHut.update(0.0f);
+    direct.Update(0.0f);
+    barnesHut.Update(0.0f);
 
-    ASSERT_EQ(direct.points(), barnesHut.points());
-    for (size_t i = 0; i < direct.points(); i++) {
-        EXPECT_NEAR(direct.get_data().accx()(0, i), barnesHut.get_data().accx()(0, i), 0.025f);
-        EXPECT_NEAR(direct.get_data().accy()(0, i), barnesHut.get_data().accy()(0, i), 0.025f);
+    ASSERT_EQ(direct.Points(), barnesHut.Points());
+    for (size_t i = 0; i < direct.Points(); i++) {
+        EXPECT_NEAR(direct.GetData().AccX()(0, i), barnesHut.GetData().AccX()(0, i), 0.025f);
+        EXPECT_NEAR(direct.GetData().AccY()(0, i), barnesHut.GetData().AccY()(0, i), 0.025f);
     }
 }

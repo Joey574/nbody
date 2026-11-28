@@ -5,7 +5,7 @@
 
 void FrameData::init(const data& d, const LogicalDevice& ld, const PhysicalDevice& pd) {
     cleanup();
-    count = d.bodies();
+    count = d.Bodies();
     if (!count) throw std::invalid_argument("cannot initialize 0 particle buffer");
 
     const vk::DeviceSize stateBytes = count * sizeof(ParticleState);
@@ -31,18 +31,18 @@ void FrameData::init(const data& d, const LogicalDevice& ld, const PhysicalDevic
 }
 
 void FrameData::update(const data& d) {
-    if (d.bodies() != count) {
+    if (d.Bodies() != count) {
         throw std::invalid_argument("particle count changed after renderer buffer initialization");
     }
 
     for (size_t i = 0; i < count; ++i) {
         mappedState[i] = {
-            d.posx()[i],
-            d.posy()[i],
-            d.velx()[i],
-            d.vely()[i]
+            d.PosX()[i],
+            d.PosY()[i],
+            d.VelX()[i],
+            d.VelY()[i]
         };
-        mappedMasses[i] = d.mass()[i];
+        mappedMasses[i] = d.Mass()[i];
     }
 }
 

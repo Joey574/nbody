@@ -3,14 +3,14 @@
 #include <string>
 #include <unistd.h>
 
-void cliargs::parse(int argc, char* argv[]) {
-    if (argc == 1) printUsage();
+void cliargs::Parse(int argc, char* argv[]) {
+    if (argc == 1) PrintUsage();
 
     for (int i = 1; i < argc; i++) {
         const std::string v(argv[i]);
 
         if (v == "-h" || v == "--help") {
-            printUsage();
+            PrintUsage();
         } else if (v == "--cpu") {
             cpu = true;
         } else if (v == "--bh") {
@@ -47,7 +47,7 @@ void cliargs::parse(int argc, char* argv[]) {
     }
 }
 
-void cliargs::printUsage() const {
+void cliargs::PrintUsage() const {
     printf(
         "nbody unstable"
         "\nUsage: nbody [Options] -f path.yml"

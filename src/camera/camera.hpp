@@ -6,11 +6,11 @@ struct camera {
         camera() = default;
         camera(float x, float y, float zoom) : position({x, y}), zoom(zoom), targetZoom(zoom) {}
 
-        void update(GLFWwindow* window, float dt);
-        void onScroll(float yOffset);
+        void Update(GLFWwindow* window, float dt);
+        void OnScroll(float yOffset);
 
-        glm::mat4 viewMatrix() const;
-        glm::mat4 projMatrix(float w, float h) const;
+        glm::mat4 ViewMatrix() const;
+        glm::mat4 ProjMatrix(float w, float h) const;
 
     private:
         glm::vec2 position = { 0.0f, 0.0f };

@@ -7,7 +7,7 @@ void simulation::InitGPU(const LogicalDevice& ld, const PhysicalDevice& pd) {
     data_.Clear();
 }
 
-void simulation::recordGPU(const vk::raii::CommandBuffer& cmd, float dt) {
+void simulation::RecordGPU(const vk::raii::CommandBuffer& cmd, float dt) {
     if (!IsGPU()) return;
     dsgpu_.record(cmd, dt);
 }

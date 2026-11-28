@@ -1,10 +1,10 @@
 #include "simulation.hpp"
 
-std::chrono::nanoseconds simulation::UpdateCpuBH(const float ft) noexcept {
+std::chrono::nanoseconds simulation::UpdateCPUBH(const float ft) noexcept {
     auto start = std::chrono::high_resolution_clock::now();
 
-    tree_.insert(data_);
-    tree_.acc(data_);
+    tree_.Insert(data_);
+    tree_.Acc(data_);
     SumAcc();
     MovePoints(ft);
 

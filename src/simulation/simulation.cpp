@@ -72,7 +72,7 @@ std::chrono::nanoseconds simulation::Update(float ft) {
         case backend::CPU:
             return UpdateCPU(ft);
         case backend::CPU_BH:
-            return UpdateCpuBH(ft);
+            return UpdateCPUBH(ft);
         default:
             return std::chrono::nanoseconds::zero();
     }

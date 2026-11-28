@@ -29,7 +29,7 @@ TEST(CliParsing, ParsesBackendAndOutputOptions) {
     EXPECT_TRUE(args.bh);
     EXPECT_TRUE(args.quiet);
     EXPECT_EQ(args.refresh, 25);
-    EXPECT_EQ(args.config.New(false).bodies(), 2);
+    EXPECT_EQ(args.config.New(false).Bodies(), 2);
 }
 
 TEST(CliParsing, DefaultsToGpuDirectSumAndStandardRefreshRate) {

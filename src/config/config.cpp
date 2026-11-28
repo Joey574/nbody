@@ -29,7 +29,7 @@ data Config::New(bool init_acc) const {
         g.Load(gConf, this->FixedTime());
 
         data d = g.New(init_acc);
-        sim.append(d, init_acc);
+        sim.Append(d, init_acc);
     }
 
     return sim;

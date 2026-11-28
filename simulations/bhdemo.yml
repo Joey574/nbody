@@ -1,22 +1,24 @@
-fixed_time: 0.000001
+fixed_time: 0.0000001
 
 galaxies:
   - type: spiral
-    points: 150000
+    points: 700000
     seed: 1234
-    radius: 6000
+    radius: 5000
+    arms: 6
     center_mass: 1e18
-    x_pos: -10000
-    y_pos: -10000
-    x_vel: 5
+    x_pos: -8000
+    y_pos: -8000
+    x_vel: 1
     y_vel: 0.5
 
   - type: spiral
-    points: 150000
+    points: 700000
     seed: 5678
-    radius: 6000
+    radius: 5000
+    arms: 6
     center_mass: 1e18
-    x_pos: 10000
-    y_pos: 10000
-    x_vel: -5
+    x_pos: 8000
+    y_pos: 8000
+    x_vel: -1
     y_vel: -0.5

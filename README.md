@@ -153,6 +153,16 @@ Press `space` to unpause the simulation.
 | `--bh` | Use the Barnes-Hut algorithm |
 | `-q`, `--quiet` | Quiet performance output |
 | `--refresh` | Set the refresh rate of the performance output |
+| `--pause` | Start the simulation paused |
+| `--record` | Record frames to a video file (requires ffmpeg) |
+| `--headless` | Disable rendering of window |
+| `--fps` | Playback fps of the video |
+| `--max-frames` | Automatically stop recording after this many frames |
+| `--width` | Starting width of the window |
+| `--height` | Starting height of the window |
+| `--zoom` | Set the starting zoom level |
+| `-x` | Set the camera's starting X position |
+| `-y` | Set the camera's starting Y position |
 
 Example scenarios live in `simulations/`. A few to start with:
 

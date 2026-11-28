@@ -1,5 +1,6 @@
 #include "Window.hpp"
 
+#include <functional>
 #include <stdexcept>
 
 std::map<int, Window::KeyCallback> Window::registry;
